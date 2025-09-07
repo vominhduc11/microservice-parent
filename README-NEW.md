@@ -280,14 +280,14 @@ docker-compose exec redis redis-cli ping
 
 # Service health (all expose actuator endpoints)
 curl http://localhost:8080/actuator/health
-curl http://localhost:8081/actuator/health
+curl http://localhost:8081/actuator/health  
 # ... for all services
 ```
 
 ### 📈 Metrics & Monitoring (Ready for Enhancement)
 - **Spring Boot Actuator** - Built-in metrics
 - **Prometheus Integration** - Ready for metrics collection
-- **Grafana Dashboards** - Ready for visualization
+- **Grafana Dashboards** - Ready for visualization  
 - **Distributed Tracing** - Ready for Zipkin/Jaeger
 - **Centralized Logging** - Ready for ELK stack
 
@@ -305,7 +305,7 @@ curl http://localhost:8081/actuator/health
 ```
 config-server/src/main/resources/configs/
 ├── api-gateway.yml      # Gateway routing & security
-├── auth-service.yml     # Auth service configuration
+├── auth-service.yml     # Auth service configuration  
 ├── user-service.yml     # User service configuration
 ├── product-service.yml  # Product service configuration
 ├── cart-service.yml     # Cart service configuration
@@ -468,9 +468,9 @@ cd user-service && mvn spring-boot:run
 
 ## 📞 Contact & Support
 
-**Project Team**: DevWonder Microservices Team  
-**Repository**: microservice-parent  
-**Last Updated**: September 7, 2025  
+**Project Team**: DevWonder Microservices Team
+**Repository**: microservice-parent
+**Last Updated**: September 7, 2025
 **Version**: 1.0.0-ENTERPRISE
 
 *🏢 Enterprise-grade microservices platform with comprehensive security, monitoring, and cloud-native capabilities*
