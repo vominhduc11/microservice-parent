@@ -1,0 +1,341 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+eureka:
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:api-gateway}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP:false}
+  client:
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA:true}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY:true}
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://discovery-service:8761/eureka/}
+  server:
+    enable-self-preservation: ${EUREKA_SERVER_ENABLE_SELF_PRESERVATION:false}
+    eviction-interval-timer-in-ms: ${EUREKA_SERVER_EVICTION_INTERVAL:10000}
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        # ===================================================================================
+        # SWAGGER UI - Centralized Documentation Hub
+        # ===================================================================================
+        - id: swagger-ui-main
+          uri: ${AUTH_SERVICE_URI}
+          order: 50
+          predicates:
+            - Path=/swagger-ui/index.html
+          filters:
+            - SetPath=/swagger-ui/index.html
+            - AddRequestHeader=X-Gateway-Request, true
+            
+        - id: swagger-ui-resources
+          uri: ${AUTH_SERVICE_URI}
+          order: 50
+          predicates:
+            - Path=/swagger-ui/**
+          filters:
+            - AddRequestHeader=X-Gateway-Request, true
+            
+        - id: swagger-webjars
+          uri: ${AUTH_SERVICE_URI}
+          order: 50
+          predicates:
+            - Path=/webjars/**
+          filters:
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # API Docs endpoints for each service
+        - id: auth-api-docs
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/api/auth/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: user-api-docs
+          uri: ${USER_SERVICE_URI}
+          predicates:
+            - Path=/api/user/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: warranty-api-docs
+          uri: ${WARRANTY_SERVICE_URI}
+          predicates:
+            - Path=/api/warranty/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: blog-api-docs
+          uri: ${BLOG_SERVICE_URI}
+          predicates:
+            - Path=/api/blog/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: product-api-docs
+          uri: ${PRODUCT_SERVICE_URI}
+          predicates:
+            - Path=/api/product/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: notification-api-docs
+          uri: ${NOTIFICATION_SERVICE_URI}
+          predicates:
+            - Path=/api/notification/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: cart-api-docs
+          uri: ${CART_SERVICE_URI}
+          predicates:
+            - Path=/api/cart/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: order-api-docs
+          uri: ${ORDER_SERVICE_URI}
+          predicates:
+            - Path=/api/order/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+            
+        - id: report-api-docs
+          uri: ${REPORT_SERVICE_URI}
+          predicates:
+            - Path=/api/report/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+
+
+        # ===================================================================================
+        # JWT/JWKS ENDPOINT
+        # ===================================================================================
+        - id: auth-service-jwks-api
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/api/auth/.well-known/jwks.json
+          filters:
+            - StripPrefix=1                    # /api/auth/.well-known/jwks.json → /auth/.well-known/jwks.json
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 50
+            
+        - id: auth-service-jwks
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/auth/.well-known/jwks.json
+          filters:
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 50
+            
+        # ===================================================================================
+        # BUSINESS API ROUTES - Order 200 (Lower Priority)
+        # Main business logic endpoints for all microservices
+        # Security: All routes require X-Gateway-Request header for service access control
+        # URL Pattern: /api/{service}/** → StripPrefix=1 → /{service}/**
+        # ===================================================================================
+        
+        # Auth Service API Routes
+        - id: auth-service-direct
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/auth/**                    # Direct access without /api prefix
+          filters:
+            - StripPrefix=1                    # /auth/** → /**
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 200
+            
+        - id: auth-service-options
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/api/auth/**               # CORS preflight pattern  
+            - Method=OPTIONS
+          filters:
+            - StripPrefix=1                   # /api/auth/** → /auth/**
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 150                          # Higher priority than main route
+            
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI}
+          predicates:
+            - Path=/api/auth/**               # Standard API pattern
+          filters:
+            - StripPrefix=1                   # /api/auth/** → /auth/**
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 200
+
+        # User Management Service API Routes
+        - id: user-service
+          uri: ${USER_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/user/**               # Customer & Reseller management
+          filters:
+            - StripPrefix=1                   # /api/user/** → /user/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+
+        # Blog Service API Routes (CMS)
+        - id: blog-service
+          uri: ${BLOG_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/blog/**               # Blog posts, categories, comments
+          filters:
+            - StripPrefix=1                   # /api/blog/** → /blog/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Warranty Service API Routes
+        - id: warranty-service
+          uri: ${WARRANTY_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/warranty/**           # Warranty tracking & claims
+          filters:
+            - StripPrefix=1                   # /api/warranty/** → /warranty/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Product Service API Routes
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/product/**            # Product catalog & management
+          filters:
+            - StripPrefix=1                   # /api/product/** → /product/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Cart Service API Routes
+        - id: cart-service
+          uri: ${CART_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/cart/**               # Shopping cart management
+          filters:
+            - StripPrefix=1                   # /api/cart/** → /cart/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Order Service API Routes
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/order/**              # Order processing & management
+          filters:
+            - StripPrefix=1                   # /api/order/** → /order/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Notification Service API Routes
+        - id: notification-service-options
+          uri: ${NOTIFICATION_SERVICE_URI}
+          predicates:
+            - Path=/api/notification/**       # CORS preflight pattern  
+            - Method=OPTIONS
+          filters:
+            - StripPrefix=1                   # /api/notification/** → /notification/**
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 150                          # Higher priority than main route
+            
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/notification/**       # Notification management
+          filters:
+            - StripPrefix=1                   # /api/notification/** → /notification/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+        # Report Service API Routes
+        - id: report-service
+          uri: ${REPORT_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/report/**             # Analytics & reporting
+          filters:
+            - StripPrefix=1                   # /api/report/** → /report/**
+            - AddRequestHeader=X-Gateway-Request, true
+
+      # ===================================================================================
+      # GLOBAL CONFIGURATIONS
+      # ===================================================================================
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:9000"
+              - "http://localhost:5173"
+              - "http://127.0.0.1:5500"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - HEAD
+              - CONNECT
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 86400
+
+# ===================================================================================
+# SPRINGDOC OPENAPI CONFIGURATION
+# Centralized Swagger UI configuration aggregating all microservices documentation
+# Main Hub: http://localhost:8080/swagger-ui.html
+# ===================================================================================
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_UI_ENABLED:true}
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /api/auth/v3/api-docs
+        name: auth-service
+        display-name: "🔐 Authentication Service"
+      - url: /api/user/v3/api-docs
+        name: user-service
+        display-name: "👤 User Management Service"
+      - url: /api/product/v3/api-docs
+        name: product-service
+        display-name: "🛍️ Product Service"
+      - url: /api/cart/v3/api-docs
+        name: cart-service
+        display-name: "🛒 Cart Service"
+      - url: /api/order/v3/api-docs
+        name: order-service
+        display-name: "📦 Order Service"
+      - url: /api/warranty/v3/api-docs
+        name: warranty-service
+        display-name: "🛡️ Warranty Service"
+      - url: /api/notification/v3/api-docs
+        name: notification-service
+        display-name: "📧 Notification Service"
+      - url: /api/blog/v3/api-docs
+        name: blog-service
+        display-name: "📝 Blog Service"
+      - url: /api/report/v3/api-docs
+        name: report-service
+        display-name: "📊 Report Service"
+  api-docs:
+    enabled: ${SWAGGER_API_DOCS_ENABLED:true}
