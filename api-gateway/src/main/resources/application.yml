@@ -1,3 +1,8 @@
+# ===================================================================================
+# BASIC APPLICATION CONFIGURATION
+# Detailed SpringDoc configuration is in Config Server
+# ===================================================================================
+
 spring:
   application:
     name: api-gateway

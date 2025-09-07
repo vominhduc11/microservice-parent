@@ -1,4 +1,4 @@
-package com.devwonder.api_gateway.security;
+package com.devwonder.apigateway.security;
 
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;

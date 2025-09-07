@@ -1,30 +1,48 @@
-# Build stage
-FROM maven:3.8.4-openjdk-17 AS builder
+# Multi-stage build for Notification Service
+FROM maven:3.9-eclipse-temurin-17 AS build
 
+# Set working directory
 WORKDIR /app
 
-# Copy pom.xml and download dependencies
 # First, build common-service library
 COPY common-service/pom.xml common-service/
 COPY common-service/src common-service/src/
 RUN cd common-service && mvn clean install -DskipTests
 
-# Now build notification-service
+# Copy service pom.xml for dependency resolution
 COPY notification-service/pom.xml .
 
+# Download dependencies (better caching)
+RUN mvn dependency:go-offline -B
 
-# Copy source code and build
+# Copy source code
 COPY notification-service/src ./src
+
+# Build the application
 RUN mvn clean package -DskipTests
 
-# Runtime stage
-FROM openjdk:17-jdk-slim
+# Add build timestamp to force rebuild
+ARG BUILD_TIME
+ENV BUILD_TIME=${BUILD_TIME:-unknown}
 
+# Production stage
+FROM eclipse-temurin:17-jre
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Copy JAR from build stage
-COPY --from=builder /app/target/*.jar app.jar
+# Copy the built jar from build stage
+COPY --from=build /app/target/notification-service-*.jar app.jar
 
+# Expose port
 EXPOSE 8087
 
-CMD ["java", "-jar", "app.jar"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8087/actuator/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

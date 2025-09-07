@@ -1,4 +1,4 @@
-package com.devwonder.api_gateway.util;
+package com.devwonder.apigateway.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

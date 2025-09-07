@@ -1,4 +1,4 @@
-package com.devwonder.api_gateway.config;
+package com.devwonder.apigateway.config;
 
 import java.util.*;
 
@@ -11,7 +11,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import com.devwonder.api_gateway.security.AllAuthoritiesAuthorizationManager;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -37,12 +36,21 @@ public class SecurityConfig {
     private void configureAuthorization(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
                 // CORS preflight requests - HIGHEST PRIORITY
-                .pathMatchers(HttpMethod.OPTIONS).permitAll();
+                .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                
+                // Swagger UI and API docs - PUBLIC ACCESS (No Authentication Required)
+                .pathMatchers(getSwaggerPaths()).permitAll()
+                
+                // Actuator endpoints - public access
+                .pathMatchers("/actuator/**").permitAll()
+                
+                // Auth Service - public access
+                .pathMatchers("/api/auth/**").permitAll()
+                
+                // All other requests require authentication
+                .anyExchange().authenticated();
 
-        // Configure public endpoints
-        configurePublicEndpoints(exchanges);
-
-        // Configure service-specific authorization
+        // Configure service-specific authorization (currently empty - will be added when endpoints are implemented)
         configureProductServiceAuth(exchanges);
         configureBlogServiceAuth(exchanges);
         configureUserServiceAuth(exchanges);
@@ -51,17 +59,6 @@ public class SecurityConfig {
         configureWarrantyServiceAuth(exchanges);
         configureNotificationServiceAuth(exchanges);
         configureReportServiceAuth(exchanges);
-
-        // Deny all other requests
-        exchanges.anyExchange().denyAll();
-    }
-
-    private void configurePublicEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        exchanges
-                // Swagger UI - public access for development
-                .pathMatchers(getSwaggerPaths()).permitAll()
-                // Auth Service - public access
-                .pathMatchers("/api/auth/**").permitAll();
     }
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -98,21 +95,13 @@ public class SecurityConfig {
 
     private String[] getSwaggerPaths() {
         return new String[] {
+                // Essential Swagger UI paths only - Optimized for centralized access
                 "/swagger-ui.html",
                 "/swagger-ui/**",
-                "/webjars/**",
-                "/webjars/swagger-ui/**",
                 "/v3/api-docs/**",
-                "/api/*/v3/api-docs/**",
-                "/api/*/swagger-ui/**",
-                "/api/*/webjars/**",
-                "/api/user/v3/api-docs/**",
-                "/api/user/swagger-ui/**",
-                "/api/user/webjars/**",
-                "/auth/swagger-ui.html",
-                "/auth/swagger-ui/**",
-                "/auth/webjars/**",
-                "/auth/v3/api-docs"
+                "/webjars/**",
+                // API docs for all services
+                "/api/*/v3/api-docs/**"
         };
     }
 

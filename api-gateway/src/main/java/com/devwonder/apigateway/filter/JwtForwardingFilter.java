@@ -1,4 +1,4 @@
-package com.devwonder.api_gateway.filter;
+package com.devwonder.apigateway.filter;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;

@@ -1,0 +1,57 @@
+auth-service:
+   POST /api/auths/login
+   POST /api/auths/logout
+   POST /api/auths/refresh
+   POST /api/auths/resgister
+user-service:
+   GET  /api/users/dealers  (public)   ok
+   PATCH/api/users/dealers/{id}
+   POST /api/users/dealers/resgister    (public)   ok
+   POST /api/users/customers
+   POST /api/users/admins
+notification-service:
+   GET  /api/notifications
+   POST /api/notifications
+product-service:
+   GET /api/products?fields=id, name, image, description&show_on_homepage=true&limit=4  (public)  ok
+   GET  /api/products/{id}  (public)  ok
+   GET  /api/products?fields=id, name, image, description&is_featured=true&limit=1    (public)  ok
+   POST /api/products
+   PATCH /api/products/{id}
+   DELETE /api/products/{id}
+blog-service:
+   GET /api/blogs?fields=id,title,description,image,category,created_at&show_on_homepage=true&limit=6    (public)  ok
+   GET  /api/blogs/{id}    (public)   ok
+   POST /api/blogs
+   PATCH /api/blogs/{id}
+   DELETE /api/blogs/{id}
+cart-service:
+   GET /api/users/{userId}/cart
+   POST /api/users/{userId}/cart/items
+   DELETE /api/users/{userId}/cart/items
+order-service:
+   GET /api/orders
+   POST /api/orders
+   PATCH /api/orders/{orderId}
+   DELETE /api/orders/{orderId}
+warranty-service:
+   GET /api/warranties/check?serial_number=ABC123XYZ
+   GET /api/warranties/{customer_id}/purchases?fields=id,name,status,image,serial_number,purchase_date,purchase_location,Retail Price,Warranty Until
+   GET /api/warranties/{customer_id}/purchases?fields=id,name,serial_number,warranty_expiry_date?warranty_expired=false
+   GET /api/warranties/warranty-requests
+   POST /api/warranties/warranty-requests
+report-service:
+   5 api
+
+
+
+
+
+
+
+
+
+
+note: Identify data to cache
+Còn 1 logic gửi thông báo ở main
+quản lý các gói gia hạn ở trang admin

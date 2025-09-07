@@ -1,6 +1,7 @@
-package com.devwonder.api_gateway.filter;
+package com.devwonder.apigateway.filter;
 
-import com.devwonder.api_gateway.util.RequestUtil;
+// Update the import to the correct package, for example:
+import com.devwonder.apigateway.util.RequestUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
