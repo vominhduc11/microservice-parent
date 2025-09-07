@@ -1,7 +1,24 @@
 # 🚀 Enterprise Microservices E-commerce Platform
 
 ## 📋 Tổng quan dự án
-Hệ thống microservices enterprise-grade cho ứng dụng e-commerce với kiến trúc phân tán hiện đại. Được xây dựng với Spring Boot 3.4.6, Spring Cloud 2024.0.0, và tích hợp đầy đủ các công nghệ cloud-native. Hệ thống bảo mật toàn diện với JWT authentication và gateway-based authorization.
+Hệ thống microservices enterprise-grade cho ứng dụng **E-commerce B2B/B2C Platform** với kiến trúc phân tán hiện đại. Được xây dựng với Spring Boot 3.4.6, Spring Cloud 2024.0.0, và tích hợp đầy đủ các công nghệ cloud-native. 
+
+### 🎯 **Business Model Overview**
+- **🏢 B2B Wholesale Platform** - Dealers đặt hàng sỉ từ nhà sản xuất
+- **🛍️ B2C Retail Platform** - Customers mua lẻ trực tiếp
+- **📦 Product Management** - Quản lý catalog sản phẩm với serial tracking
+- **🛒 Shopping Cart System** - Giỏ hàng riêng biệt cho dealer và customer
+- **📋 Order Processing** - Xử lý đơn hàng với nhiều trạng thái
+- **🛡️ Warranty Management** - Quản lý bảo hành sản phẩm
+- **📢 Notification System** - Thông báo đa kênh (Email, SMS, Push)
+- **📝 Content Management** - Blog và content marketing
+- **📊 Analytics & Reporting** - Báo cáo kinh doanh và analytics
+
+### 🔒 **Security & Authorization**
+Hệ thống bảo mật toàn diện với JWT authentication, role-based access control (RBAC), và gateway-based authorization cho 3 loại user:
+- **👤 Customer** - End customers (B2C)
+- **🏢 Dealer** - Business partners (B2B) 
+- **🛡️ Admin** - System administrators
 
 ## 🏗️ Kiến trúc hệ thống
 
@@ -27,17 +44,17 @@ Hệ thống microservices enterprise-grade cho ứng dụng e-commerce với ki
 | **common-service** | 0.0.1-SNAPSHOT | Shared utilities & base configurations | BaseSecurityConfig, BaseOpenApiConfig, Common DTOs, Utility classes |
 
 ### 🔐 Business Services
-| Service | Port | Container | Database | Dependencies | Security Model |
-|---------|------|-----------|----------|--------------|----------------|
-| **auth-service** | 8081 | auth-service | auth_service_db | config-server, postgres, redis | JWT issuer, public auth endpoints |
-| **user-service** | 8082 | user-service | user_service_db | config-server, postgres, auth-service | Gateway + JWT validation |
-| **product-service** | 8083 | product-service | product_service_db | config-server, postgres | Public read, authenticated write |
-| **cart-service** | 8084 | cart-service | cart_service_db | config-server, postgres, redis, product-service | User-specific access |
-| **order-service** | 8085 | order-service | order_service_db | config-server, postgres, cart-service | User-specific + admin access |
-| **warranty-service** | 8086 | warranty-service | warranty_service_db | config-server, postgres, product-service | Authenticated access |
-| **notification-service** | 8087 | notification-service | notification_service_db | config-server, redis | Internal/admin access |
-| **blog-service** | 8088 | blog-service | blog_service_db | config-server, postgres, user-service | Public read, auth write |
-| **report-service** | 8089 | report-service | report_service_db | config-server, postgres | Admin/manager access |
+| Service | Port | Container | Database | Core Entities | Business Purpose |
+|---------|------|-----------|----------|---------------|------------------|
+| **auth-service** | 8081 | auth-service | auth_service_db | Account, Role | JWT authentication, user credentials, role management |
+| **user-service** | 8082 | user-service | user_service_db | Customer, Dealer, Admin | User profiles, B2B/B2C user management |
+| **product-service** | 8083 | product-service | product_service_db | Product, ProductSerial | Catalog management, inventory, pricing (retail/wholesale) |
+| **cart-service** | 8084 | cart-service | cart_service_db | ProductOfCart, DealerProductOfCart | Shopping cart, dealer-specific cart management |
+| **order-service** | 8085 | order-service | order_service_db | Order, OrderItem, DealerOrderItem | Order processing, B2B/B2C order handling |
+| **warranty-service** | 8086 | warranty-service | warranty_service_db | Warranty | Product warranty tracking and management |
+| **notification-service** | 8087 | notification-service | notification_service_db | Notification | Multi-channel notifications (Email, SMS, Push) |
+| **blog-service** | 8088 | blog-service | blog_service_db | Blog, CategoryBlog | Content management, marketing content |
+| **report-service** | 8089 | report-service | report_service_db | Report | Business analytics, sales reporting |
 
 ## 🛠️ Technology Stack
 
@@ -58,12 +75,16 @@ Hệ thống microservices enterprise-grade cho ứng dụng e-commerce với ki
 - **PostgreSQL 15** - Primary relational database
 - **Redis 7** - In-memory cache & session storage
 - **Database per Service** - Microservices data isolation pattern
+- **JPA/Hibernate 6.x** - Object-Relational Mapping
+- **HikariCP** - High-performance connection pooling
+- **Lombok** - Java boilerplate code reduction
 
 ### 📡 Communication & Messaging
 - **Apache Kafka 7.4.0** - Event streaming platform (3-broker cluster)
 - **Zookeeper 7.4.0** - Distributed coordination (3-node ensemble)
 - **Spring Cloud OpenFeign** - Declarative REST client
 - **Spring Kafka** - Kafka integration framework
+- **RESTful APIs** - HTTP-based service communication
 
 ### 📚 API Documentation
 - **SpringDoc OpenAPI 3 (v2.6.0)** - API documentation framework
@@ -75,6 +96,13 @@ Hệ thống microservices enterprise-grade cho ứng dụng e-commerce với ki
 - **Spring Boot Actuator** - Production monitoring
 - **Spring Cloud Config** - External configuration management
 - **Health Check Dependencies** - Startup orchestration
+
+### 📋 Data Modeling & Validation
+- **Jakarta Persistence (JPA)** - Java persistence standard
+- **Jakarta Validation** - Bean validation framework
+- **Hibernate Annotations** - ORM configuration
+- **Soft Delete Pattern** - Data retention strategy
+- **Audit Timestamps** - Automatic created/updated tracking
 
 ## 🔒 Enterprise Security Architecture
 
@@ -140,7 +168,270 @@ report_service_db    -- Analytics & business intelligence
 - **Database Migrations** - Ready for Liquibase/Flyway
 - **Connection Health Checks** - Docker health monitoring
 
-## 📚 Centralized API Documentation
+## 🏢 Domain Model & Entity Architecture
+
+### 👤 **Auth Service Entities**
+```java
+📋 Account          // User authentication accounts
+├── id: Long        // Primary key
+├── username: String // Unique username
+├── password: String // Encrypted password
+├── roles: Set<Role> // User roles (Many-to-Many)
+├── enabled: Boolean // Account status
+└── timestamps      // Created/Updated/Deleted
+
+🔐 Role             // User roles and permissions
+├── id: Long        // Primary key
+├── name: String    // Role name (ADMIN, DEALER, CUSTOMER)
+└── permissions     // Role-based permissions
+```
+
+### 👥 **User Service Entities**
+```java
+🛡️ Admin            // System administrators
+├── accountId: Long  // Links to Account in Auth Service
+└── adminData       // Admin-specific information
+
+🏢 Dealer           // Business dealers/partners
+├── accountId: Long  // Links to Account in Auth Service
+├── companyName     // Company information
+├── address, phone  // Contact details
+└── city, district  // Location data
+
+👤 Customer         // End customers
+├── accountId: Long  // Links to Account in Auth Service
+├── name: String    // Customer name
+└── email: String   // Contact email
+```
+
+### 📦 **Product Service Entities**
+```java
+🛍️ Product          // Product catalog
+├── id: Long        // Primary key
+├── sku: String     // Unique product code
+├── name: String    // Product name
+├── image: String   // Product image URL
+├── features: Text  // Product features
+├── description: Text // Detailed description
+├── videos: Text    // Video links
+├── specifications: Text // Technical specs
+├── retailPrice: BigDecimal // Customer price
+├── wholesalePrice: BigDecimal // Dealer price
+├── status: ProductStatus // ACTIVE/INACTIVE/OUT_OF_STOCK
+├── soldQuantity: Long // Sales tracking
+├── showOnHomepage: Boolean // Featured product
+└── productSerials: List<ProductSerial> // Serial numbers
+
+🔢 ProductSerial    // Individual product items
+├── id: Long        // Primary key
+├── serialNumber    // Unique serial
+├── product: Product // Parent product
+└── status         // Serial status
+```
+
+### 🛒 **Cart Service Entities**
+```java
+🛍️ ProductOfCart    // Products in shopping cart
+├── id: Long        // Primary key
+├── idProduct: Long // Reference to Product Service
+├── createdAt      // When added to cart
+└── dealerProductOfCarts: List // Dealer-specific cart items
+
+🏢 DealerProductOfCart // Dealer-specific cart data
+├── id: Long        // Primary key
+├── idDealer: Long  // Reference to Dealer
+├── quantity: Integer // Requested quantity
+└── productOfCart   // Parent cart item
+```
+
+### 📋 **Order Service Entities**
+```java
+📦 Order            // Customer orders
+├── id: Long        // Primary key
+├── subtotal: BigDecimal // Order subtotal
+├── shippingFee: BigDecimal // Shipping cost
+├── vat: BigDecimal // Tax amount
+├── total: BigDecimal // Final total
+├── status: OrderStatus // PENDING/CONFIRMED/PROCESSING/SHIPPED/DELIVERED/CANCELLED
+├── createAt: LocalDateTime // Order date
+├── idDealer: Long  // Dealer ID
+├── orderItems: List<OrderItem> // Standard order items
+└── dealerOrderItems: List<DealerOrderItem> // Dealer-specific items
+
+📝 OrderItem        // Individual order items
+├── id: Long        // Primary key
+├── order: Order    // Parent order
+├── productInfo     // Product details snapshot
+├── quantity        // Ordered quantity
+└── price          // Price at time of order
+
+🏢 DealerOrderItem  // Dealer-specific order items
+├── id: Long        // Primary key
+├── order: Order    // Parent order
+├── dealerInfo      // Dealer details
+└── orderData      // Dealer-specific order data
+```
+
+### 🛡️ **Warranty Service Entities**
+```java
+📋 Warranty         // Product warranty records
+├── id: Long        // Primary key
+├── productInfo     // Product details
+├── customerInfo    // Customer information
+├── warrantyPeriod  // Warranty duration
+├── startDate      // Warranty start
+├── endDate        // Warranty expiry
+└── status         // WARRANTY_STATUS
+```
+
+### 📢 **Notification Service Entities**
+```java
+📬 Notification     // System notifications
+├── id: Long        // Primary key
+├── recipientId     // Target user
+├── title: String   // Notification title
+├── message: Text   // Notification content
+├── type: NotificationType // EMAIL/SMS/PUSH/IN_APP
+├── status: NotificationStatus // PENDING/SENT/DELIVERED/FAILED
+├── scheduledAt     // When to send
+└── sentAt         // When actually sent
+```
+
+### 📝 **Blog Service Entities**
+```java
+📖 Blog             // Blog posts/articles
+├── id: Long        // Primary key
+├── title: String   // Blog title
+├── content: Text   // Blog content
+├── authorId: Long  // Author reference
+├── category: CategoryBlog // Blog category
+├── tags: String    // Blog tags
+├── status: BlogStatus // DRAFT/PUBLISHED/ARCHIVED
+├── publishedAt     // Publication date
+└── viewCount      // Read statistics
+
+📚 CategoryBlog     // Blog categories
+├── id: Long        // Primary key
+├── name: String    // Category name
+├── description    // Category description
+└── blogs: List<Blog> // Associated blogs
+```
+
+### 📊 **Report Service Entities**
+```java
+📈 Report           // Business analytics reports
+├── id: Long        // Primary key
+├── reportType      // Report category
+├── title: String   // Report title
+├── data: JSON      // Report data
+├── generatedBy     // Report creator
+├── generatedAt     // Creation time
+├── parameters     // Report parameters
+└── status         // Report status
+```
+
+### 🔗 **Cross-Service Relationships**
+```
+🔄 Service Integration Patterns:
+├── Auth Service ←→ User Service (Account ↔ Customer/Dealer/Admin)
+├── Product Service → Cart Service (Product references)
+├── Cart Service → Order Service (Cart to Order conversion)
+├── User Service → Order Service (Dealer/Customer references)
+├── Product Service → Warranty Service (Product warranty)
+├── Order Service → Notification Service (Order notifications)
+├── User Service → Blog Service (Author references)
+└── All Services → Report Service (Analytics data)
+```
+
+## � Business Workflows & Use Cases
+
+### 🛍️ **B2C Customer Journey**
+```mermaid
+Customer Registration → Browse Products → Add to Cart → Place Order → Payment → Order Fulfillment → Warranty Registration
+```
+
+**Key Workflows:**
+1. **Customer Registration** (Auth + User Service)
+   - Account creation with customer role
+   - Email verification and profile setup
+   - Customer-specific pricing access
+
+2. **Product Discovery** (Product + Blog Service)
+   - Browse product catalog with retail pricing
+   - View product specifications, images, videos
+   - Read blog posts and reviews
+
+3. **Shopping Cart** (Cart Service)
+   - Add/remove products with retail quantities
+   - Calculate retail pricing and shipping
+   - Session management and cart persistence
+
+4. **Order Processing** (Order + Notification Service)
+   - Order placement with customer details
+   - Payment processing integration
+   - Order status tracking and notifications
+
+### 🏢 **B2B Dealer Journey**
+```mermaid
+Dealer Registration → Approval Process → Browse Wholesale → Bulk Orders → Dealer Management → Inventory Planning
+```
+
+**Key Workflows:**
+1. **Dealer Onboarding** (User + Auth Service)
+   - Dealer registration with company details
+   - Admin approval workflow
+   - Dealer-specific access and pricing
+
+2. **Wholesale Operations** (Product + Cart Service)
+   - Access to wholesale pricing tiers
+   - Bulk quantity ordering capabilities
+   - Dealer-specific product availability
+
+3. **Order Management** (Order Service)
+   - Large volume order processing
+   - Dealer-specific order history
+   - Credit terms and payment management
+
+4. **Business Analytics** (Report Service)
+   - Sales performance tracking
+   - Inventory turnover reports
+   - Commission and profit analysis
+
+### 🛡️ **Admin Operations**
+```mermaid
+User Management → Product Management → Order Oversight → Analytics → System Monitoring
+```
+
+**Key Functions:**
+1. **User Administration** (User Service)
+   - Manage customer/dealer accounts
+   - Role assignment and permissions
+   - Account activation/deactivation
+
+2. **Product Catalog Management** (Product Service)
+   - Add/edit product information
+   - Manage pricing (retail vs wholesale)
+   - Inventory tracking and alerts
+
+3. **Order Operations** (Order + Notification Service)
+   - Order approval and processing
+   - Status updates and tracking
+   - Customer/dealer communication
+
+4. **Business Intelligence** (Report Service)
+   - Sales and revenue analytics
+   - User behavior analysis
+   - Performance dashboards
+
+### 🔄 **Event-Driven Workflows**
+```
+📦 Order Placed → 🔔 Notification Sent → 📊 Analytics Updated
+🛍️ Product Sold → 📈 Inventory Updated → 📊 Sales Recorded
+👤 User Registered → ✉️ Welcome Email → 📋 Profile Created
+🛡️ Warranty Claimed → 🔔 Admin Notified → 📋 Ticket Created
+```
+
+## �📚 Centralized API Documentation
 
 ### 🎯 Swagger Hub Architecture
 - **Single Entry Point**: `http://localhost:8080/swagger-ui/index.html`
@@ -471,6 +762,26 @@ cd user-service && mvn spring-boot:run
 **Project Team**: DevWonder Microservices Team  
 **Repository**: microservice-parent  
 **Last Updated**: September 7, 2025  
-**Version**: 1.0.0-ENTERPRISE
+**Version**: 1.0.0-ENTERPRISE  
+**Domain**: B2B/B2C E-commerce Platform
 
-*🏢 Enterprise-grade microservices platform with comprehensive security, monitoring, and cloud-native capabilities*
+### 📊 **Project Statistics**
+- **Services**: 11 total (2 platform + 9 business)
+- **Entities**: 15+ domain entities across services
+- **Databases**: 9 isolated databases
+- **Infrastructure**: 6 supporting services (PostgreSQL, Redis, Kafka cluster, etc.)
+- **Security**: JWT + Role-based access control
+- **Documentation**: Centralized Swagger UI hub
+
+### � **Business Capabilities**
+- ✅ **Multi-tenant B2B/B2C platform**
+- ✅ **Product catalog with serial tracking** 
+- ✅ **Differential pricing (retail/wholesale)**
+- ✅ **Shopping cart with dealer-specific features**
+- ✅ **Order processing with multiple statuses**
+- ✅ **Warranty management system**
+- ✅ **Multi-channel notification system**
+- ✅ **Content management for marketing**
+- ✅ **Business analytics and reporting**
+
+*�🏢 Enterprise-grade microservices platform with comprehensive B2B/B2C e-commerce capabilities, advanced security, monitoring, and cloud-native architecture*
