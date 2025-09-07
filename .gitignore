@@ -1,6 +1,7 @@
 # Maven
 target/
-!.mvn/wrapper/maven-wrapper.jar
+.mvn/
+!.mvn/wrapper/
 !**/src/main/**/target/
 !**/src/test/**/target/
 pom.xml.tag
@@ -10,8 +11,6 @@ pom.xml.next
 release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.properties
 
 # Spring Boot
 *.jar
