@@ -5,7 +5,9 @@
       "Bash(do)",
       "Bash(echo:*)",
       "Bash(sed:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(docker volume:*)",
+      "Bash(docker-compose up:*)"
     ],
     "deny": [],
     "ask": []
