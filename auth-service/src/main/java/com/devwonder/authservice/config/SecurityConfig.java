@@ -10,7 +10,9 @@ public class SecurityConfig extends BaseSecurityConfig {
     @Override
     protected void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<org.springframework.security.config.annotation.web.builders.HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
-            // All auth endpoints - ONLY accessible via API Gateway
+            // JWKS endpoint - PUBLIC access (no authentication required)
+            .requestMatchers("/auth/.well-known/jwks.json").permitAll()
+            // All other auth endpoints - ONLY accessible via API Gateway
             .requestMatchers("/auth/**").access(gatewayHeaderRequired());
     }
 }

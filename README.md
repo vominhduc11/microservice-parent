@@ -24,6 +24,9 @@ Hệ thống microservices enterprise-grade cho ứng dụng **E-commerce B2B/B2
 - 🧹 **Repository Cleanup**: Consolidated .gitignore files for better maintainability
 - 📚 **Enhanced Documentation**: Added individual HELP.md files for each service
 - ✅ **Quality Assurance**: Repository now passes all build and collaboration tests
+- 🔐 **JWT/JWKS Implementation**: Added OAuth2-compatible JWT verification endpoint
+- 🌐 **CORS Enhancement**: Centralized CORS configuration for seamless API Gateway integration
+- 🧹 **Swagger Optimization**: Removed redundant SpringDoc configs across all services
 
 ### 🏗️ **Business Capabilities** (Email, SMS, Push)
 - **📝 Content Management** - Blog và content marketing
@@ -144,6 +147,23 @@ Internet → Load Balancer → API Gateway (JWT + CORS) → Services (Gateway He
 // Gateway header validation in all services
 public static final String GATEWAY_HEADER_EXPRESSION = 
     "request.getHeader('X-Gateway-Request') == 'true'";
+```
+
+### 🔐 JWT & JWKS Implementation
+- **JWKS Endpoint**: `/auth/.well-known/jwks.json` - Public key distribution
+- **RSA256 Signing**: 2048-bit RSA key pair for JWT signing/verification
+- **OAuth2ResourceServer**: Compatible with Spring Security JWT validation
+- **Automatic Key Rotation**: Ready for key rotation scenarios
+- **CORS Support**: Centralized CORS configuration for API Gateway integration
+
+```http
+GET /auth/.well-known/jwks.json
+Response: {
+  "keys": [{
+    "kty": "RSA", "use": "sig", "kid": "key-id",
+    "alg": "RS256", "n": "modulus", "e": "exponent"
+  }]
+}
 ```
 
 ## 🔄 Service Communication Patterns
@@ -774,10 +794,10 @@ cd user-service && mvn spring-boot:run
 
 ## 📞 Contact & Support
 
-**Project Team**: DevWonder Microservices Team  
-**Repository**: microservice-parent  
-**Last Updated**: September 7, 2025  
-**Version**: 1.0.0-ENTERPRISE  
+**Project Team**: DevWonder Microservices Team
+**Repository**: microservice-parent
+**Last Updated**: September 7, 2025
+**Version**: 1.0.0-ENTERPRISE
 **Domain**: B2B/B2C E-commerce Platform
 
 ### 📊 **Project Statistics**
@@ -795,10 +815,12 @@ cd user-service && mvn spring-boot:run
 - ✅ **Git Configuration**: Optimized .gitignore for Maven projects
 - ✅ **Dependencies**: All Maven dependencies properly declared
 - ✅ **Collaboration Ready**: Project builds successfully from fresh clone
+- ✅ **JWKS Implementation**: JWT verification endpoint for OAuth2ResourceServer
+- ✅ **CORS Configuration**: Centralized CORS support for API Gateway integration
 
 ### � **Business Capabilities**
 - ✅ **Multi-tenant B2B/B2C platform**
-- ✅ **Product catalog with serial tracking** 
+- ✅ **Product catalog with serial tracking**
 - ✅ **Differential pricing (retail/wholesale)**
 - ✅ **Shopping cart with dealer-specific features**
 - ✅ **Order processing with multiple statuses**

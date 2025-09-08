@@ -1,23 +1,6 @@
 server:
   port: 8081
 
-# SpringDoc OpenAPI Configuration
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: ${SWAGGER_API_DOCS_ENABLED:true}
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: ${SWAGGER_UI_ENABLED:true}
-    display-request-duration: true
-    groups-order: DESC
-    operationsSorter: method
-    disable-swagger-default-url: true
-    use-root-path: true
-  show-actuator: false
-  cache:
-    disabled: true
-
 spring:
   application:
     name: auth-service
