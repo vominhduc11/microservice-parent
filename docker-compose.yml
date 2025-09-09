@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+      - ./scripts/database/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
     networks:
       - microservices-network
     restart: unless-stopped
@@ -281,7 +281,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=auth_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_HOST=redis
@@ -312,7 +312,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=user_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - AUTH_SERVICE_URL=http://auth-service:8081
@@ -336,7 +336,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=product_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - SWAGGER_UI_ENABLED=true
@@ -362,7 +362,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=cart_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_HOST=redis
@@ -395,7 +395,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=order_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - CART_SERVICE_URL=http://cart-service:8084
@@ -424,7 +424,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=warranty_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - PRODUCT_SERVICE_URL=http://product-service:8083
@@ -453,7 +453,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=notification_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_HOST=redis
@@ -480,7 +480,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=blog_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - USER_SERVICE_URL=http://user-service:8082
@@ -507,7 +507,7 @@ services:
       - CONFIG_SERVER_URL=http://config-server:8888
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=microservices_db
+      - DB_NAME=report_service_db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - ORDER_SERVICE_URL=http://order-service:8085

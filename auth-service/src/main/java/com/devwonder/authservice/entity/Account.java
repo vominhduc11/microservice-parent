@@ -32,12 +32,13 @@ public class Account {
     @Column(nullable = false)
     private String password;
     
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "account_roles",
         joinColumns = @JoinColumn(name = "account_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
     
     @CreationTimestamp
@@ -51,6 +52,5 @@ public class Account {
     @Column(name = "delete_at")
     private LocalDateTime deleteAt;
     
-    @Column(nullable = false)
-    private Boolean enabled = true;
+    
 }

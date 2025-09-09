@@ -3,7 +3,7 @@ package com.devwonder.authservice.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -11,17 +11,13 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
     private final JwksService jwksService;
 
     // JWT expiration time: 24 hours
     private static final long JWT_EXPIRATION = 24 * 60 * 60 * 1000;
-
-    @Autowired
-    public JwtService(JwksService jwksService) {
-        this.jwksService = jwksService;
-    }
 
     public String generateToken(String username, Map<String, Object> claims) {
         return createToken(claims, username);

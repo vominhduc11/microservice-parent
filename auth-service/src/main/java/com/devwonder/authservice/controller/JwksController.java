@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,14 +17,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth/.well-known")
 @Tag(name = "JWKS", description = "JSON Web Key Set endpoints for JWT verification")
+@RequiredArgsConstructor
 public class JwksController {
 
     private final JwksService jwksService;
-
-    @Autowired
-    public JwksController(JwksService jwksService) {
-        this.jwksService = jwksService;
-    }
 
     @GetMapping(value = "/jwks.json", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(

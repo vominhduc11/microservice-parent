@@ -116,11 +116,8 @@ public class SecurityConfig {
             org.springframework.security.oauth2.jwt.Jwt jwt) {
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
 
-        // Extract roles
+        // Extract roles only
         extractRoles(jwt, authorities);
-
-        // Extract permissions
-        extractPermissions(jwt, authorities);
 
         return authorities.isEmpty()
                 ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
@@ -135,18 +132,6 @@ public class SecurityConfig {
             java.util.List<String> rolesList = (java.util.List<String>) rolesObj;
             rolesList.stream()
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .forEach(authorities::add);
-        }
-    }
-
-    private void extractPermissions(org.springframework.security.oauth2.jwt.Jwt jwt,
-            Set<SimpleGrantedAuthority> authorities) {
-        Object permsObj = jwt.getClaim("permissions");
-        if (permsObj instanceof java.util.List) {
-            @SuppressWarnings("unchecked")
-            java.util.List<String> permsList = (java.util.List<String>) permsObj;
-            permsList.stream()
-                    .map(perm -> new SimpleGrantedAuthority("PERM_" + perm))
                     .forEach(authorities::add);
         }
     }

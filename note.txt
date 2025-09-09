@@ -1,5 +1,5 @@
 auth-service:
-   POST /api/auths/login
+   POST /api/auth/login
    POST /api/auths/logout
    POST /api/auths/refresh
    POST /api/auths/resgister

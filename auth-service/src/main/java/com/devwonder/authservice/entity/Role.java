@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,5 +24,6 @@ public class Role {
     private String name;
     
     @ManyToMany(mappedBy = "roles")
+    @Builder.Default
     private Set<Account> accounts = new HashSet<>();
 }
