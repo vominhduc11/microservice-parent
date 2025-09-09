@@ -1,12 +1,12 @@
 auth-service:
    POST /api/auth/login           ok
-   POST /api/auth/logout
-   POST /api/auths/refresh
+   POST /api/auth/logout          ok
+   POST /api/auth/refresh         ok
    POST /api/auths/resgister
 user-service:
-   GET  /api/users/dealers
+   GET  /api/user/dealers         ok
    PATCH/api/users/dealers/{id}
-   POST /api/users/dealers/resgister
+   POST /api/user/dealers
    POST /api/users/customers
    POST /api/users/admins
 notification-service:

@@ -2,19 +2,22 @@ package com.devwonder.authservice.service;
 
 import com.devwonder.authservice.dto.LoginRequest;
 import com.devwonder.authservice.dto.LoginResponse;
-import com.devwonder.authservice.dto.LogoutRequest;
 import com.devwonder.authservice.dto.LogoutResponse;
+import com.devwonder.authservice.dto.RefreshTokenRequest;
+import com.devwonder.authservice.dto.RefreshTokenResponse;
 import com.devwonder.authservice.entity.Account;
 import com.devwonder.authservice.entity.Role;
 import com.devwonder.authservice.repository.AccountRepository;
 import com.devwonder.common.exception.AuthenticationException;
 import com.devwonder.common.exception.TokenExpiredException;
 import com.devwonder.common.exception.TokenBlacklistedException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -44,6 +47,11 @@ public class AuthService {
             throw new AuthenticationException("Invalid username or password");
         }
 
+        // Check if account is still active (not soft deleted)
+        if (account.getDeleteAt() != null) {
+            throw new AuthenticationException("Account is disabled");
+        }
+
         // Extract roles
         log.info("Account {} has {} roles: {}", account.getUsername(),
                 account.getRoles().size(),
@@ -58,19 +66,33 @@ public class AuthService {
         claims.put("roles", roles);
         claims.put("userId", account.getId());
 
-        // Generate JWT token
-        String token = jwtService.generateToken(account.getUsername(), claims);
+        // Generate access token (30 minutes)
+        String accessToken = jwtService.generateToken(account.getUsername(), claims);
+        
+        // Generate refresh token (7 days)
+        String refreshToken = jwtService.generateRefreshToken(account.getUsername(), claims);
 
-        // Token expires in 24 hours (86400 seconds)
-        Long expiresIn = 86400L;
-
-        return new LoginResponse(token, expiresIn, account.getUsername(), roles);
+        return new LoginResponse(
+            accessToken,
+            refreshToken,
+            jwtService.getAccessTokenExpirationInSeconds(),
+            jwtService.getRefreshTokenExpirationInSeconds(),
+            account.getUsername(),
+            roles
+        );
     }
 
-    public LogoutResponse logoutUser(LogoutRequest logoutRequest) {
+    @Transactional
+    public LogoutResponse logoutUser(HttpServletRequest request) {
         try {
+            // Extract token from Authorization header
+            String token = extractTokenFromRequest(request);
+            
+            if (!StringUtils.hasText(token)) {
+                throw new AuthenticationException("No authorization token provided");
+            }
+            
             // Validate token format and extract username
-            String token = logoutRequest.getToken();
             String username = jwtService.extractUsername(token);
             
             // Check if token is already expired
@@ -99,5 +121,66 @@ public class AuthService {
             log.error("Logout failed: {}", e.getMessage());
             throw new AuthenticationException("Logout failed: " + e.getMessage());
         }
+    }
+
+    /**
+     * Extract JWT token from Authorization header
+     */
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7); // Remove "Bearer " prefix
+        }
+        return null;
+    }
+
+    @Transactional(readOnly = true)
+    public RefreshTokenResponse refreshToken(RefreshTokenRequest refreshRequest) {
+        String refreshToken = refreshRequest.getToken();
+        
+        // Extract username from refresh token
+        String username = jwtService.extractUsername(refreshToken);
+        
+        // Check if refresh token is blacklisted
+        if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
+            throw new TokenBlacklistedException("Refresh token has been invalidated");
+        }
+        
+        // Validate refresh token specifically (must be valid and not expired)
+        if (!jwtService.isRefreshTokenValid(refreshToken, username)) {
+            throw new AuthenticationException("Invalid or expired refresh token");
+        }
+        
+        // Get user account to refresh roles and data
+        Account account = accountRepository.findByUsername(username)
+            .orElseThrow(() -> new AuthenticationException("User account not found"));
+        
+        // Check if account is still active (not soft deleted)
+        if (account.getDeleteAt() != null) {
+            throw new AuthenticationException("Account is disabled");
+        }
+        
+        // Extract current roles
+        Set<String> roles = account.getRoles().stream()
+            .map(Role::getName)
+            .collect(Collectors.toSet());
+        
+        // Create new JWT claims
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        claims.put("userId", account.getId());
+        
+        // Generate new access token (30 minutes)
+        String newAccessToken = jwtService.generateToken(username, claims);
+        
+        log.info("Token refreshed successfully for user: {}", username);
+        
+        return new RefreshTokenResponse(
+            newAccessToken,
+            jwtService.getAccessTokenExpirationInSeconds(),
+            username,
+            roles,
+            Instant.now().toString()
+        );
     }
 }

@@ -37,20 +37,14 @@ public class SecurityConfig {
         exchanges
                 // CORS preflight requests - HIGHEST PRIORITY
                 .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                
+
                 // Swagger UI and API docs - PUBLIC ACCESS (No Authentication Required)
                 .pathMatchers(getSwaggerPaths()).permitAll()
-                
-                // Actuator endpoints - public access
-                .pathMatchers("/actuator/**").permitAll()
-                
-                // Auth Service - configured separately
-                // (Auth service rules are defined in configureAuthServiceAuth method)
-                
-                // All other requests require authentication
-                .anyExchange().authenticated();
 
-        // Configure service-specific authorization
+                // Actuator endpoints - public access
+                .pathMatchers("/actuator/**").permitAll();
+
+        // Configure service-specific authorization BEFORE general rules
         configureAuthServiceAuth(exchanges);
         configureProductServiceAuth(exchanges);
         configureBlogServiceAuth(exchanges);
@@ -60,21 +54,24 @@ public class SecurityConfig {
         configureWarrantyServiceAuth(exchanges);
         configureNotificationServiceAuth(exchanges);
         configureReportServiceAuth(exchanges);
+
+        // All other requests require authentication - MUST BE LAST
+        exchanges.anyExchange().denyAll();
     }
 
     private void configureAuthServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
                 // Login endpoint - public access (no authentication required)
                 .pathMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                
+
                 // Logout endpoint - requires valid JWT token
                 .pathMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
-                
+
+                // Refresh token endpoint - public access (handles expired tokens internally)
+                .pathMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+
                 // JWKS endpoint - public access (for other services to validate tokens)
-                .pathMatchers(HttpMethod.GET, "/api/auth/.well-known/jwks.json").permitAll()
-                
-                // All other auth endpoints - public access by default
-                .pathMatchers("/api/auth/**").permitAll();
+                .pathMatchers(HttpMethod.GET, "/api/auth/.well-known/jwks.json").permitAll();
     }
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -86,7 +83,9 @@ public class SecurityConfig {
     }
 
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add user service authorization rules when endpoints are implemented
+        exchanges
+                // Dealers endpoint - public access (for displaying dealer network)
+                .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll();
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -102,7 +101,8 @@ public class SecurityConfig {
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add notification service authorization rules when endpoints are implemented
+        // TODO: Add notification service authorization rules when endpoints are
+        // implemented
     }
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
