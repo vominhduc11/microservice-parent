@@ -1,27 +1,27 @@
 auth-service:
-   POST /api/auth/login
-   POST /api/auths/logout
+   POST /api/auth/login           ok
+   POST /api/auth/logout
    POST /api/auths/refresh
    POST /api/auths/resgister
 user-service:
-   GET  /api/users/dealers  (public)   ok
+   GET  /api/users/dealers
    PATCH/api/users/dealers/{id}
-   POST /api/users/dealers/resgister    (public)   ok
+   POST /api/users/dealers/resgister
    POST /api/users/customers
    POST /api/users/admins
 notification-service:
    GET  /api/notifications
    POST /api/notifications
 product-service:
-   GET /api/products?fields=id, name, image, description&show_on_homepage=true&limit=4  (public)  ok
-   GET  /api/products/{id}  (public)  ok
-   GET  /api/products?fields=id, name, image, description&is_featured=true&limit=1    (public)  ok
+   GET /api/products?fields=id, name, image, description&show_on_homepage=true&limit=4
+   GET  /api/products/{id}
+   GET  /api/products?fields=id, name, image, description&is_featured=true&limit=1
    POST /api/products
    PATCH /api/products/{id}
    DELETE /api/products/{id}
 blog-service:
-   GET /api/blogs?fields=id,title,description,image,category,created_at&show_on_homepage=true&limit=6    (public)  ok
-   GET  /api/blogs/{id}    (public)   ok
+   GET /api/blogs?fields=id,title,description,image,category,created_at&show_on_homepage=true&limit=6
+   GET  /api/blogs/{id}
    POST /api/blogs
    PATCH /api/blogs/{id}
    DELETE /api/blogs/{id}

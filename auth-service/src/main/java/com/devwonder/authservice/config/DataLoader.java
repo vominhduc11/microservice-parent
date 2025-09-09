@@ -59,11 +59,8 @@ public class DataLoader {
             Account account = Account.builder()
                     .username(username)
                     .password(passwordEncoder.encode(password))
+                    .roles(roles)
                     .build();
-            
-            // Set both sides of bidirectional relationship
-            account.setRoles(roles);
-            roles.forEach(role -> role.getAccounts().add(account));
             
             accountRepository.save(account);
             log.info("Created account: {} with roles: {}", username, 

@@ -2,6 +2,7 @@
 -- This script runs automatically when PostgreSQL container starts
 
 -- Create databases for each microservice
+-- Note: These will error if databases already exist during container restart, but that's expected in development
 CREATE DATABASE auth_service_db;
 CREATE DATABASE user_service_db;
 CREATE DATABASE product_service_db;
@@ -23,14 +24,14 @@ CREATE DATABASE report_service_db;
 -- CREATE USER report_user WITH ENCRYPTED PASSWORD 'report_password';
 
 -- Grant permissions (if using separate users)
-GRANT ALL PRIVILEGES ON DATABASE auth_service_db TO auth_user;
-GRANT ALL PRIVILEGES ON DATABASE user_service_db TO user_user;
-GRANT ALL PRIVILEGES ON DATABASE product_service_db TO product_user;
-GRANT ALL PRIVILEGES ON DATABASE cart_service_db TO cart_user;
-GRANT ALL PRIVILEGES ON DATABASE order_service_db TO order_user;
-GRANT ALL PRIVILEGES ON DATABASE warranty_service_db TO warranty_user;
-GRANT ALL PRIVILEGES ON DATABASE blog_service_db TO blog_user;
-GRANT ALL PRIVILEGES ON DATABASE report_service_db TO report_user;
+-- GRANT ALL PRIVILEGES ON DATABASE auth_service_db TO auth_user;
+-- GRANT ALL PRIVILEGES ON DATABASE user_service_db TO user_user;
+-- GRANT ALL PRIVILEGES ON DATABASE product_service_db TO product_user;
+-- GRANT ALL PRIVILEGES ON DATABASE cart_service_db TO cart_user;
+-- GRANT ALL PRIVILEGES ON DATABASE order_service_db TO order_user;
+-- GRANT ALL PRIVILEGES ON DATABASE warranty_service_db TO warranty_user;
+-- GRANT ALL PRIVILEGES ON DATABASE blog_service_db TO blog_user;
+-- GRANT ALL PRIVILEGES ON DATABASE report_service_db TO report_user;
 
 -- For now, using default postgres user for all databases
 -- This is simpler for development environment

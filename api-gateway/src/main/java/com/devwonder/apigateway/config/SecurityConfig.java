@@ -44,13 +44,14 @@ public class SecurityConfig {
                 // Actuator endpoints - public access
                 .pathMatchers("/actuator/**").permitAll()
                 
-                // Auth Service - public access
-                .pathMatchers("/api/auth/**").permitAll()
+                // Auth Service - configured separately
+                // (Auth service rules are defined in configureAuthServiceAuth method)
                 
                 // All other requests require authentication
                 .anyExchange().authenticated();
 
-        // Configure service-specific authorization (currently empty - will be added when endpoints are implemented)
+        // Configure service-specific authorization
+        configureAuthServiceAuth(exchanges);
         configureProductServiceAuth(exchanges);
         configureBlogServiceAuth(exchanges);
         configureUserServiceAuth(exchanges);
@@ -59,6 +60,21 @@ public class SecurityConfig {
         configureWarrantyServiceAuth(exchanges);
         configureNotificationServiceAuth(exchanges);
         configureReportServiceAuth(exchanges);
+    }
+
+    private void configureAuthServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
+        exchanges
+                // Login endpoint - public access (no authentication required)
+                .pathMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                
+                // Logout endpoint - requires valid JWT token
+                .pathMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                
+                // JWKS endpoint - public access (for other services to validate tokens)
+                .pathMatchers(HttpMethod.GET, "/api/auth/.well-known/jwks.json").permitAll()
+                
+                // All other auth endpoints - public access by default
+                .pathMatchers("/api/auth/**").permitAll();
     }
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

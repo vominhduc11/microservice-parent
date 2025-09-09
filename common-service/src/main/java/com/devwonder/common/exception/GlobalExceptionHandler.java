@@ -28,6 +28,18 @@ public class GlobalExceptionHandler {
                 .body(BaseResponse.error(e.getMessage()));
     }
     
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<BaseResponse<String>> handleTokenExpiredException(TokenExpiredException e) {
+        return ResponseEntity.status(e.getHttpStatus())
+                .body(BaseResponse.error(e.getMessage()));
+    }
+    
+    @ExceptionHandler(TokenBlacklistedException.class)
+    public ResponseEntity<BaseResponse<String>> handleTokenBlacklistedException(TokenBlacklistedException e) {
+        return ResponseEntity.status(e.getHttpStatus())
+                .body(BaseResponse.error(e.getMessage()));
+    }
+    
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<BaseResponse<Map<String, String>>> handleValidationExceptions(
             MethodArgumentNotValidException e) {

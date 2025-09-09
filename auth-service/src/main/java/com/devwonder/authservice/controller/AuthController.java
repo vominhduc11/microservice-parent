@@ -2,6 +2,8 @@ package com.devwonder.authservice.controller;
 
 import com.devwonder.authservice.dto.LoginRequest;
 import com.devwonder.authservice.dto.LoginResponse;
+import com.devwonder.authservice.dto.LogoutRequest;
+import com.devwonder.authservice.dto.LogoutResponse;
 import com.devwonder.authservice.service.AuthService;
 import com.devwonder.common.dto.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,5 +42,22 @@ public class AuthController {
     public ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
         LoginResponse response = authService.authenticateUser(loginRequest);
         return ResponseEntity.ok(BaseResponse.success("Login successful", response));
+    }
+
+    @PostMapping("/logout")
+    @Operation(
+        summary = "User Logout",
+        description = "Invalidate JWT token and add it to blacklist. " +
+                    "The token will no longer be valid for accessing protected resources."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Logout successful, token invalidated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload"),
+        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<LogoutResponse>> logout(@Valid @RequestBody LogoutRequest logoutRequest) {
+        LogoutResponse response = authService.logoutUser(logoutRequest);
+        return ResponseEntity.ok(BaseResponse.success("Logout successful", response));
     }
 }

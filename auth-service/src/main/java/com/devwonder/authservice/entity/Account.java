@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -20,6 +21,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = "roles")
 public class Account {
     
     @Id
@@ -32,7 +34,7 @@ public class Account {
     @Column(nullable = false)
     private String password;
     
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "account_roles",
         joinColumns = @JoinColumn(name = "account_id"),
@@ -51,6 +53,5 @@ public class Account {
     
     @Column(name = "delete_at")
     private LocalDateTime deleteAt;
-    
     
 }
