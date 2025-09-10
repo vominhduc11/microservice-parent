@@ -85,7 +85,10 @@ public class SecurityConfig {
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
                 // Dealers endpoint - public access (for displaying dealer network)
-                .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll();
+                .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll()
+                
+                // Dealer registration - public access (for dealer self-registration)
+                .pathMatchers(HttpMethod.POST, "/api/user/dealers").permitAll();
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

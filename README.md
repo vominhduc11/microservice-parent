@@ -350,17 +350,20 @@ report_service_db    -- Analytics & business intelligence
 └── status         // WARRANTY_STATUS
 ```
 
-### 📢 **Notification Service Entities**
+### 📢 **Notification Service Entities** 🆕 **Updated Structure**
 ```java
-📬 Notification     // System notifications
+📬 Notification     // System notifications (Updated Schema)
 ├── id: Long        // Primary key
-├── recipientId     // Target user
 ├── title: String   // Notification title
 ├── message: Text   // Notification content
-├── type: NotificationType // EMAIL/SMS/PUSH/IN_APP
-├── status: NotificationStatus // PENDING/SENT/DELIVERED/FAILED
-├── scheduledAt     // When to send
-└── sentAt         // When actually sent
+├── time: LocalDateTime // Notification timestamp
+├── read: Boolean   // Read status (true/false)
+├── type: String    // Notification type (DEALER_REGISTRATION, etc.)
+└── createdAt: LocalDateTime // Record creation time
+
+# Database Table: `notifies` (Updated from notifications)
+# Enhanced for simplified structure and better Kafka integration
+# Supports dealer registration events and real-time WebSocket broadcasting
 ```
 
 ### 📝 **Blog Service Entities**
@@ -636,6 +639,13 @@ WS     /ws                                # WebSocket endpoint for real-time not
 # Automated welcome emails for dealer registrations
 # SMTP integration with Gmail for production-ready email delivery
 # HTML email templates with company branding
+
+# 🔄 Kafka Event Processing (Latest Enhancement)
+# - DealerEmailEvent: Processes dealer registration for email notifications
+# - DealerSocketEvent: Handles real-time WebSocket notifications
+# - Event deserialization with ErrorHandlingDeserializer for fault tolerance
+# - Type mapping between user-service and notification-service events
+# - Database notification storage before WebSocket broadcasting
 ```
 
 ### 📝 **Blog Service** (`/api/blog`)
@@ -942,6 +952,9 @@ cd user-service && mvn spring-boot:run
 - [x] Email service integration with SMTP
 - [x] MapStruct entity mapping optimization
 - [x] Dual token authentication system
+- [x] **Event-driven notification system** with Kafka messaging 🆕
+- [x] **Cross-service event handling** with fault-tolerant deserialization 🆕
+- [x] **Database notification persistence** before WebSocket broadcasting 🆕
 - [ ] Circuit breaker implementation
 - [ ] Rate limiting enhancement
 - [ ] API versioning strategy

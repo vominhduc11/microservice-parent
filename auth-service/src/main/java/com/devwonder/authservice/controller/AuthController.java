@@ -1,19 +1,17 @@
 package com.devwonder.authservice.controller;
 
-import com.devwonder.authservice.dto.LoginRequest;
-import com.devwonder.authservice.dto.LoginResponse;
-import com.devwonder.authservice.dto.LogoutResponse;
-import com.devwonder.authservice.dto.RefreshTokenRequest;
-import com.devwonder.authservice.dto.RefreshTokenResponse;
+import com.devwonder.authservice.dto.*;
 import com.devwonder.authservice.service.AuthService;
 import com.devwonder.common.dto.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,5 +79,33 @@ public class AuthController {
     public ResponseEntity<BaseResponse<RefreshTokenResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshRequest) {
         RefreshTokenResponse response = authService.refreshToken(refreshRequest);
         return ResponseEntity.ok(BaseResponse.success("Token refreshed successfully", response));
+    }
+
+    @PostMapping("/accounts")
+    @Operation(
+        summary = "Create New Account (Internal Only)",
+        description = "Create a new user account with specified roles. " +
+                    "⚠️ INTERNAL USE ONLY: Requires X-Internal-Service header. " +
+                    "This endpoint is for service-to-service communication. " +
+                    "Password will be encrypted and stored securely.",
+        tags = {"Internal APIs"}
+    )
+    @Parameter(
+        name = "X-Internal-Service",
+        description = "Required header for internal service authentication",
+        required = true,
+        in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER,
+        schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "user-service")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Account created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload"),
+        @ApiResponse(responseCode = "409", description = "Account with this username already exists"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<AccountCreateResponse>> createAccount(@Valid @RequestBody AccountCreateRequest request) {
+        AccountCreateResponse response = authService.createAccount(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(BaseResponse.success("Account created successfully", response));
     }
 }

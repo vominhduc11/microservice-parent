@@ -10,7 +10,7 @@ user-service:
    POST /api/users/customers
    POST /api/users/admins
 notification-service:
-   GET  /api/notifications
+   GET  /api/notifications 
    POST /api/notifications
 product-service:
    GET /api/products?fields=id, name, image, description&show_on_homepage=true&limit=4

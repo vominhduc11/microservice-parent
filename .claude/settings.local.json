@@ -8,7 +8,8 @@
       "Bash(done)",
       "Bash(docker volume:*)",
       "Bash(docker-compose up:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,17 +1,18 @@
 package com.devwonder.userservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.userservice.dto.DealerRequest;
 import com.devwonder.userservice.dto.DealerResponse;
 import com.devwonder.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -41,5 +42,28 @@ public class UserController {
             dealers
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/dealers")
+    @Operation(
+        summary = "Register New Dealer",
+        description = "Register a new dealer (business partner) in the system. " +
+                    "This endpoint creates dealer profile with company information, contact details and location. " +
+                    "The accountId must correspond to an existing account in the auth service with DEALER role."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Dealer registered successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "409", description = "Dealer already exists for this account"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<DealerResponse>> registerDealer(@Valid @RequestBody DealerRequest dealerRequest) {
+        DealerResponse dealerResponse = userService.createDealer(dealerRequest);
+        BaseResponse<DealerResponse> response = new BaseResponse<>(
+            true,
+            "Dealer registered successfully",
+            dealerResponse
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

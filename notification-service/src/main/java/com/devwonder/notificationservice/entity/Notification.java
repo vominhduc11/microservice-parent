@@ -10,7 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifies")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,33 +21,23 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "id_user", nullable = false)
-    private Long idUser;
-    
     @Column(nullable = false)
     private String title;
     
     @Column(columnDefinition = "TEXT")
     private String message;
     
-    @Enumerated(EnumType.STRING)
-    private NotificationType type = NotificationType.GENERAL;
+    @CreationTimestamp
+    @Column(name = "time", updatable = false)
+    private LocalDateTime time;
     
-    @Enumerated(EnumType.STRING)
-    private NotificationStatus status = NotificationStatus.UNREAD;
+    @Column(name = "read", nullable = false)
+    private Boolean read = false;
+    
+    @Column(nullable = false)
+    private String type;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-    
-    @Column(name = "read_at")
-    private LocalDateTime readAt;
-    
-    public enum NotificationType {
-        GENERAL, ORDER, PRODUCT, PROMOTION, WARNING
-    }
-    
-    public enum NotificationStatus {
-        READ, UNREAD, ARCHIVED
-    }
 }

@@ -23,8 +23,10 @@ public class Dealer {
     
     private String address;
     
+    @Column(unique = true)
     private String phone;
     
+    @Column(unique = true)
     private String email;
     
     private String district;

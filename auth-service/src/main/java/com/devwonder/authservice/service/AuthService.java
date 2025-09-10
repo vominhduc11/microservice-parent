@@ -1,14 +1,12 @@
 package com.devwonder.authservice.service;
 
-import com.devwonder.authservice.dto.LoginRequest;
-import com.devwonder.authservice.dto.LoginResponse;
-import com.devwonder.authservice.dto.LogoutResponse;
-import com.devwonder.authservice.dto.RefreshTokenRequest;
-import com.devwonder.authservice.dto.RefreshTokenResponse;
+import com.devwonder.authservice.dto.*;
 import com.devwonder.authservice.entity.Account;
 import com.devwonder.authservice.entity.Role;
 import com.devwonder.authservice.repository.AccountRepository;
+import com.devwonder.authservice.repository.RoleRepository;
 import com.devwonder.common.exception.AuthenticationException;
+import com.devwonder.common.exception.ResourceAlreadyExistsException;
 import com.devwonder.common.exception.TokenExpiredException;
 import com.devwonder.common.exception.TokenBlacklistedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +29,7 @@ import java.util.stream.Collectors;
 public class AuthService {
 
     private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
@@ -182,5 +181,45 @@ public class AuthService {
             roles,
             Instant.now().toString()
         );
+    }
+
+    @Transactional
+    public AccountCreateResponse createAccount(AccountCreateRequest request) {
+        log.info("Creating new account with username: {}", request.getUsername());
+        
+        // Check if username already exists
+        if (accountRepository.existsByUsername(request.getUsername())) {
+            log.warn("Account with username {} already exists", request.getUsername());
+            throw new ResourceAlreadyExistsException("Account with username " + request.getUsername() + " already exists");
+        }
+        
+        // Get roles from database
+        Set<Role> roles = request.getRoleNames().stream()
+                .map(roleName -> roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
+                .collect(Collectors.toSet());
+        
+        // Create new account
+        Account account = Account.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .roles(roles)
+                .build();
+        
+        // Save account
+        Account savedAccount = accountRepository.save(account);
+        log.info("Successfully created account with ID: {} and username: {}", savedAccount.getId(), savedAccount.getUsername());
+        
+        // Convert roles to role names
+        Set<String> roleNames = savedAccount.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+        
+        // Return response
+        return AccountCreateResponse.builder()
+                .id(savedAccount.getId())
+                .username(savedAccount.getUsername())
+                .roles(roleNames)
+                .build();
     }
 }

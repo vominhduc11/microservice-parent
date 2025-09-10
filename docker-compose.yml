@@ -459,6 +459,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9093,kafka3:9094
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_USERNAME=vominhduc760@gmail.com
+      - MAIL_PASSWORD=agcbtolwkdbbjwoi
       - SWAGGER_UI_ENABLED=true
       - SWAGGER_API_DOCS_ENABLED=true
     networks:
