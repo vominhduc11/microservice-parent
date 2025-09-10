@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers:kafka1:9092,kafka2:9093,kafka3:9094}")
     private String bootstrapServers;
     
-    private Map<String, Object> getBaseConsumerConfig(String groupId) {
+    private Map<String, Object> getBaseConsumerConfig(String groupId, String defaultType) {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
@@ -29,9 +30,8 @@ public class KafkaConsumerConfig {
         configProps.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         configProps.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        configProps.put(JsonDeserializer.TYPE_MAPPINGS, 
-            "com.devwonder.userservice.event.DealerEmailEvent:com.devwonder.notificationservice.event.DealerEmailEvent," +
-            "com.devwonder.userservice.event.DealerSocketEvent:com.devwonder.notificationservice.event.DealerSocketEvent");
+        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, defaultType);
         return configProps;
     }
     
@@ -40,12 +40,13 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         factory.setConcurrency(concurrency);
+        factory.setCommonErrorHandler(new DefaultErrorHandler());
         return factory;
     }
     
     @Bean
     public ConsumerFactory<String, Object> emailNotificationConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-email"));
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-email", "com.devwonder.notificationservice.event.DealerEmailEvent"));
     }
 
     @Bean
@@ -55,7 +56,7 @@ public class KafkaConsumerConfig {
     
     @Bean
     public ConsumerFactory<String, Object> websocketNotificationConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-socket"));
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-socket", "com.devwonder.notificationservice.event.DealerSocketEvent"));
     }
 
     @Bean

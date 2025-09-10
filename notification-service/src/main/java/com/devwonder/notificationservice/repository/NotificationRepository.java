@@ -10,8 +10,4 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     
     List<Notification> findAllByOrderByCreatedAtDesc();
-    
-    List<Notification> findByReadOrderByCreatedAtDesc(Boolean read);
-    
-    List<Notification> findByTypeOrderByCreatedAtDesc(String type);
 }

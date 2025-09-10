@@ -462,7 +462,7 @@ services:
       - MAIL_HOST=smtp.gmail.com
       - MAIL_PORT=587
       - MAIL_USERNAME=vominhduc760@gmail.com
-      - MAIL_PASSWORD=agcbtolwkdbbjwoi
+      - MAIL_PASSWORD=osvxpsnfohbpwiqz
       - SWAGGER_UI_ENABLED=true
       - SWAGGER_API_DOCS_ENABLED=true
     networks:

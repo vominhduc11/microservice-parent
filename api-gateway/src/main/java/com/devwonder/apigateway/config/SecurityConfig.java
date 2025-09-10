@@ -75,7 +75,8 @@ public class SecurityConfig {
     }
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add product service authorization rules when endpoints are implemented
+        exchanges
+            .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll();
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -104,8 +105,8 @@ public class SecurityConfig {
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add notification service authorization rules when endpoints are
-        // implemented
+        exchanges
+            .pathMatchers(HttpMethod.GET, "/api/notification/notifies").hasRole("ADMIN");
     }
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

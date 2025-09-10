@@ -560,20 +560,27 @@ POST   /api/users/admins                  # Admin account creation
 GET    /api/users/admins/{id}             # Get admin profile
 ```
 
-### 📦 **Product Service** (`/api/product`)
+### 📦 **Product Service** (`/api/product`) 🆕 **Recently Enhanced**
 ```bash
-# Public Product Endpoints
-GET    /api/products                      # Product catalog with filtering
-       ?fields=id,name,image,description  # Field selection
-       &show_on_homepage=true             # Homepage products
-       &is_featured=true                  # Featured products
-       &limit=4                           # Pagination
-GET    /api/products/{id}                 # Product details (public)
+# Public Product Endpoints (🆕 Latest Implementation)
+GET    /api/product/products/showhomepageandlimit4  # Homepage products (Public access) 🌐
+       ?fields=id,name,image,description             # Dynamic field selection
+       # Returns 4 products with show_on_homepage=true
+       # Field filtering: only specified fields returned
+       # No authentication required - optimized for frontend homepage
+       # Uses MapStruct mapping with custom field filtering utility
 
-# Admin Product Management
-POST   /api/products                      # Create new product
-PATCH  /api/products/{id}                 # Update product
-DELETE /api/products/{id}                 # Delete product
+# Admin Product Management (Ready for Implementation)
+POST   /api/product/products              # Create new product (ADMIN) 🔒
+PATCH  /api/product/products/{id}         # Update product (ADMIN) 🔒
+DELETE /api/product/products/{id}         # Delete product (ADMIN) 🔒
+GET    /api/product/products/{id}         # Product details (Public)
+
+# 🛠️ Technical Features (Latest Enhancement)
+# - MapStruct integration for optimized entity mapping
+# - Dynamic field selection with FieldFilterUtil
+# - Repository pattern with custom queries
+# - Swagger documentation with comprehensive examples
 ```
 
 ### 🛒 **Cart Service** (`/api/cart`)
@@ -621,15 +628,11 @@ POST   /api/warranties/warranty-requests  # Submit warranty claim
 
 ### 📢 **Notification Service** (`/api/notification`) 🆕 **Recently Enhanced**
 ```bash
-# Notification Management
-GET    /api/notifications                 # Get user notifications
-POST   /api/notifications                 # Send notification
-PATCH  /api/notifications/{id}/read       # Mark as read
-DELETE /api/notifications/{id}            # Delete notification
-
-# Admin Notification Operations
-POST   /api/notifications/broadcast       # Broadcast notification
-GET    /api/notifications/templates       # Notification templates
+# Admin Notification Management (🆕 Latest Implementation)
+GET    /api/notification/notifies         # Get all notifications (ADMIN only) 🔒
+       # Returns comprehensive notification list with titles, messages, timestamps
+       # Requires ADMIN role via API Gateway authentication
+       # Ordered by creation time (newest first)
 
 # Real-time Communication (🆕 New Implementation)
 WS     /ws                                # WebSocket endpoint for real-time notifications 🔄
@@ -955,6 +958,9 @@ cd user-service && mvn spring-boot:run
 - [x] **Event-driven notification system** with Kafka messaging 🆕
 - [x] **Cross-service event handling** with fault-tolerant deserialization 🆕
 - [x] **Database notification persistence** before WebSocket broadcasting 🆕
+- [x] **Admin notification API** with role-based access control 🆕
+- [x] **Dynamic field selection** for frontend optimization 🆕
+- [x] **Homepage product API** with MapStruct integration 🆕
 - [ ] Circuit breaker implementation
 - [ ] Rate limiting enhancement
 - [ ] API versioning strategy

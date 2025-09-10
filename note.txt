@@ -6,17 +6,16 @@ auth-service:
 user-service:
    GET  /api/user/dealers         ok
    PATCH/api/users/dealers/{id}
-   POST /api/user/dealers
+   POST /api/user/dealers         ok
    POST /api/users/customers
    POST /api/users/admins
 notification-service:
-   GET  /api/notifications 
-   POST /api/notifications
+   GET  /api/notification/notifies  ok
 product-service:
-   GET /api/products?fields=id, name, image, description&show_on_homepage=true&limit=4
+   GET /api/product/products/showhomepageandlimit4?fields=id, name, image, description       in trouble
    GET  /api/products/{id}
    GET  /api/products?fields=id, name, image, description&is_featured=true&limit=1
-   POST /api/products
+   POST /api/product/products
    PATCH /api/products/{id}
    DELETE /api/products/{id}
 blog-service:
