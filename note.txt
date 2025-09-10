@@ -13,8 +13,8 @@ notification-service:
    GET  /api/notification/notifies  ok
 product-service:
    GET /api/product/products/showhomepageandlimit4?fields=id, name, image, description       in trouble
-   GET  /api/products/{id}
-   GET  /api/products?fields=id, name, image, description&is_featured=true&limit=1
+   GET  /api/product/{id}                                                                    in trouble
+   GET  /api/product/products/featuredandlimit1?fields=id, name, image, description
    POST /api/product/products
    PATCH /api/products/{id}
    DELETE /api/products/{id}

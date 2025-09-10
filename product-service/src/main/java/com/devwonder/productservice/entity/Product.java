@@ -33,9 +33,6 @@ public class Product {
     private String image;
     
     @Column(columnDefinition = "TEXT")
-    private String features;
-    
-    @Column(columnDefinition = "TEXT")
     private String description;
     
     @Column(columnDefinition = "TEXT")
@@ -58,6 +55,9 @@ public class Product {
     
     @Column(name = "show_on_homepage")
     private Boolean showOnHomepage = false;
+    
+    @Column(name = "is_featured")
+    private Boolean isFeatured = false;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

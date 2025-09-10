@@ -43,4 +43,46 @@ public class ProductController {
         
         return ResponseEntity.ok(BaseResponse.success("Products retrieved successfully", products));
     }
+    
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get Product Details",
+        description = "Retrieve detailed information about a specific product by ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product details retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<ProductResponse>> getProductById(@PathVariable Long id) {
+        
+        log.info("Requesting product details for ID: {}", id);
+        
+        ProductResponse product = productService.getProductById(id);
+        
+        log.info("Retrieved product details for ID: {}", id);
+        
+        return ResponseEntity.ok(BaseResponse.success("Product details retrieved successfully", product));
+    }
+    
+    @GetMapping("/products/featuredandlimit1")
+    @Operation(
+        summary = "Get Featured Products",
+        description = "Retrieve 1 featured product with is_featured=true"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Featured products retrieved successfully"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> getFeaturedProducts(
+            @RequestParam(required = false) String fields) {
+        
+        log.info("Requesting featured products - fields: {}", fields);
+        
+        List<ProductResponse> products = productService.getFeaturedProducts(fields, 1);
+        
+        log.info("Retrieved {} featured products", products.size());
+        
+        return ResponseEntity.ok(BaseResponse.success("Featured products retrieved successfully", products));
+    }
 }

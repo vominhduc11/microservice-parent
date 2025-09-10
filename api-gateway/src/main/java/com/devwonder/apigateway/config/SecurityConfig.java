@@ -76,7 +76,9 @@ public class SecurityConfig {
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll();
+            .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll();
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

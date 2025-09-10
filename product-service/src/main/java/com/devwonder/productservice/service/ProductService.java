@@ -30,4 +30,24 @@ public class ProductService {
                 .map(product -> fieldFilterUtil.applyFieldFiltering(productMapper.toProductResponse(product), fields))
                 .toList();
     }
+    
+    public ProductResponse getProductById(Long id) {
+        log.info("Fetching product details for ID: {}", id);
+        
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+        
+        return productMapper.toProductResponse(product);
+    }
+    
+    public List<ProductResponse> getFeaturedProducts(String fields, int limit) {
+        log.info("Fetching featured products with fields: {}, limit: {}", fields, limit);
+        
+        List<Product> products = productRepository.findByIsFeaturedTrue();
+        
+        return products.stream()
+                .limit(limit)
+                .map(product -> fieldFilterUtil.applyFieldFiltering(productMapper.toProductResponse(product), fields))
+                .toList();
+    }
 }

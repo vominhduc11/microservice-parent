@@ -270,14 +270,13 @@ report_service_db    -- Analytics & business intelligence
 └── email: String   // Contact email
 ```
 
-### 📦 **Product Service Entities**
+### 📦 **Product Service Entities** 🆕 **Updated Schema**
 ```java
-🛍️ Product          // Product catalog
+🛍️ Product          // Product catalog (Updated Structure)
 ├── id: Long        // Primary key
 ├── sku: String     // Unique product code
 ├── name: String    // Product name
 ├── image: String   // Product image URL
-├── features: Text  // Product features
 ├── description: Text // Detailed description
 ├── videos: Text    // Video links
 ├── specifications: Text // Technical specs
@@ -285,8 +284,14 @@ report_service_db    -- Analytics & business intelligence
 ├── wholesalePrice: BigDecimal // Dealer price
 ├── status: ProductStatus // ACTIVE/INACTIVE/OUT_OF_STOCK
 ├── soldQuantity: Long // Sales tracking
-├── showOnHomepage: Boolean // Featured product
+├── showOnHomepage: Boolean // Homepage display flag
+├── isFeatured: Boolean // Featured product flag (🆕 New Field)
 └── productSerials: List<ProductSerial> // Serial numbers
+
+# 🆕 Schema Changes:
+# - Added: isFeatured field for featured product functionality
+# - Removed: features field (database optimization)
+# - Enhanced: Support for both homepage and featured product queries
 
 🔢 ProductSerial    // Individual product items
 ├── id: Long        // Primary key
@@ -570,17 +575,30 @@ GET    /api/product/products/showhomepageandlimit4  # Homepage products (Public 
        # No authentication required - optimized for frontend homepage
        # Uses MapStruct mapping with custom field filtering utility
 
+GET    /api/product/products/featuredandlimit1     # Featured products (Public access) 🌐
+       ?fields=id,name,image,description            # Dynamic field selection
+       # Returns 1 product with is_featured=true
+       # Field filtering: only specified fields returned
+       # No authentication required - optimized for featured sections
+       # Uses same MapStruct and FieldFilterUtil architecture
+
+GET    /api/product/{id}                           # Product details (Public access) 🌐
+       # Returns complete product information by ID
+       # No authentication required for public product viewing
+       # Full ProductResponse with all available fields
+
 # Admin Product Management (Ready for Implementation)
 POST   /api/product/products              # Create new product (ADMIN) 🔒
 PATCH  /api/product/products/{id}         # Update product (ADMIN) 🔒
 DELETE /api/product/products/{id}         # Delete product (ADMIN) 🔒
-GET    /api/product/products/{id}         # Product details (Public)
 
 # 🛠️ Technical Features (Latest Enhancement)
 # - MapStruct integration for optimized entity mapping
 # - Dynamic field selection with FieldFilterUtil
-# - Repository pattern with custom queries
+# - Repository pattern with custom queries (homepage, featured, by ID)
+# - Enhanced Product entity with is_featured field
 # - Swagger documentation with comprehensive examples
+# - Database schema optimization (removed unused features field)
 ```
 
 ### 🛒 **Cart Service** (`/api/cart`)
@@ -961,6 +979,9 @@ cd user-service && mvn spring-boot:run
 - [x] **Admin notification API** with role-based access control 🆕
 - [x] **Dynamic field selection** for frontend optimization 🆕
 - [x] **Homepage product API** with MapStruct integration 🆕
+- [x] **Featured product API** with database schema enhancement 🆕
+- [x] **Product detail API** for individual product viewing 🆕
+- [x] **Database schema optimization** with field cleanup 🆕
 - [ ] Circuit breaker implementation
 - [ ] Rate limiting enhancement
 - [ ] API versioning strategy
