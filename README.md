@@ -162,19 +162,19 @@ Response: {
 
 #### ✅ **Working Components**
 - **JWT Token Generation**: RS256 algorithm with proper claims
-- **JWKS Endpoint**: Public key distribution for token verification
+- **JWKS Endpoint**: Public key distribution for token verification  
+- **Dual Token System**: Access + Refresh token implementation (Latest Enhancement)
 - **Role Management**: 3-tier role system (ADMIN, DEALER, CUSTOMER)
 - **Password Encryption**: BCrypt password hashing
 - **Data Initialization**: Automatic creation of default accounts and roles
 - **Login Flow**: Complete authentication workflow with token response
+- **Enhanced Logout**: Authorization header extraction for secure logout
 
-#### ⚠️ **Current Issue: Role Authorization**
-The authentication system is **functional** but has an identified issue with role-based authorization:
-
-**Issue Description**: 
-- JWT tokens are generated correctly with role claims
-- Roles are properly stored in the database and retrieved during login
-- However, roles may appear as empty array in some authorization contexts
+#### 🆕 **Recent Major Enhancements**
+- **Refresh Token System**: Proper token refresh validation with security checks
+- **OAuth2ResourceServer Compatibility**: JWKS endpoint for JWT verification
+- **Security Optimizations**: Improved exception handling and authorization flow
+- **Modern Java Features**: Upgraded to use `.toList()` streams and other Java 17 features
 
 **Default Test Accounts** (created automatically on startup):
 ```bash
@@ -191,11 +191,11 @@ log.info("Account {} has {} roles: {}", account.getUsername(),
          account.getRoles().stream().map(Role::getName).toList());
 ```
 
-#### 🔧 **Recommended Next Steps**
-1. **Test Login Flow**: Use `/api/auth/login` with default accounts
-2. **Verify JWT Claims**: Decode generated JWT to confirm role claims
-3. **Service-level Authorization**: Implement endpoint-level authorization rules
-4. **Gateway Security**: Configure role-based routing in API Gateway
+#### 🎯 **Current Implementation Status**
+1. **✅ Authentication Flow**: Fully functional with access/refresh tokens
+2. **✅ JWKS Endpoint**: JWT verification ready for OAuth2ResourceServer
+3. **✅ Role-Based System**: Working authentication with proper role assignment
+4. **🔄 Next Phase**: Endpoint-level authorization refinement and role-based routing
 
 ## 🔄 Service Communication Patterns
 
@@ -528,7 +528,12 @@ GET http://localhost:8080/api/report/v3/api-docs     # Report Service API Spec
 ```bash
 # Authentication
 POST   /api/auth/login                    # User login with JWT response
+POST   /api/auth/logout                   # User logout (token blacklist)
+POST   /api/auth/refresh                  # JWT token refresh
 GET    /api/auth/.well-known/jwks.json    # JWKS endpoint for JWT verification
+
+# Internal Service Operations (Service-to-Service)
+POST   /api/auth/accounts                 # Create account (Internal Only - requires X-Internal-Service header) 🔒
 
 # Health & Monitoring
 GET    /api/auth/actuator/health          # Service health check
@@ -536,9 +541,10 @@ GET    /api/auth/actuator/health          # Service health check
 
 ### 👥 **User Service** (`/api/user`)
 ```bash
-# Dealer Management
-GET    /api/users/dealers                 # List all dealers (public)
-POST   /api/users/dealers/register        # Dealer registration (public)
+# Dealer Management (🆕 Recently Enhanced)
+GET    /api/users/dealers                 # List all dealers with comprehensive info
+POST   /api/user/dealers                  # New dealer registration with auto account creation ⚡
+       # Includes: company info, address, contact details, automatic Auth Service integration
 PATCH  /api/users/dealers/{id}            # Update dealer information
 
 # Customer Management  
@@ -610,7 +616,7 @@ GET    /api/warranties/warranty-requests  # List warranty requests
 POST   /api/warranties/warranty-requests  # Submit warranty claim
 ```
 
-### 📢 **Notification Service** (`/api/notification`)
+### 📢 **Notification Service** (`/api/notification`) 🆕 **Recently Enhanced**
 ```bash
 # Notification Management
 GET    /api/notifications                 # Get user notifications
@@ -621,6 +627,15 @@ DELETE /api/notifications/{id}            # Delete notification
 # Admin Notification Operations
 POST   /api/notifications/broadcast       # Broadcast notification
 GET    /api/notifications/templates       # Notification templates
+
+# Real-time Communication (🆕 New Implementation)
+WS     /ws                                # WebSocket endpoint for real-time notifications 🔄
+       /broadcast/dealer-registrations    # Topic: Dealer registration notifications
+
+# Email Service Integration (🆕 New Feature)
+# Automated welcome emails for dealer registrations
+# SMTP integration with Gmail for production-ready email delivery
+# HTML email templates with company branding
 ```
 
 ### 📝 **Blog Service** (`/api/blog`)
@@ -919,10 +934,14 @@ cd user-service && mvn spring-boot:run
 - [x] Docker containerization
 - [x] Health checks & monitoring
 
-### 🎯 Phase 2: Advanced Features (🔄 In Progress)
-- [x] Kafka event streaming
-- [x] Redis caching
-- [x] Swagger documentation hub
+### 🎯 Phase 2: Advanced Features (🆕 Recently Completed)
+- [x] Kafka event streaming with 3-broker cluster
+- [x] Redis caching with management interface
+- [x] Swagger documentation hub with centralized API docs
+- [x] WebSocket real-time notifications
+- [x] Email service integration with SMTP
+- [x] MapStruct entity mapping optimization
+- [x] Dual token authentication system
 - [ ] Circuit breaker implementation
 - [ ] Rate limiting enhancement
 - [ ] API versioning strategy
@@ -979,14 +998,15 @@ cd user-service && mvn spring-boot:run
 - **Documentation**: Centralized Swagger UI hub + Individual service HELP.md files
 
 ### 🛠️ **Repository Status**
-- ✅ **Build Status**: Fully functional after critical .gitignore fixes
-- ✅ **Essential Files**: All pom.xml files recovered and tracked
-- ✅ **Documentation**: Complete with 12 service-specific HELP.md files
-- ✅ **Git Configuration**: Optimized .gitignore for Maven projects
-- ✅ **Dependencies**: All Maven dependencies properly declared
-- ✅ **Collaboration Ready**: Project builds successfully from fresh clone
-- ✅ **JWKS Implementation**: JWT verification endpoint for OAuth2ResourceServer
-- ✅ **CORS Configuration**: Centralized CORS support for API Gateway integration
+- ✅ **Build Status**: Fully functional with enterprise-grade architecture
+- ✅ **Essential Files**: All Maven configurations properly tracked and maintained
+- ✅ **Documentation**: Complete with comprehensive API documentation and troubleshooting guides
+- ✅ **Git Configuration**: Optimized .gitignore for Maven microservices projects
+- ✅ **Dependencies**: All Maven dependencies properly declared with version management
+- ✅ **Collaboration Ready**: Project builds successfully from fresh clone with Docker support
+- ✅ **JWKS Implementation**: JWT verification endpoint for OAuth2ResourceServer compatibility
+- ✅ **CORS Configuration**: Multi-frontend support (React, Vue.js, Vite, Live Server)
+- 🆕 **Recent Enhancements**: Dual token system, MapStruct integration, enhanced security patterns
 
 ### � **Business Capabilities**
 - ✅ **Multi-tenant B2B/B2C platform**
@@ -1252,7 +1272,7 @@ curl http://localhost:8888/api-gateway/default
 
 **Project**: Enterprise Microservices E-commerce Platform  
 **Repository**: microservice-parent  
-**Last Updated**: September 9, 2024  
+**Last Updated**: September 10, 2025  
 **Version**: 1.0.0-ENTERPRISE  
 **Domain**: B2B/B2C E-commerce Platform
 
