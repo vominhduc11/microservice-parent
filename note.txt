@@ -14,15 +14,15 @@ notification-service:
 product-service:
    GET /api/product/products/showhomepageandlimit4?fields=id, name, image, description       in trouble
    GET  /api/product/{id}                                                                    in trouble
-   GET  /api/product/products/featuredandlimit1?fields=id, name, image, description
-   POST /api/product/products
-   PATCH /api/products/{id}
+   GET  /api/product/products/featuredandlimit1?fields=id, name, image, description          in trouble
+   POST /api/product/products                                                                in trouble
+   PATCH /api/products/{id}                                                                  in trouble
    DELETE /api/products/{id}
 blog-service:
-   GET /api/blogs?fields=id,title,description,image,category,created_at&show_on_homepage=true&limit=6
-   GET  /api/blogs/{id}
-   POST /api/blogs
-   PATCH /api/blogs/{id}
+   GET /api/blog/blogs/showhomepageandlimit6?fields=id,title,description,image,category,created_at      in trouble
+   GET  /api/blog/{id}                                                                                  in trouble
+   POST /api/blog/blogs                                                                                 in trouble
+   PATCH /api/blog/{id}                                                                                 in trouble
    DELETE /api/blogs/{id}
 cart-service:
    GET /api/users/{userId}/cart

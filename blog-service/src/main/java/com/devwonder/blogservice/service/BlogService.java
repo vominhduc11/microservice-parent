@@ -1,0 +1,108 @@
+package com.devwonder.blogservice.service;
+
+import com.devwonder.blogservice.dto.BlogCreateRequest;
+import com.devwonder.blogservice.dto.BlogResponse;
+import com.devwonder.blogservice.dto.BlogUpdateRequest;
+import com.devwonder.blogservice.entity.Blog;
+import com.devwonder.blogservice.entity.CategoryBlog;
+import com.devwonder.blogservice.mapper.BlogMapper;
+import com.devwonder.blogservice.repository.BlogRepository;
+import com.devwonder.blogservice.repository.CategoryBlogRepository;
+import com.devwonder.blogservice.util.FieldFilterUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class BlogService {
+    
+    private final BlogRepository blogRepository;
+    private final CategoryBlogRepository categoryBlogRepository;
+    private final BlogMapper blogMapper;
+    private final FieldFilterUtil fieldFilterUtil;
+    
+    public List<BlogResponse> getHomepageBlogs(String fields, int limit) {
+        log.info("Fetching homepage blogs with fields: {}, limit: {}", fields, limit);
+        
+        List<Blog> blogs = blogRepository.findByShowOnHomepageTrue();
+        
+        return blogs.stream()
+                .limit(limit)
+                .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
+                .toList();
+    }
+    
+    public BlogResponse getBlogById(Long id) {
+        log.info("Fetching blog details for ID: {}", id);
+        
+        Blog blog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + id));
+        
+        return blogMapper.toBlogResponse(blog);
+    }
+    
+    @Transactional
+    public BlogResponse createBlog(BlogCreateRequest request) {
+        log.info("Creating new blog with title: {}", request.getTitle());
+        
+        // Find category by ID
+        CategoryBlog categoryBlog = categoryBlogRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with ID: " + request.getCategoryId()));
+        
+        Blog blog = Blog.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .image(request.getImage())
+                .introduction(request.getIntroduction())
+                .showOnHomepage(request.getShowOnHomepage())
+                .categoryBlog(categoryBlog)
+                .build();
+        
+        Blog savedBlog = blogRepository.save(blog);
+        log.info("Successfully created blog with ID: {} and title: {}", savedBlog.getId(), savedBlog.getTitle());
+        
+        return blogMapper.toBlogResponse(savedBlog);
+    }
+    
+    @Transactional
+    public BlogResponse updateBlog(Long id, BlogUpdateRequest request) {
+        log.info("Updating blog with ID: {}", id);
+        
+        Blog existingBlog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + id));
+        
+        // Update only non-null fields (PATCH behavior)
+        if (request.getTitle() != null) {
+            existingBlog.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            existingBlog.setDescription(request.getDescription());
+        }
+        if (request.getImage() != null) {
+            existingBlog.setImage(request.getImage());
+        }
+        if (request.getIntroduction() != null) {
+            existingBlog.setIntroduction(request.getIntroduction());
+        }
+        if (request.getShowOnHomepage() != null) {
+            existingBlog.setShowOnHomepage(request.getShowOnHomepage());
+        }
+        
+        // Update category if provided
+        if (request.getCategoryId() != null) {
+            CategoryBlog categoryBlog = categoryBlogRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found with ID: " + request.getCategoryId()));
+            existingBlog.setCategoryBlog(categoryBlog);
+        }
+        
+        Blog updatedBlog = blogRepository.save(existingBlog);
+        log.info("Successfully updated blog with ID: {} and title: {}", updatedBlog.getId(), updatedBlog.getTitle());
+        
+        return blogMapper.toBlogResponse(updatedBlog);
+    }
+}

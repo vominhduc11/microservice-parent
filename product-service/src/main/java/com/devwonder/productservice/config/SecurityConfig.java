@@ -2,9 +2,11 @@ package com.devwonder.productservice.config;
 
 import com.devwonder.common.config.BaseSecurityConfig;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends BaseSecurityConfig {
 
     @Override

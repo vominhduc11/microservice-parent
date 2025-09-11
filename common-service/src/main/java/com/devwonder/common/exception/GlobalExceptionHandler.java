@@ -53,6 +53,12 @@ public class GlobalExceptionHandler {
                 .body(BaseResponse.error("Validation failed", errors));
     }
     
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<BaseResponse<String>> handleResourceAlreadyExistsException(ResourceAlreadyExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(BaseResponse.error(e.getMessage()));
+    }
+    
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<BaseResponse<String>> handleIllegalArgumentException(IllegalArgumentException e) {
         return ResponseEntity.badRequest()

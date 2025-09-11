@@ -1,0 +1,46 @@
+package com.devwonder.productservice.dto;
+
+import com.devwonder.productservice.entity.Product;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductCreateRequest {
+    
+    @NotBlank(message = "SKU is required")
+    private String sku;
+    
+    @NotBlank(message = "Product name is required")
+    private String name;
+    
+    private String image;
+    
+    private Object description;
+    
+    private Object videos;
+    
+    private Object specifications;
+    
+    @NotNull(message = "Retail price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Retail price must be greater than 0")
+    private BigDecimal retailPrice;
+    
+    @NotNull(message = "Wholesale price is required")
+    private Object wholesalePrice;
+    
+    private Product.ProductStatus status = Product.ProductStatus.ACTIVE;
+    
+    private Boolean showOnHomepage = false;
+    
+    private Boolean isFeatured = false;
+}

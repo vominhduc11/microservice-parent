@@ -76,13 +76,25 @@ public class SecurityConfig {
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
+            // Public product endpoints (no authentication required)
             .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll()
-            .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll();
+            .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll()
+            
+            // ADMIN-only product endpoints (authentication + ADMIN role required)
+            .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole("ADMIN")
+            .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole("ADMIN");
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add blog service authorization rules when endpoints are implemented
+        exchanges
+            // Public blog endpoints (no authentication required)
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs/showhomepageandlimit6").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll()
+            
+            // ADMIN-only blog endpoints (authentication + ADMIN role required)
+            .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole("ADMIN")
+            .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole("ADMIN");
     }
 
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

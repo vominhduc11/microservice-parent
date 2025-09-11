@@ -6,7 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,20 +34,24 @@ public class Product {
     
     private String image;
     
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Object description;
     
-    @Column(columnDefinition = "TEXT")
-    private String videos;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Object videos;
     
-    @Column(columnDefinition = "TEXT")
-    private String specifications;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Object specifications;
     
     @Column(name = "retail_price", precision = 10, scale = 2)
     private BigDecimal retailPrice;
     
-    @Column(name = "wholesale_price", precision = 10, scale = 2)
-    private BigDecimal wholesalePrice;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "wholesale_price", columnDefinition = "jsonb")
+    private Object wholesalePrice;
     
     @Enumerated(EnumType.STRING)
     private ProductStatus status = ProductStatus.ACTIVE;

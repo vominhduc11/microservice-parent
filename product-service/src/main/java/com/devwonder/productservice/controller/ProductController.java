@@ -1,14 +1,19 @@
 package com.devwonder.productservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.productservice.dto.ProductCreateRequest;
 import com.devwonder.productservice.dto.ProductResponse;
+import com.devwonder.productservice.dto.ProductUpdateRequest;
 import com.devwonder.productservice.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -84,5 +89,59 @@ public class ProductController {
         log.info("Retrieved {} featured products", products.size());
         
         return ResponseEntity.ok(BaseResponse.success("Featured products retrieved successfully", products));
+    }
+    
+    @PostMapping("/products")
+    @Operation(
+        summary = "Create New Product",
+        description = "Create a new product in the catalog. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Product created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid product data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "409", description = "Conflict - Product SKU already exists"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<ProductResponse>> createProduct(@Valid @RequestBody ProductCreateRequest request) {
+        
+        log.info("Creating new product with SKU: {} by ADMIN user", request.getSku());
+        
+        ProductResponse product = productService.createProduct(request);
+        
+        log.info("Successfully created product with ID: {} and SKU: {}", product.getId(), product.getSku());
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(BaseResponse.success("Product created successfully", product));
+    }
+    
+    @PatchMapping("/{id}")
+    @Operation(
+        summary = "Update Product",
+        description = "Update an existing product by ID. Only provided fields will be updated (PATCH behavior). Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid product data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "409", description = "Conflict - Product SKU already exists"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<ProductResponse>> updateProduct(
+            @PathVariable Long id, 
+            @Valid @RequestBody ProductUpdateRequest request) {
+        
+        log.info("Updating product with ID: {} by ADMIN user", id);
+        
+        ProductResponse product = productService.updateProduct(id, request);
+        
+        log.info("Successfully updated product with ID: {} and SKU: {}", product.getId(), product.getSku());
+        
+        return ResponseEntity.ok(BaseResponse.success("Product updated successfully", product));
     }
 }
