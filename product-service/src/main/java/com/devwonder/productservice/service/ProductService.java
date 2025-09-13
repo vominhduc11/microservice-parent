@@ -19,10 +19,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class ProductService {
-    
+
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final FieldFilterUtil fieldFilterUtil;
+    private final MediaProcessingService mediaProcessingService;
     
     public List<ProductResponse> getHomepageProducts(String fields, int limit) {
         log.info("Fetching homepage products with fields: {}, limit: {}", fields, limit);
@@ -68,28 +69,31 @@ public class ProductService {
     @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
         log.info("Creating new product with SKU: {}", request.getSku());
-        
+
         // Check if SKU already exists
         if (productRepository.existsBySku(request.getSku())) {
             throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
         }
-        
+
+        // Process media uploads (base64 -> Cloudinary URLs)
+        ProductCreateRequest processedRequest = processMediaInRequest(request);
+
         Product product = Product.builder()
-                .sku(request.getSku())
-                .name(request.getName())
-                .image(request.getImage())
-                .description(request.getDescription())
-                .videos(request.getVideos())
-                .specifications(request.getSpecifications())
-                .retailPrice(request.getRetailPrice())
-                .wholesalePrice(request.getWholesalePrice())
-                .showOnHomepage(request.getShowOnHomepage())
-                .isFeatured(request.getIsFeatured())
+                .sku(processedRequest.getSku())
+                .name(processedRequest.getName())
+                .image(processedRequest.getImage())
+                .description(processedRequest.getDescription())
+                .videos(processedRequest.getVideos())
+                .specifications(processedRequest.getSpecifications())
+                .retailPrice(processedRequest.getRetailPrice())
+                .wholesalePrice(processedRequest.getWholesalePrice())
+                .showOnHomepage(processedRequest.getShowOnHomepage())
+                .isFeatured(processedRequest.getIsFeatured())
                 .build();
-        
+
         Product savedProduct = productRepository.save(product);
         log.info("Successfully created product with ID: {} and SKU: {}", savedProduct.getId(), savedProduct.getSku());
-        
+
         return productMapper.toProductResponse(savedProduct);
     }
     
@@ -141,5 +145,69 @@ public class ProductService {
         log.info("Successfully updated product with ID: {} and SKU: {}", updatedProduct.getId(), updatedProduct.getSku());
         
         return productMapper.toProductResponse(updatedProduct);
+    }
+
+    /**
+     * Process media uploads in product request (base64 -> Cloudinary URLs)
+     */
+    private ProductCreateRequest processMediaInRequest(ProductCreateRequest request) {
+        try {
+            // Clone the request to avoid modifying original
+            return ProductCreateRequest.builder()
+                    .sku(request.getSku())
+                    .name(request.getName())
+                    .image(processImageField(request.getImage()))
+                    .description(processDescriptionField(request.getDescription()))
+                    .videos(request.getVideos()) // Videos are URLs, not base64
+                    .specifications(request.getSpecifications())
+                    .retailPrice(request.getRetailPrice())
+                    .wholesalePrice(request.getWholesalePrice())
+                    .showOnHomepage(request.getShowOnHomepage())
+                    .isFeatured(request.getIsFeatured())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error processing media in product request", e);
+            return request; // Return original on error
+        }
+    }
+
+    /**
+     * Process main product image field (async)
+     */
+    private String processImageField(String image) {
+        if (image == null || !mediaProcessingService.containsBase64Images(image)) {
+            return image;
+        }
+
+        // Send base64 image for async upload via Kafka
+        mediaProcessingService.processBase64ImageAsync(image, "products");
+
+        // Return original base64 (will be stored temporarily, replaced later by webhook/callback if needed)
+        return image;
+    }
+
+    /**
+     * Process description array for base64 images
+     */
+    private Object processDescriptionField(Object description) {
+        if (description == null) return null;
+
+        try {
+            // Convert to JSON string, process base64 images, then back to object
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            String jsonDescription = mapper.writeValueAsString(description);
+
+            if (mediaProcessingService.containsBase64Images(jsonDescription)) {
+                String processedJson = mediaProcessingService.processBase64Images(jsonDescription);
+                return mapper.readValue(processedJson, Object.class);
+            }
+
+            return description;
+
+        } catch (Exception e) {
+            log.error("Error processing description media", e);
+            return description; // Return original on error
+        }
     }
 }

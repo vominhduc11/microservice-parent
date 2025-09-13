@@ -506,6 +506,7 @@ services:
       - config-server
     environment:
       - CONFIG_SERVER_URL=http://config-server:8888
+      - SERVER_PORT=8090
       - CLOUDINARY_CLOUD_NAME=daohufjec
       - CLOUDINARY_API_KEY=872317127931114
       - CLOUDINARY_API_SECRET=N4qcHq42OqjlyK5GiQoZfk1UXfE
