@@ -91,6 +91,29 @@ public class ProductController {
         return ResponseEntity.ok(BaseResponse.success("Featured products retrieved successfully", products));
     }
     
+    @GetMapping("/products")
+    @Operation(
+        summary = "Get All Products",
+        description = "Retrieve all products in the catalog. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> getAllProducts() {
+        
+        log.info("Requesting all products by ADMIN user");
+        
+        List<ProductResponse> products = productService.getAllProducts();
+        
+        log.info("Retrieved {} products", products.size());
+        
+        return ResponseEntity.ok(BaseResponse.success("Products retrieved successfully", products));
+    }
+    
     @PostMapping("/products")
     @Operation(
         summary = "Create New Product",

@@ -1,6 +1,6 @@
 package com.devwonder.notificationservice.service;
 
-import com.devwonder.notificationservice.event.DealerEmailEvent;
+import com.devwonder.common.event.DealerEmailEvent;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;

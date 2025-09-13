@@ -30,7 +30,8 @@ public class KafkaConsumerConfig {
         configProps.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         configProps.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+        // Ignore type headers to avoid ClassNotFoundException when event classes are moved/refactored
+        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, defaultType);
         return configProps;
     }
@@ -46,7 +47,7 @@ public class KafkaConsumerConfig {
     
     @Bean
     public ConsumerFactory<String, Object> emailNotificationConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-email", "com.devwonder.notificationservice.event.DealerEmailEvent"));
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-email", "com.devwonder.common.event.DealerEmailEvent"));
     }
 
     @Bean
@@ -56,7 +57,7 @@ public class KafkaConsumerConfig {
     
     @Bean
     public ConsumerFactory<String, Object> websocketNotificationConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-socket", "com.devwonder.notificationservice.event.DealerSocketEvent"));
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-socket", "com.devwonder.common.event.DealerSocketEvent"));
     }
 
     @Bean

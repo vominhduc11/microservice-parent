@@ -28,8 +28,10 @@ public class FieldFilterUtil {
             JsonNode jsonNode = objectMapper.valueToTree(object);
             
             // Parse requested fields
-            Set<String> requestedFields = new HashSet<>(Arrays.asList(fields.split(",")));
-            requestedFields.replaceAll(String::trim);
+            Set<String> requestedFields = new HashSet<>();
+            Arrays.stream(fields.split(","))
+                  .map(String::trim)
+                  .forEach(requestedFields::add);
             
             // Create filtered object
             ObjectNode filteredNode = objectMapper.createObjectNode();

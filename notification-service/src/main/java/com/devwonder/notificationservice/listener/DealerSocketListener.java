@@ -1,7 +1,7 @@
 package com.devwonder.notificationservice.listener;
 
 import com.devwonder.notificationservice.entity.Notification;
-import com.devwonder.notificationservice.event.DealerSocketEvent;
+import com.devwonder.common.event.DealerSocketEvent;
 import com.devwonder.notificationservice.service.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -31,8 +31,8 @@ public class DealerSocketListener {
         // Save notification to database
         Notification notification = notificationService.createDealerRegistrationNotification(event);
         
-        // Send saved notification via WebSocket
-        messagingTemplate.convertAndSend("/broadcast/dealer-registrations", notification);
+        // Send saved notification via WebSocket (ADMIN only subscription)
+        messagingTemplate.convertAndSend("/topic/dealer-registrations", notification);
         
         log.info("Successfully processed websocket notification for accountId: {} with notificationId: {}", 
             event.getAccountId(), notification.getId());

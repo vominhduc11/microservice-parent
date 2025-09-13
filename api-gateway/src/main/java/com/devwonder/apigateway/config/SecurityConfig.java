@@ -16,10 +16,13 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    private static final String ROLE_ADMIN = "ADMIN";
+
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {}) // Use default CORS config from YAML
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .oauth2ResourceServer(this::configureOAuth2ResourceServer)
@@ -53,6 +56,7 @@ public class SecurityConfig {
         configureOrderServiceAuth(exchanges);
         configureWarrantyServiceAuth(exchanges);
         configureNotificationServiceAuth(exchanges);
+        configureMediaServiceAuth(exchanges);
         configureReportServiceAuth(exchanges);
 
         // All other requests require authentication - MUST BE LAST
@@ -69,6 +73,9 @@ public class SecurityConfig {
 
                 // Refresh token endpoint - public access (handles expired tokens internally)
                 .pathMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                
+                // Token validation endpoint - requires valid JWT token
+                .pathMatchers(HttpMethod.GET, "/api/auth/validate").authenticated()
 
                 // JWKS endpoint - public access (for other services to validate tokens)
                 .pathMatchers(HttpMethod.GET, "/api/auth/.well-known/jwks.json").permitAll();
@@ -82,19 +89,22 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll()
             
             // ADMIN-only product endpoints (authentication + ADMIN role required)
-            .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole("ADMIN")
-            .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole("ADMIN");
+            .pathMatchers(HttpMethod.GET, "/api/product/products").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/serials").hasRole(ROLE_ADMIN);
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            // Public blog endpoints (no authentication required)
+            // ADMIN-only blog endpoints (authentication + ADMIN role required) - MUST BE FIRST
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole(ROLE_ADMIN)
+
+            // Public blog endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/showhomepageandlimit6").permitAll()
-            .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll()
-            
-            // ADMIN-only blog endpoints (authentication + ADMIN role required)
-            .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole("ADMIN")
-            .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole("ADMIN");
+            .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll();
     }
 
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -103,7 +113,13 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll()
                 
                 // Dealer registration - public access (for dealer self-registration)
-                .pathMatchers(HttpMethod.POST, "/api/user/dealers").permitAll();
+                .pathMatchers(HttpMethod.POST, "/api/user/dealers").permitAll()
+                
+                // Update dealer - ADMIN only
+                .pathMatchers(HttpMethod.PUT, "/api/user/dealers/*").hasRole(ROLE_ADMIN)
+
+                // Delete dealer - ADMIN only
+                .pathMatchers(HttpMethod.DELETE, "/api/user/dealers/*").hasRole(ROLE_ADMIN);
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -120,7 +136,16 @@ public class SecurityConfig {
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            .pathMatchers(HttpMethod.GET, "/api/notification/notifies").hasRole("ADMIN");
+            .pathMatchers(HttpMethod.GET, "/api/notification/notifies").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/notification/*/read").hasRole(ROLE_ADMIN);
+    }
+
+    private void configureMediaServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
+        exchanges
+            // ADMIN-only media endpoints (authentication + ADMIN role required)
+            .pathMatchers(HttpMethod.POST, "/api/media/upload/image").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/media/upload/video").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/media/delete/*").hasRole(ROLE_ADMIN);
     }
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -169,4 +194,6 @@ public class SecurityConfig {
                     .forEach(authorities::add);
         }
     }
+
+    // CORS configuration moved to YAML (api-gateway.yml) for easier maintenance
 }

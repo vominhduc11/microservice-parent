@@ -252,6 +252,7 @@ services:
       - WARRANTY_SERVICE_URI=http://warranty-service:8086
       - NOTIFICATION_SERVICE_URI=http://notification-service:8087
       - BLOG_SERVICE_URI=http://blog-service:8088
+      - MEDIA_SERVICE_URI=http://media-service:8090
       - REPORT_SERVICE_URI=http://report-service:8089
     networks:
       - microservices-network
@@ -488,6 +489,26 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - USER_SERVICE_URL=http://user-service:8082
+      - SWAGGER_UI_ENABLED=true
+      - SWAGGER_API_DOCS_ENABLED=true
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  media-service:
+    build:
+      context: .
+      dockerfile: media-service/Dockerfile
+    container_name: media-service
+    ports:
+      - "8095:8090"
+    depends_on:
+      - config-server
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - CLOUDINARY_CLOUD_NAME=daohufjec
+      - CLOUDINARY_API_KEY=872317127931114
+      - CLOUDINARY_API_SECRET=N4qcHq42OqjlyK5GiQoZfk1UXfE
       - SWAGGER_UI_ENABLED=true
       - SWAGGER_API_DOCS_ENABLED=true
     networks:

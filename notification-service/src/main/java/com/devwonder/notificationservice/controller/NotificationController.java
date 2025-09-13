@@ -29,4 +29,16 @@ public class NotificationController {
         
         return ResponseEntity.ok(BaseResponse.success("Notifications retrieved successfully", notifications));
     }
+    
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<BaseResponse<Notification>> markNotificationAsRead(@PathVariable Long id) {
+        
+        log.info("Marking notification {} as read", id);
+        
+        Notification updatedNotification = notificationService.markAsRead(id);
+        
+        log.info("Successfully marked notification {} as read", id);
+        
+        return ResponseEntity.ok(BaseResponse.success("Notification marked as read", updatedNotification));
+    }
 }

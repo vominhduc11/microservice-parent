@@ -1,25 +1,30 @@
 auth-service:
-   POST /api/auth/login           ok
-   POST /api/auth/logout          ok
-   POST /api/auth/refresh         ok
-   POST /api/auths/resgister
+   POST /api/auth/login           ok.
+   POST /api/auth/logout          ok.
+   POST /api/auth/refresh         ok.
+   GET  /api/auth/validate        ok.
 user-service:
-   GET  /api/user/dealers         ok
-   PATCH/api/users/dealers/{id}
-   POST /api/user/dealers         ok
+   GET  /api/user/dealers         ok.
+   PUT  /api/user/dealers/{id}    ok.
+   POST /api/user/dealers         ok.
    POST /api/users/customers
    POST /api/users/admins
+   DELETE /api/user/dealers/{id}  ok.
 notification-service:
-   GET  /api/notification/notifies  ok
+   GET  /api/notification/notifies  ok.
+   PATCH /api/notification/{id}/read  ok.
 product-service:
    GET /api/product/products/showhomepageandlimit4?fields=id, name, image, description       in trouble
    GET  /api/product/{id}                                                                    in trouble
    GET  /api/product/products/featuredandlimit1?fields=id, name, image, description          in trouble
+   GET  /api/product/products
    POST /api/product/products                                                                in trouble
+   POST /api/product/serials                                                                 ok
    PATCH /api/products/{id}                                                                  in trouble
    DELETE /api/products/{id}
 blog-service:
    GET /api/blog/blogs/showhomepageandlimit6?fields=id,title,description,image,category,created_at      in trouble
+   GET /api/blog/blogs
    GET  /api/blog/{id}                                                                                  in trouble
    POST /api/blog/blogs                                                                                 in trouble
    PATCH /api/blog/{id}                                                                                 in trouble

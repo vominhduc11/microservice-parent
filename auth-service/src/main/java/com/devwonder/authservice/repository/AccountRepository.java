@@ -11,10 +11,10 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    @Query("SELECT a FROM Account a LEFT JOIN FETCH a.roles WHERE a.username = :username AND a.deleteAt IS NULL")
+    @Query("SELECT a FROM Account a LEFT JOIN FETCH a.roles WHERE a.username = :username")
     Optional<Account> findByUsername(@Param("username") String username);
 
-    @Query("SELECT a FROM Account a WHERE a.username = :username AND a.deleteAt IS NULL")
+    @Query("SELECT a FROM Account a WHERE a.username = :username")
     Optional<Account> findByUsernameSimple(@Param("username") String username);
 
     boolean existsByUsername(String username);

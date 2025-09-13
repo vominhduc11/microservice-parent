@@ -22,4 +22,7 @@ public class LoginRequest {
     @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     @Schema(description = "Password for authentication", example = "password123")
     private String password;
+
+    @Schema(description = "User type/role for authentication", example = "ADMIN", allowableValues = {"ADMIN", "DEALER", "CUSTOMER"})
+    private String userType;
 }

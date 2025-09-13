@@ -36,6 +36,10 @@ spring:
           ssl:
             trust: smtp.gmail.com
 
+nexhub:
+  jwt:
+    jwks-uri: http://auth-service:8081/auth/.well-known/jwks.json
+
 management:
   endpoints:
     web:

@@ -4,6 +4,7 @@ import com.devwonder.common.exception.AccountCreationException;
 import com.devwonder.common.exception.ResourceAlreadyExistsException;
 import com.devwonder.userservice.client.AuthServiceClient;
 import com.devwonder.userservice.dto.*;
+import com.devwonder.common.exception.ResourceNotFoundException;
 import com.devwonder.userservice.entity.Dealer;
 import com.devwonder.userservice.mapper.DealerMapper;
 import com.devwonder.userservice.repository.DealerRepository;
@@ -91,6 +92,69 @@ public class UserService {
         } catch (Exception e) {
             log.error("Failed to create account for dealer: {}", e.getMessage());
             throw new AccountCreationException("Failed to create dealer account: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public DealerResponse updateDealer(Long dealerId, DealerUpdateRequest updateRequest) {
+        log.info("Updating dealer with ID: {}", dealerId);
+        
+        // Find existing dealer
+        Dealer existingDealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dealer not found with ID: " + dealerId));
+        
+        // Check if phone already exists for another dealer
+        if (!updateRequest.getPhone().equals(existingDealer.getPhone()) &&
+            dealerRepository.existsByPhone(updateRequest.getPhone())) {
+            log.warn("Phone {} already exists for another dealer", updateRequest.getPhone());
+            throw new ResourceAlreadyExistsException("Phone " + updateRequest.getPhone() + " already exists for another dealer");
+        }
+        
+        // Check if email already exists for another dealer
+        if (!updateRequest.getEmail().equals(existingDealer.getEmail()) &&
+            dealerRepository.existsByEmail(updateRequest.getEmail())) {
+            log.warn("Email {} already exists for another dealer", updateRequest.getEmail());
+            throw new ResourceAlreadyExistsException("Email " + updateRequest.getEmail() + " already exists for another dealer");
+        }
+        
+        // Full replacement - update ALL fields (PUT semantics)
+        existingDealer.setCompanyName(updateRequest.getCompanyName());
+        existingDealer.setAddress(updateRequest.getAddress());
+        existingDealer.setPhone(updateRequest.getPhone());
+        existingDealer.setEmail(updateRequest.getEmail());
+        existingDealer.setDistrict(updateRequest.getDistrict());
+        existingDealer.setCity(updateRequest.getCity());
+        
+        // Save updated dealer
+        Dealer updatedDealer = dealerRepository.save(existingDealer);
+        log.info("Successfully updated dealer with accountId: {}", updatedDealer.getAccountId());
+        
+        return dealerMapper.toResponse(updatedDealer);
+    }
+
+    @Transactional
+    public void deleteDealer(Long dealerId) {
+        log.info("Deleting dealer with ID: {}", dealerId);
+        
+        // Find existing dealer first to get accountId
+        Dealer existingDealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dealer not found with ID: " + dealerId));
+        
+        Long accountId = existingDealer.getAccountId();
+        log.info("Found dealer with accountId: {}, proceeding to delete both dealer and account", accountId);
+        
+        try {
+            // Delete dealer first (local transaction)
+            dealerRepository.deleteById(dealerId);
+            log.info("Successfully deleted dealer with ID: {}", dealerId);
+            
+            // Delete corresponding account in auth-service
+            authServiceClient.deleteAccount(accountId, "user-service");
+            log.info("Successfully deleted account with ID: {} in auth-service", accountId);
+            
+        } catch (Exception e) {
+            log.error("Failed to delete dealer or account: {}", e.getMessage());
+            throw new RuntimeException("Failed to delete dealer and associated account: " + e.getMessage(), e);
         }
     }
 }

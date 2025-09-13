@@ -25,6 +25,4 @@ public class ProductSerial {
     @JoinColumn(name = "id_product", nullable = false)
     private Product product;
     
-    @Column(name = "is_sold")
-    private Boolean isSold = false;
 }

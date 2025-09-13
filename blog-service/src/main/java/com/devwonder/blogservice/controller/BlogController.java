@@ -27,7 +27,31 @@ import java.util.List;
 public class BlogController {
     
     private final BlogService blogService;
-    
+
+    @GetMapping("/blogs")
+    @Operation(
+        summary = "Get All Blogs",
+        description = "Retrieve all blogs for administrative purposes. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "All blogs retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<BlogResponse>>> getAllBlogs(
+            @RequestParam(required = false) String fields) {
+
+        log.info("Requesting all blogs by ADMIN user - fields: {}", fields);
+
+        List<BlogResponse> blogs = blogService.getAllBlogs(fields);
+
+        log.info("Retrieved {} blogs for ADMIN user", blogs.size());
+
+        return ResponseEntity.ok(BaseResponse.success("All blogs retrieved successfully", blogs));
+    }
+
     @GetMapping("/blogs/showhomepageandlimit6")
     @Operation(
         summary = "Get Homepage Blogs",

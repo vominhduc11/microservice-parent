@@ -38,7 +38,6 @@ public class ProductCreateRequest {
     @NotNull(message = "Wholesale price is required")
     private Object wholesalePrice;
     
-    private Product.ProductStatus status = Product.ProductStatus.ACTIVE;
     
     private Boolean showOnHomepage = false;
     

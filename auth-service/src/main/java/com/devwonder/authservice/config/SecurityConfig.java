@@ -15,6 +15,8 @@ public class SecurityConfig extends BaseSecurityConfig {
             .requestMatchers("/auth/.well-known/jwks.json").permitAll()
             // Account creation endpoint - INTERNAL service-to-service calls only
             .requestMatchers("/auth/accounts").access(internalServiceRequired())
+            // Account deletion endpoint - INTERNAL service-to-service calls only
+            .requestMatchers("/auth/accounts/*").access(internalServiceRequired())
             // Login endpoint - PUBLIC access via API Gateway
             .requestMatchers("/auth/login").access(gatewayHeaderRequired())
             // Logout endpoint - PUBLIC access via API Gateway

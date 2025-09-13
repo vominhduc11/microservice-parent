@@ -1,6 +1,6 @@
 package com.devwonder.notificationservice.listener;
 
-import com.devwonder.notificationservice.event.DealerEmailEvent;
+import com.devwonder.common.event.DealerEmailEvent;
 import com.devwonder.notificationservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

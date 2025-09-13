@@ -1,8 +1,8 @@
 package com.devwonder.userservice.service;
 
 import com.devwonder.userservice.entity.Dealer;
-import com.devwonder.userservice.event.DealerEmailEvent;
-import com.devwonder.userservice.event.DealerSocketEvent;
+import com.devwonder.common.event.DealerEmailEvent;
+import com.devwonder.common.event.DealerSocketEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

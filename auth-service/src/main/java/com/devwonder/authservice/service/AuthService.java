@@ -31,7 +31,7 @@ public class AuthService {
     private final AccountRepository accountRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final AuthJwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
 
     @Transactional(readOnly = true)
@@ -46,10 +46,6 @@ public class AuthService {
             throw new AuthenticationException("Invalid username or password");
         }
 
-        // Check if account is still active (not soft deleted)
-        if (account.getDeleteAt() != null) {
-            throw new AuthenticationException("Account is disabled");
-        }
 
         // Extract roles
         log.info("Account {} has {} roles: {}", account.getUsername(),
@@ -59,6 +55,15 @@ public class AuthService {
         Set<String> roles = account.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet());
+
+        // Validate userType if provided
+        if (StringUtils.hasText(loginRequest.getUserType())) {
+            String requestedUserType = loginRequest.getUserType().toUpperCase();
+            if (!roles.contains(requestedUserType)) {
+                throw new AuthenticationException("User type '" + requestedUserType + "' does not match account roles");
+            }
+            log.info("Login validation successful for user {} with userType: {}", account.getUsername(), requestedUserType);
+        }
 
         // Create JWT claims
         Map<String, Object> claims = new HashMap<>();
@@ -154,10 +159,6 @@ public class AuthService {
         Account account = accountRepository.findByUsername(username)
             .orElseThrow(() -> new AuthenticationException("User account not found"));
         
-        // Check if account is still active (not soft deleted)
-        if (account.getDeleteAt() != null) {
-            throw new AuthenticationException("Account is disabled");
-        }
         
         // Extract current roles
         Set<String> roles = account.getRoles().stream()
@@ -221,5 +222,54 @@ public class AuthService {
                 .username(savedAccount.getUsername())
                 .roles(roleNames)
                 .build();
+    }
+
+    public boolean validateTokenFromHeader(HttpServletRequest request) {
+        try {
+            // Extract token from Authorization header
+            String token = extractTokenFromRequest(request);
+            
+            if (token == null) {
+                log.warn("No authorization token provided for validation");
+                return false;
+            }
+            
+            // Check if token is blacklisted
+            if (tokenBlacklistService.isTokenBlacklisted(token)) {
+                log.warn("Token validation failed: token is blacklisted");
+                return false;
+            }
+            
+            // Extract username and validate token
+            String username = jwtService.extractUsername(token);
+            boolean isValid = jwtService.validateToken(token, username);
+            
+            if (isValid) {
+                log.info("Token validation successful for user: {}", username);
+            } else {
+                log.warn("Token validation failed for user: {}", username);
+            }
+            
+            return isValid;
+            
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    @Transactional
+    public void deleteAccount(Long accountId) {
+        log.info("Deleting account with ID: {}", accountId);
+        
+        // Check if account exists
+        if (!accountRepository.existsById(accountId)) {
+            log.warn("Account not found with ID: {}", accountId);
+            throw new RuntimeException("Account not found with ID: " + accountId);
+        }
+        
+        // Delete account (hard delete)
+        accountRepository.deleteById(accountId);
+        log.info("Successfully deleted account with ID: {}", accountId);
     }
 }

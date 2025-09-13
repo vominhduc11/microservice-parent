@@ -21,6 +21,8 @@ springdoc:
         url: /api/blog/v3/api-docs
       - name: Notification Service
         url: /api/notification/v3/api-docs
+      - name: Media Service
+        url: /api/media/v3/api-docs
       - name: Report Service
         url: /api/report/v3/api-docs
       - name: Warranty Service
@@ -115,6 +117,15 @@ spring:
             - AddRequestHeader=X-Gateway-Request, true
           order: 100
             
+        - id: media-api-docs
+          uri: ${MEDIA_SERVICE_URI}
+          predicates:
+            - Path=/api/media/v3/api-docs/**
+          filters:
+            - StripPrefix=2
+            - AddRequestHeader=X-Gateway-Request, true
+          order: 100
+
         - id: report-api-docs
           uri: ${REPORT_SERVICE_URI}
           predicates:
@@ -233,6 +244,16 @@ spring:
             - StripPrefix=1                   # /api/notification/** → /notification/**
             - AddRequestHeader=X-Gateway-Request, true
 
+        # Media Service API Routes
+        - id: media-service
+          uri: ${MEDIA_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/media/**              # Media upload & management
+          filters:
+            - StripPrefix=1                   # /api/media/** → /media/**
+            - AddRequestHeader=X-Gateway-Request, true
+
         # Report Service API Routes
         - id: report-service
           uri: ${REPORT_SERVICE_URI}
@@ -249,20 +270,20 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins:
+            allowed-origins:
               - "http://localhost:3000"
+              - "http://localhost:5173"  
               - "http://localhost:9000"
-              - "http://localhost:5173"
-              - "http://127.0.0.1:5500"
-            allowedMethods:
+            allowed-methods:
               - GET
               - POST
               - PUT
+              - PATCH
               - DELETE
               - OPTIONS
               - HEAD
               - CONNECT
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 86400
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 86400
 

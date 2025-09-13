@@ -23,8 +23,6 @@ public class ProductResponse {
     private Object specifications;
     private BigDecimal retailPrice;
     private Object wholesalePrice;
-    private Product.ProductStatus status;
-    private Long soldQuantity;
     private Boolean showOnHomepage;
     private Boolean isFeatured;
     private LocalDateTime createdAt;

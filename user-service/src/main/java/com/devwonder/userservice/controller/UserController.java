@@ -3,11 +3,13 @@ package com.devwonder.userservice.controller;
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.userservice.dto.DealerRequest;
 import com.devwonder.userservice.dto.DealerResponse;
+import com.devwonder.userservice.dto.DealerUpdateRequest;
 import com.devwonder.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,5 +67,58 @@ public class UserController {
             dealerResponse
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/dealers/{id}")
+    @Operation(
+        summary = "Update Dealer Information (ADMIN Only)",
+        description = "Update existing dealer information. This endpoint allows admin users to modify dealer " +
+                    "company information, contact details, and location. Requires ADMIN role authorization.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Dealer updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN role"),
+        @ApiResponse(responseCode = "404", description = "Dealer not found"),
+        @ApiResponse(responseCode = "409", description = "Phone or email already exists for another dealer"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<DealerResponse>> updateDealer(
+            @PathVariable Long id,
+            @Valid @RequestBody DealerUpdateRequest updateRequest) {
+        DealerResponse dealerResponse = userService.updateDealer(id, updateRequest);
+        BaseResponse<DealerResponse> response = new BaseResponse<>(
+            true,
+            "Dealer updated successfully",
+            dealerResponse
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/dealers/{id}")
+    @Operation(
+        summary = "Delete Dealer (ADMIN Only)",
+        description = "Delete an existing dealer from the system. This endpoint permanently removes the dealer " +
+                    "record from the database. Requires ADMIN role authorization. Use with caution as this operation " +
+                    "cannot be undone.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Dealer deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN role"),
+        @ApiResponse(responseCode = "404", description = "Dealer not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> deleteDealer(@PathVariable Long id) {
+        userService.deleteDealer(id);
+        BaseResponse<String> response = new BaseResponse<>(
+            true,
+            "Dealer deleted successfully",
+            "Dealer with ID " + id + " has been permanently removed"
+        );
+        return ResponseEntity.ok(response);
     }
 }

@@ -53,11 +53,6 @@ public class Product {
     @Column(name = "wholesale_price", columnDefinition = "jsonb")
     private Object wholesalePrice;
     
-    @Enumerated(EnumType.STRING)
-    private ProductStatus status = ProductStatus.ACTIVE;
-    
-    @Column(name = "sold_quantity")
-    private Long soldQuantity = 0L;
     
     @Column(name = "show_on_homepage")
     private Boolean showOnHomepage = false;
@@ -76,7 +71,4 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<ProductSerial> productSerials;
     
-    public enum ProductStatus {
-        ACTIVE, INACTIVE, OUT_OF_STOCK
-    }
 }

@@ -32,7 +32,6 @@ public class ProductUpdateRequest {
     
     private Object wholesalePrice;
     
-    private Product.ProductStatus status;
     
     private Boolean showOnHomepage;
     

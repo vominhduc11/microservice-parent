@@ -55,6 +55,16 @@ public class ProductService {
                 .toList();
     }
     
+    public List<ProductResponse> getAllProducts() {
+        log.info("Fetching all products");
+        
+        List<Product> products = productRepository.findAll();
+        
+        return products.stream()
+                .map(productMapper::toProductResponse)
+                .toList();
+    }
+    
     @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
         log.info("Creating new product with SKU: {}", request.getSku());
@@ -73,8 +83,6 @@ public class ProductService {
                 .specifications(request.getSpecifications())
                 .retailPrice(request.getRetailPrice())
                 .wholesalePrice(request.getWholesalePrice())
-                .status(request.getStatus())
-                .soldQuantity(0L)
                 .showOnHomepage(request.getShowOnHomepage())
                 .isFeatured(request.getIsFeatured())
                 .build();
@@ -121,9 +129,6 @@ public class ProductService {
         }
         if (request.getWholesalePrice() != null) {
             existingProduct.setWholesalePrice(request.getWholesalePrice());
-        }
-        if (request.getStatus() != null) {
-            existingProduct.setStatus(request.getStatus());
         }
         if (request.getShowOnHomepage() != null) {
             existingProduct.setShowOnHomepage(request.getShowOnHomepage());

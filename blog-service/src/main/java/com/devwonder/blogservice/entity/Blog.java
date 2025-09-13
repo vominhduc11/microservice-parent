@@ -7,13 +7,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "blogs")
-@Where(clause = "delete_at IS NULL")
+@SQLRestriction("delete_at IS NULL")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,7 +34,8 @@ public class Blog {
     @Column(columnDefinition = "TEXT")
     private String description;
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String introduction;
     
     @Column(name = "show_on_homepage")

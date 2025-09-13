@@ -15,7 +15,7 @@ import java.util.Date;
 public class TokenBlacklistService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final JwtService jwtService;
+    private final AuthJwtService jwtService;
     
     private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
     

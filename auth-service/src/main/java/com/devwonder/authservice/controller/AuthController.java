@@ -13,10 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,6 +27,7 @@ public class AuthController {
     @Operation(
         summary = "User Login",
         description = "Authenticate user credentials and return JWT access token. " +
+                    "Optional userType field can be provided to validate against specific user role. " +
                     "The token can be used for accessing protected resources in other microservices."
     )
     @ApiResponses(value = {
@@ -88,7 +86,8 @@ public class AuthController {
                     "⚠️ INTERNAL USE ONLY: Requires X-Internal-Service header. " +
                     "This endpoint is for service-to-service communication. " +
                     "Password will be encrypted and stored securely.",
-        tags = {"Internal APIs"}
+        tags = {"Internal APIs"},
+        hidden = true
     )
     @Parameter(
         name = "X-Internal-Service",
@@ -107,5 +106,55 @@ public class AuthController {
         AccountCreateResponse response = authService.createAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(BaseResponse.success("Account created successfully", response));
+    }
+
+    @GetMapping("/validate")
+    @Operation(
+        summary = "Validate JWT Token", 
+        description = "Validate JWT token from Authorization header. " +
+                    "Returns token status and user information if valid."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Token is valid"),
+        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+        @ApiResponse(responseCode = "403", description = "No Authorization header provided")
+    })
+    public ResponseEntity<BaseResponse<String>> validateToken(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        boolean isValid = authService.validateTokenFromHeader(request);
+        return ResponseEntity.ok(BaseResponse.success(
+            isValid ? "Token is valid" : "Token is invalid",
+            isValid ? "VALID" : "INVALID"
+        ));
+    }
+
+    @DeleteMapping("/accounts/{accountId}")
+    @Operation(
+        summary = "Delete Account (Internal Only)",
+        description = "Delete an existing user account by ID. " +
+                    "⚠️ INTERNAL USE ONLY: Requires X-Internal-Service header. " +
+                    "This endpoint is for service-to-service communication. " +
+                    "Account will be permanently removed from the system.",
+        tags = {"Internal APIs"},
+        hidden = true
+    )
+    @Parameter(
+        name = "X-Internal-Service",
+        description = "Required header for internal service authentication",
+        required = true,
+        in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER,
+        schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "user-service")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Account deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Account not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> deleteAccount(@PathVariable Long accountId) {
+        authService.deleteAccount(accountId);
+        return ResponseEntity.ok(BaseResponse.success(
+            "Account deleted successfully", 
+            "Account with ID " + accountId + " has been permanently removed"
+        ));
     }
 }

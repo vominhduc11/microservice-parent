@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
-public class JwtService {
+public class AuthJwtService {
 
     private final JwksService jwksService;
 

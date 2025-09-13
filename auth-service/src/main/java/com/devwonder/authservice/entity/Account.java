@@ -8,7 +8,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -16,7 +15,6 @@ import java.util.Set;
 
 @Entity
 @Table(name = "accounts")
-@Where(clause = "delete_at IS NULL")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -50,8 +48,5 @@ public class Account {
     @UpdateTimestamp
     @Column(name = "update_at")
     private LocalDateTime updateAt;
-    
-    @Column(name = "delete_at")
-    private LocalDateTime deleteAt;
     
 }

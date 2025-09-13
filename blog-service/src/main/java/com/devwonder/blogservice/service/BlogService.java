@@ -26,11 +26,21 @@ public class BlogService {
     private final BlogMapper blogMapper;
     private final FieldFilterUtil fieldFilterUtil;
     
+    public List<BlogResponse> getAllBlogs(String fields) {
+        log.info("Fetching all blogs with fields: {}", fields);
+
+        List<Blog> blogs = blogRepository.findAll();
+
+        return blogs.stream()
+                .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
+                .toList();
+    }
+
     public List<BlogResponse> getHomepageBlogs(String fields, int limit) {
         log.info("Fetching homepage blogs with fields: {}, limit: {}", fields, limit);
-        
+
         List<Blog> blogs = blogRepository.findByShowOnHomepageTrue();
-        
+
         return blogs.stream()
                 .limit(limit)
                 .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))

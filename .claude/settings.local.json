@@ -9,7 +9,9 @@
       "Bash(docker volume:*)",
       "Bash(docker-compose up:*)",
       "Bash(cat:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []
