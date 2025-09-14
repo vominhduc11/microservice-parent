@@ -1,4 +1,4 @@
-package com.devwonder.mediaservice.dto;
+package com.devwonder.productservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

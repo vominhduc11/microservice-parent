@@ -23,6 +23,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final FieldFilterUtil fieldFilterUtil;
+    private final MediaProcessingService mediaProcessingService;
     
     public List<ProductResponse> getHomepageProducts(String fields, int limit) {
         log.info("Fetching homepage products with fields: {}, limit: {}", fields, limit);
@@ -74,14 +75,19 @@ public class ProductService {
             throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
         }
 
+        // Process media data - save product first, then send media to Kafka for async processing
+        String processedImage = request.getImages(); // Keep original for now
+        Object processedDescription = request.getDescription(); // Keep original for now
+        Object processedVideos = request.getVideos(); // Keep original for now
+
         Product product = Product.builder()
                 .sku(request.getSku())
                 .name(request.getName())
-                .image(request.getImage())
-                .description(request.getDescription())
-                .videos(request.getVideos())
+                .image(processedImage)
+                .description(processedDescription)
+                .videos(processedVideos)
                 .specifications(request.getSpecifications())
-                .retailPrice(request.getRetailPrice())
+                .retailPrice(request.getPrice())
                 .wholesalePrice(request.getWholesalePrice())
                 .showOnHomepage(request.getShowOnHomepage())
                 .isFeatured(request.getIsFeatured())
@@ -89,6 +95,9 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
         log.info("Successfully created product with ID: {} and SKU: {}", savedProduct.getId(), savedProduct.getSku());
+
+        // Send media processing requests to Kafka after product is saved
+        mediaProcessingService.processProductMediaAsync(savedProduct.getSku(), request.getDescription(), request.getVideos(), request.getImages());
 
         return productMapper.toProductResponse(savedProduct);
     }
@@ -112,20 +121,26 @@ public class ProductService {
         if (request.getName() != null) {
             existingProduct.setName(request.getName());
         }
-        if (request.getImage() != null) {
-            existingProduct.setImage(request.getImage());
+        if (request.getImages() != null) {
+            // Process main image if it contains base64 data
+            String processedImage = mediaProcessingService.processMainImage(request.getImages());
+            existingProduct.setImage(processedImage);
         }
         if (request.getDescription() != null) {
-            existingProduct.setDescription(request.getDescription());
+            // Process description for base64 images
+            Object processedDescription = mediaProcessingService.processDescription(request.getDescription());
+            existingProduct.setDescription(processedDescription);
         }
         if (request.getVideos() != null) {
-            existingProduct.setVideos(request.getVideos());
+            // Process videos for base64 data
+            Object processedVideos = mediaProcessingService.processVideos(request.getVideos());
+            existingProduct.setVideos(processedVideos);
         }
         if (request.getSpecifications() != null) {
             existingProduct.setSpecifications(request.getSpecifications());
         }
-        if (request.getRetailPrice() != null) {
-            existingProduct.setRetailPrice(request.getRetailPrice());
+        if (request.getPrice() != null) {
+            existingProduct.setRetailPrice(request.getPrice());
         }
         if (request.getWholesalePrice() != null) {
             existingProduct.setWholesalePrice(request.getWholesalePrice());

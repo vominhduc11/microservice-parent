@@ -23,18 +23,18 @@ public class ProductCreateRequest {
     @NotBlank(message = "Product name is required")
     private String name;
     
-    private String image;
-    
+    private String images; // Base64 image data
+
     private Object description;
-    
+
     private Object videos;
-    
+
     private Object specifications;
-    
-    @NotNull(message = "Retail price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Retail price must be greater than 0")
-    private BigDecimal retailPrice;
-    
+
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
+    private BigDecimal price; // Changed from retailPrice to price
+
     @NotNull(message = "Wholesale price is required")
     private Object wholesalePrice;
     

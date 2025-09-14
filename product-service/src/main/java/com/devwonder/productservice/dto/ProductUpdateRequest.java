@@ -19,16 +19,16 @@ public class ProductUpdateRequest {
     
     private String name;
     
-    private String image;
-    
+    private String images; // Base64 image data
+
     private Object description;
-    
+
     private Object videos;
-    
+
     private Object specifications;
-    
-    @DecimalMin(value = "0.0", inclusive = false, message = "Retail price must be greater than 0")
-    private BigDecimal retailPrice;
+
+    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
+    private BigDecimal price;
     
     private Object wholesalePrice;
     
