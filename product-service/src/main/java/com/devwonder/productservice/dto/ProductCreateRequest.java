@@ -25,7 +25,7 @@ public class ProductCreateRequest {
     
     private String images; // Base64 image data
 
-    private Object description;
+    private Object descriptions;
 
     private Object videos;
 

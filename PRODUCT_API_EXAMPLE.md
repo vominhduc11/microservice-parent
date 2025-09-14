@@ -11,7 +11,7 @@ This document describes the JSON structure for creating/updating products via th
   "name": "string (required)",
   "sku": "string (required)",
 
-  "description": [
+  "descriptions": [
     {
       "type": "title",
       "text": "Gaming Headset Pro"
@@ -66,11 +66,11 @@ This document describes the JSON structure for creating/updating products via th
 
 ### Media Fields (Base64 Support)
 - **`images`**: Main product image (string) - supports base64: `"data:image/jpeg;base64,/9j/4AAQ..."`
-- **`description[].link`**: Image links when type="image" - supports base64
+- **`descriptions[].link`**: Image links when type="image" - supports base64
 - **`videos[].videoUrl`**: Video URLs - supports base64: `"data:video/mp4;base64,GkXf..."`
 
 ### Structured Fields
-- **`description`**: Array of content blocks
+- **`descriptions`**: Array of content blocks
   - `type`: "title" | "description" | "image"
   - `text`: Text content (for title/description types)
   - `link`: URL or base64 data (for image type)
@@ -100,7 +100,7 @@ The system supports base64-encoded media data for async processing:
 ```json
 {
   "images": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...",
-  "description": [
+  "descriptions": [
     {
       "type": "image",
       "link": "data:image/png;base64,iVBORw0KGgoAAAANSUhE..."
@@ -132,7 +132,7 @@ The API returns the created product immediately, while media processing happens 
   "sku": "GP-100",
   "name": "Gaming Headset Pro",
   "images": "data:image/jpeg;base64,/9j/4AAQ...",
-  "description": [...],
+  "descriptions": [...],
   "videos": [...],
   "specifications": {...},
   "price": 220000,

@@ -77,7 +77,7 @@ public class ProductService {
 
         // Process media data - save product first, then send media to Kafka for async processing
         String processedImage = request.getImages(); // Keep original for now
-        Object processedDescription = request.getDescription(); // Keep original for now
+        Object processedDescription = request.getDescriptions(); // Keep original for now
         Object processedVideos = request.getVideos(); // Keep original for now
 
         Product product = Product.builder()
@@ -97,7 +97,7 @@ public class ProductService {
         log.info("Successfully created product with ID: {} and SKU: {}", savedProduct.getId(), savedProduct.getSku());
 
         // Send media processing requests to Kafka after product is saved
-        mediaProcessingService.processProductMediaAsync(savedProduct.getSku(), request.getDescription(), request.getVideos(), request.getImages());
+        mediaProcessingService.processProductMediaAsync(savedProduct.getSku(), request.getDescriptions(), request.getVideos(), request.getImages());
 
         return productMapper.toProductResponse(savedProduct);
     }
@@ -126,9 +126,9 @@ public class ProductService {
             String processedImage = mediaProcessingService.processMainImage(request.getImages());
             existingProduct.setImage(processedImage);
         }
-        if (request.getDescription() != null) {
+        if (request.getDescriptions() != null) {
             // Process description for base64 images
-            Object processedDescription = mediaProcessingService.processDescription(request.getDescription());
+            Object processedDescription = mediaProcessingService.processDescription(request.getDescriptions());
             existingProduct.setDescription(processedDescription);
         }
         if (request.getVideos() != null) {
