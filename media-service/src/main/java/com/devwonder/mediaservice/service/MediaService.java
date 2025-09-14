@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Map;
 
 @Service
@@ -77,6 +78,46 @@ public class MediaService {
             return result;
         } catch (IOException e) {
             log.error("Failed to upload video to Cloudinary: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Upload base64 encoded image to Cloudinary
+     * @param base64Data Base64 encoded image data
+     * @param fileName File name for the upload
+     * @param folder Optional folder name in Cloudinary
+     * @return Map containing upload result with URL and public_id
+     * @throws IOException if upload fails
+     * @throws IllegalArgumentException if base64 data is invalid
+     */
+    public Map<String, Object> uploadBase64Image(String base64Data, String fileName, String folder) throws IOException {
+        log.info("Uploading base64 image to Cloudinary - filename: {}", fileName);
+
+        try {
+            // Decode base64 data
+            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                    "resource_type", "image",
+                    "format", "auto",
+                    "quality", "auto",
+                    "public_id", fileName.replaceAll("\\.[^.]*$", "") // Remove extension from filename for public_id
+            );
+
+            if (folder != null && !folder.trim().isEmpty()) {
+                uploadParams.put("folder", folder);
+            }
+
+            Map<String, Object> result = cloudinary.uploader().upload(imageBytes, uploadParams);
+            log.info("Successfully uploaded base64 image to Cloudinary - public_id: {}, url: {}",
+                    result.get("public_id"), result.get("secure_url"));
+            return result;
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid base64 data: {}", e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            log.error("Failed to upload base64 image to Cloudinary: {}", e.getMessage(), e);
             throw e;
         }
     }

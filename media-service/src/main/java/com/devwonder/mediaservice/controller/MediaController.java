@@ -123,6 +123,52 @@ public class MediaController {
         }
     }
 
+    @PostMapping("/upload/base64")
+    @Operation(
+        summary = "Upload Base64 Image",
+        description = "Upload a base64 encoded image to Cloudinary. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid base64 data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<Map<String, Object>> uploadBase64Image(
+            @Parameter(description = "Base64 image data", required = true)
+            @RequestParam("base64Data") String base64Data,
+            @Parameter(description = "File name")
+            @RequestParam("fileName") String fileName,
+            @Parameter(description = "Optional folder name in Cloudinary")
+            @RequestParam(value = "folder", required = false) String folder) {
+
+        log.info("Received base64 image upload request - filename: {}", fileName);
+
+        try {
+            // Validate base64 data
+            if (base64Data == null || base64Data.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(createErrorResponse("Base64 data is empty"));
+            }
+
+            // Upload to Cloudinary
+            Map<String, Object> result = mediaService.uploadBase64Image(base64Data, fileName, folder);
+
+            return ResponseEntity.ok(createSuccessResponse("Base64 image uploaded successfully", result));
+
+        } catch (IOException e) {
+            log.error("Failed to upload base64 image: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Failed to upload base64 image: " + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid base64 data: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(createErrorResponse("Invalid base64 data: " + e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/delete/{publicId}")
     @Operation(
         summary = "Delete Media",
