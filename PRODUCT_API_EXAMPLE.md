@@ -45,7 +45,7 @@ This document describes the JSON structure for creating/updating products via th
     }
   ],
 
-  "images": "string",
+  "image": "string",
   "showOnHomepage": true,
   "isFeatured": false,
   "price": 220000,

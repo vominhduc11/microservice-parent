@@ -23,7 +23,6 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final FieldFilterUtil fieldFilterUtil;
-    private final MediaProcessingService mediaProcessingService;
     
     public List<ProductResponse> getHomepageProducts(String fields, int limit) {
         log.info("Fetching homepage products with fields: {}, limit: {}", fields, limit);
@@ -70,22 +69,16 @@ public class ProductService {
     public ProductResponse createProduct(ProductCreateRequest request) {
         log.info("Creating new product with SKU: {}", request.getSku());
 
-        // Check if SKU already exists
         if (productRepository.existsBySku(request.getSku())) {
             throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
         }
 
-        // Process media data - save product first, then send media to Kafka for async processing
-        String processedImage = request.getImages(); // Keep original for now
-        Object processedDescription = request.getDescriptions(); // Keep original for now
-        Object processedVideos = request.getVideos(); // Keep original for now
-
         Product product = Product.builder()
                 .sku(request.getSku())
                 .name(request.getName())
-                .image(processedImage)
-                .descriptions(processedDescription)
-                .videos(processedVideos)
+                .image(request.getImage())
+                .descriptions(request.getDescriptions())
+                .videos(request.getVideos())
                 .specifications(request.getSpecifications())
                 .price(request.getPrice())
                 .wholesalePrice(request.getWholesalePrice())
@@ -95,9 +88,6 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
         log.info("Successfully created product with ID: {} and SKU: {}", savedProduct.getId(), savedProduct.getSku());
-
-        // Send media processing requests to Kafka after product is saved
-        mediaProcessingService.processProductMediaAsync(savedProduct.getSku(), request.getDescriptions(), request.getVideos(), request.getImages());
 
         return productMapper.toProductResponse(savedProduct);
     }
@@ -121,20 +111,14 @@ public class ProductService {
         if (request.getName() != null) {
             existingProduct.setName(request.getName());
         }
-        if (request.getImages() != null) {
-            // Process main image if it contains base64 data
-            String processedImage = mediaProcessingService.processMainImage(request.getImages());
-            existingProduct.setImage(processedImage);
+        if (request.getImage() != null) {
+            existingProduct.setImage(request.getImage());
         }
         if (request.getDescriptions() != null) {
-            // Process description for base64 images
-            Object processedDescription = mediaProcessingService.processDescription(request.getDescriptions());
-            existingProduct.setDescriptions(processedDescription);
+            existingProduct.setDescriptions(request.getDescriptions());
         }
         if (request.getVideos() != null) {
-            // Process videos for base64 data
-            Object processedVideos = mediaProcessingService.processVideos(request.getVideos());
-            existingProduct.setVideos(processedVideos);
+            existingProduct.setVideos(request.getVideos());
         }
         if (request.getSpecifications() != null) {
             existingProduct.setSpecifications(request.getSpecifications());

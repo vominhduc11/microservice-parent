@@ -23,7 +23,7 @@ public class ProductCreateRequest {
     @NotBlank(message = "Product name is required")
     private String name;
     
-    private String images; // Base64 image data
+    private String image;
 
     private Object descriptions;
 
