@@ -64,9 +64,9 @@ public class MediaController {
             }
 
             // Upload to Cloudinary
-            Map<String, Object> result = mediaService.uploadImage(file, folder);
+            String imageUrl = mediaService.uploadImage(file, folder);
 
-            return ResponseEntity.ok(createSuccessResponse("Image uploaded successfully", result));
+            return ResponseEntity.ok(createSuccessResponse("Image uploaded successfully", imageUrl));
 
         } catch (IOException e) {
             log.error("Failed to upload image: {}", e.getMessage(), e);
@@ -112,9 +112,9 @@ public class MediaController {
             }
 
             // Upload to Cloudinary
-            Map<String, Object> result = mediaService.uploadVideo(file, folder);
+            String videoUrl = mediaService.uploadVideo(file, folder);
 
-            return ResponseEntity.ok(createSuccessResponse("Video uploaded successfully", result));
+            return ResponseEntity.ok(createSuccessResponse("Video uploaded successfully", videoUrl));
 
         } catch (IOException e) {
             log.error("Failed to upload video: {}", e.getMessage(), e);
@@ -156,6 +156,14 @@ public class MediaController {
     }
 
     private Map<String, Object> createSuccessResponse(String message, Map<String, Object> data) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", message);
+        response.put("data", data);
+        return response;
+    }
+
+    private Map<String, Object> createSuccessResponse(String message, String data) {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", message);
