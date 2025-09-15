@@ -145,7 +145,7 @@ public class SecurityConfig {
             // ADMIN-only media endpoints (authentication + ADMIN role required)
             .pathMatchers(HttpMethod.POST, "/api/media/upload/image").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/media/upload/video").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.DELETE, "/api/media/delete/*").hasRole(ROLE_ADMIN);
+            .pathMatchers(HttpMethod.DELETE, "/api/media/delete").hasRole(ROLE_ADMIN);
     }
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

@@ -130,8 +130,8 @@ POST   /api/media/upload/video            # Upload video (ADMIN)
        - Parameters: file (required), folder (optional, default: "videos_short")
        - Response: { "success": true, "message": "...", "data": { "url": "https://...", "public_id": "..." } }
 
-DELETE /api/media/delete/{publicId}       # Delete media (ADMIN)
-       - Parameters: resourceType (query, default: "image")
+DELETE /api/media/delete                  # Delete media (ADMIN)
+       - Parameters: publicId (query, required), resourceType (query, default: "image")
        - Response: Full Cloudinary deletion result
 ```
 **Implementation**: Returns both secure_url and public_id for display and deletion management
@@ -591,6 +591,33 @@ public class ServiceName {
 - **Kafka UI**: View topics, messages, and consumer groups
 - **PostgreSQL Admin**: Use pgAdmin or DataGrip for database management
 - **API Testing**: Use Swagger UI or Postman collections
+
+---
+
+## 🔄 Recent Changes Log
+
+### September 15, 2025 - Media Service API Update
+**Modified Files:**
+- `api-gateway/src/main/java/com/devwonder/apigateway/config/SecurityConfig.java:148`
+- `media-service/src/main/java/com/devwonder/mediaservice/controller/MediaController.java:121,130`
+
+**Changes Made:**
+1. **Media Deletion Endpoint Update**: Changed DELETE endpoint from `/api/media/delete/{publicId}` to `/api/media/delete`
+   - **Before**: `DELETE /api/media/delete/{publicId}` with publicId as path variable
+   - **After**: `DELETE /api/media/delete` with publicId as query parameter
+   - **Reason**: Better API consistency and parameter flexibility
+
+2. **Security Configuration Update**: Updated API Gateway security rules to match new endpoint pattern
+   - **Before**: `.pathMatchers(HttpMethod.DELETE, "/api/media/delete/*").hasRole(ROLE_ADMIN)`
+   - **After**: `.pathMatchers(HttpMethod.DELETE, "/api/media/delete").hasRole(ROLE_ADMIN)`
+   - **Impact**: Maintains ADMIN-only access control for media deletion
+
+**API Usage Example:**
+```bash
+# New deletion endpoint usage
+DELETE http://localhost:8080/api/media/delete?publicId=images/sample&resourceType=image
+Authorization: Bearer <JWT_TOKEN>
+```
 
 ---
 

@@ -118,7 +118,7 @@ public class MediaController {
         }
     }
 
-    @DeleteMapping("/delete/{publicId}")
+    @DeleteMapping("/delete")
     @Operation(summary = "Delete Media", description = "Delete a media file from Cloudinary by public ID. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Media deleted successfully"),
@@ -127,7 +127,7 @@ public class MediaController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Map<String, Object>> deleteMedia(
-            @PathVariable("publicId") String publicId,
+            @RequestParam("publicId") String publicId,
             @RequestParam(value = "resourceType", defaultValue = "image") String resourceType) {
 
         log.info("Received delete request - public_id: {}, resource_type: {}", publicId, resourceType);
