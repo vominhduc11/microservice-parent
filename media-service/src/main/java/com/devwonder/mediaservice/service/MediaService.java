@@ -1,6 +1,7 @@
 package com.devwonder.mediaservice.service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
@@ -24,10 +25,10 @@ public class MediaService {
      *
      * @param file   MultipartFile to upload
      * @param folder Optional folder name in Cloudinary
-     * @return String containing secure URL of uploaded image
+     * @return Map containing url and public_id of uploaded image
      * @throws IOException if upload fails
      */
-    public String uploadImage(MultipartFile file, String folder) throws IOException {
+    public Map<String, Object> uploadImage(MultipartFile file, String folder) throws IOException {
         log.info("Uploading image to Cloudinary - filename: {}, size: {} bytes",
                 file.getOriginalFilename(), file.getSize());
 
@@ -37,11 +38,13 @@ public class MediaService {
                     "folder", folder != null && !folder.trim().isEmpty() ? folder : "images"
             ));
 
-            String imageUrl = uploadResult.get("secure_url").toString(); // Trả về URL đầy đủ của image đã upload
+            Map<String, Object> result = new HashMap<>();
+            result.put("url", uploadResult.get("secure_url").toString()); // URL đầy đủ của image đã upload
+            result.put("public_id", uploadResult.get("public_id").toString()); // Public ID để delete
 
             log.info("Successfully uploaded image to Cloudinary - public_id: {}, url: {}",
-                    uploadResult.get("public_id"), imageUrl);
-            return imageUrl;
+                    result.get("public_id"), result.get("url"));
+            return result;
         } catch (IOException e) {
             log.error("Failed to upload image to Cloudinary: {}", e.getMessage(), e);
             throw e;
@@ -53,10 +56,10 @@ public class MediaService {
      *
      * @param file   MultipartFile to upload
      * @param folder Optional folder name in Cloudinary
-     * @return String containing secure URL of uploaded video
+     * @return Map containing url and public_id of uploaded video
      * @throws IOException if upload fails
      */
-    public String uploadVideo(MultipartFile file, String folder) throws IOException {
+    public Map<String, Object> uploadVideo(MultipartFile file, String folder) throws IOException {
         log.info("Uploading video to Cloudinary - filename: {}, size: {} bytes",
                 file.getOriginalFilename(), file.getSize());
 
@@ -66,11 +69,13 @@ public class MediaService {
                     "folder", folder != null && !folder.trim().isEmpty() ? folder : "videos_short"
             ));
 
-            String videoUrl = uploadResult.get("secure_url").toString(); // Trả về URL đầy đủ của video đã upload
+            Map<String, Object> result = new HashMap<>();
+            result.put("url", uploadResult.get("secure_url").toString()); // URL đầy đủ của video đã upload
+            result.put("public_id", uploadResult.get("public_id").toString()); // Public ID để delete
 
             log.info("Successfully uploaded video to Cloudinary - public_id: {}, url: {}",
-                    uploadResult.get("public_id"), videoUrl);
-            return videoUrl;
+                    result.get("public_id"), result.get("url"));
+            return result;
         } catch (IOException e) {
             log.error("Failed to upload video to Cloudinary: {}", e.getMessage(), e);
             throw e;

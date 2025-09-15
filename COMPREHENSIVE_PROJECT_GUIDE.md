@@ -123,15 +123,18 @@ PATCH  /api/product/products/{id}         # Update product
 POST   /api/media/upload/image            # Upload image (ADMIN)
        - Content-Type: multipart/form-data
        - Parameters: file (required), folder (optional, default: "images")
+       - Response: { "success": true, "message": "...", "data": { "url": "https://...", "public_id": "..." } }
 
 POST   /api/media/upload/video            # Upload video (ADMIN)
        - Content-Type: multipart/form-data
        - Parameters: file (required), folder (optional, default: "videos_short")
+       - Response: { "success": true, "message": "...", "data": { "url": "https://...", "public_id": "..." } }
 
 DELETE /api/media/delete/{publicId}       # Delete media (ADMIN)
        - Parameters: resourceType (query, default: "image")
+       - Response: Full Cloudinary deletion result
 ```
-**Implementation**: Direct Cloudinary ObjectUtils.asMap() pattern, hardcoded credentials
+**Implementation**: Returns both secure_url and public_id for display and deletion management
 
 ### 📢 Notification Service (`/api/notification`) - Messaging
 ```
@@ -442,6 +445,7 @@ POST http://localhost:8080/api/media/upload/image
 - Headers: Authorization: Bearer <JWT_TOKEN>
 - Body: multipart/form-data with 'file' field
 - Optional: folder parameter (default: "images")
+- Response: { "success": true, "data": { "url": "https://res.cloudinary.com/daohufjec/...", "public_id": "images/filename" } }
 
 # Infrastructure Management
 http://localhost:8090                         # Redis Commander (admin/admin123)
@@ -463,10 +467,11 @@ Username: customer  | Password: password123 | Role: CUSTOMER
 - **🔐 Authentication System**: Complete JWT/JWKS implementation with RS256
 - **👥 User Management**: Full dealer CRUD operations with account integration
 - **📦 Product Management**: Complete catalog with serial number tracking
-- **📸 Media Management**: Cloudinary direct integration with hardcoded credentials
-  - Implementation: `Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(...))`
+- **📸 Media Management**: Cloudinary direct integration with comprehensive response
+  - Implementation: Returns both `secure_url` and `public_id` from Cloudinary
+  - Response format: `{ "success": true, "data": { "url": "https://...", "public_id": "..." } }`
   - Default folders: images/, videos_short/
-  - No environment variables - production-ready configuration
+  - Frontend usage: `response.data.url` for display, `response.data.public_id` for deletion
 - **📝 Blog System**: Full CMS with category management
 - **🌐 API Gateway**: Centralized routing, security, and documentation
 - **📧 Event System**: Kafka-based notifications for dealer registration
