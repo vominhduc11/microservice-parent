@@ -31,19 +31,15 @@ public class MediaService {
         log.info("Uploading image to Cloudinary - filename: {}, size: {} bytes",
                 file.getOriginalFilename(), file.getSize());
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> uploadParams = ObjectUtils.asMap(
-                "resource_type", "image",
-                "format", "auto",
-                "quality", "auto");
-
-        if (folder != null && !folder.trim().isEmpty()) {
-            uploadParams.put("folder", folder);
-        }
-
         try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "resource_type", "image",
+                    "folder", folder != null && !folder.trim().isEmpty() ? folder : "images"
+            ));
+
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+            Map<String, Object> result = (Map<String, Object>) uploadResult;
+
             log.info("Successfully uploaded image to Cloudinary - public_id: {}, url: {}",
                     result.get("public_id"), result.get("secure_url"));
             return result;
@@ -65,19 +61,15 @@ public class MediaService {
         log.info("Uploading video to Cloudinary - filename: {}, size: {} bytes",
                 file.getOriginalFilename(), file.getSize());
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> uploadParams = ObjectUtils.asMap(
-                "resource_type", "video",
-                "format", "auto",
-                "quality", "auto");
-
-        if (folder != null && !folder.trim().isEmpty()) {
-            uploadParams.put("folder", folder);
-        }
-
         try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "resource_type", "video",
+                    "folder", folder != null && !folder.trim().isEmpty() ? folder : "videos_short"
+            ));
+
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+            Map<String, Object> result = (Map<String, Object>) uploadResult;
+
             log.info("Successfully uploaded video to Cloudinary - public_id: {}, url: {}",
                     result.get("public_id"), result.get("secure_url"));
             return result;
@@ -99,9 +91,12 @@ public class MediaService {
         log.info("Deleting media from Cloudinary - public_id: {}, resource_type: {}", publicId, resourceType);
 
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = cloudinary.uploader().destroy(publicId,
+            Map<?, ?> deleteResult = cloudinary.uploader().destroy(publicId,
                     ObjectUtils.asMap("resource_type", resourceType));
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = (Map<String, Object>) deleteResult;
+
             log.info("Successfully deleted media from Cloudinary - public_id: {}, result: {}",
                     publicId, result.get("result"));
             return result;
