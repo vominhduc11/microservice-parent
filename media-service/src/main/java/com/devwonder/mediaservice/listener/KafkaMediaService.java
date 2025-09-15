@@ -1,6 +1,7 @@
-package com.devwonder.mediaservice.service;
+package com.devwonder.mediaservice.listener;
 
 import com.devwonder.mediaservice.dto.MediaUploadRequest;
+import com.devwonder.mediaservice.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

@@ -36,7 +36,7 @@ public class Product {
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object description;
+    private Object descriptions;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
@@ -47,7 +47,7 @@ public class Product {
     private Object specifications;
     
     @Column(name = "retail_price", precision = 10, scale = 2)
-    private BigDecimal retailPrice;
+    private BigDecimal price;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "wholesale_price", columnDefinition = "jsonb")

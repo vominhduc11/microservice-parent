@@ -20,7 +20,8 @@ public class FieldFilterUtil {
                 case "id" -> builder.id(response.getId());
                 case "name" -> builder.name(response.getName());
                 case "image" -> builder.image(response.getImage());
-                case "description" -> builder.description(response.getDescription());
+                case "descriptions" -> builder.descriptions(response.getDescriptions());
+                case "price" -> builder.price(response.getPrice());
             }
         }
         

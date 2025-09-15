@@ -84,10 +84,10 @@ public class ProductService {
                 .sku(request.getSku())
                 .name(request.getName())
                 .image(processedImage)
-                .description(processedDescription)
+                .descriptions(processedDescription)
                 .videos(processedVideos)
                 .specifications(request.getSpecifications())
-                .retailPrice(request.getPrice())
+                .price(request.getPrice())
                 .wholesalePrice(request.getWholesalePrice())
                 .showOnHomepage(request.getShowOnHomepage())
                 .isFeatured(request.getIsFeatured())
@@ -129,7 +129,7 @@ public class ProductService {
         if (request.getDescriptions() != null) {
             // Process description for base64 images
             Object processedDescription = mediaProcessingService.processDescription(request.getDescriptions());
-            existingProduct.setDescription(processedDescription);
+            existingProduct.setDescriptions(processedDescription);
         }
         if (request.getVideos() != null) {
             // Process videos for base64 data
@@ -140,7 +140,7 @@ public class ProductService {
             existingProduct.setSpecifications(request.getSpecifications());
         }
         if (request.getPrice() != null) {
-            existingProduct.setRetailPrice(request.getPrice());
+            existingProduct.setPrice(request.getPrice());
         }
         if (request.getWholesalePrice() != null) {
             existingProduct.setWholesalePrice(request.getWholesalePrice());

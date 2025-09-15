@@ -21,7 +21,7 @@ public class ProductUpdateRequest {
     
     private String images; // Base64 image data
 
-    private Object description;
+    private Object descriptions;
 
     private Object videos;
 
