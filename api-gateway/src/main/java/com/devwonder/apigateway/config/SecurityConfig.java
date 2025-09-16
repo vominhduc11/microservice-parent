@@ -110,7 +110,12 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole(ROLE_ADMIN)
 
+            // ADMIN-only category blog endpoints
+            .pathMatchers(HttpMethod.POST, "/api/blog/categories").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/blog/categories/*").hasRole(ROLE_ADMIN)
+
             // Public blog endpoints (no authentication required) - AFTER specific rules
+            .pathMatchers(HttpMethod.GET, "/api/blog/categories").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/showhomepageandlimit6").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll();
     }

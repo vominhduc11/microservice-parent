@@ -1,0 +1,98 @@
+package com.devwonder.blogservice.controller;
+
+import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.blogservice.dto.CategoryBlogCreateRequest;
+import com.devwonder.blogservice.dto.CategoryBlogResponse;
+import com.devwonder.blogservice.service.CategoryBlogService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/blog")
+@Tag(name = "Category Blog Management", description = "Category blog management endpoints")
+@RequiredArgsConstructor
+@Slf4j
+public class CategoryBlogController {
+
+    private final CategoryBlogService categoryBlogService;
+
+    @GetMapping("/categories")
+    @Operation(
+        summary = "Get All Category Blogs",
+        description = "Retrieve all category blogs. Public access - no authentication required."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Category blogs retrieved successfully"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<CategoryBlogResponse>>> getAllCategoryBlogs() {
+
+        log.info("Requesting all category blogs");
+
+        List<CategoryBlogResponse> categoryBlogs = categoryBlogService.getAllCategoryBlogs();
+
+        log.info("Retrieved {} category blogs", categoryBlogs.size());
+
+        return ResponseEntity.ok(BaseResponse.success("Category blogs retrieved successfully", categoryBlogs));
+    }
+
+    @PostMapping("/categories")
+    @Operation(
+        summary = "Create New Category Blog",
+        description = "Create a new category blog. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Category blog created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid category blog data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<CategoryBlogResponse>> createCategoryBlog(@Valid @RequestBody CategoryBlogCreateRequest request) {
+
+        log.info("Creating new category blog with name: {} by ADMIN user", request.getName());
+
+        CategoryBlogResponse categoryBlog = categoryBlogService.createCategoryBlog(request);
+
+        log.info("Successfully created category blog with ID: {} and name: {}", categoryBlog.getId(), categoryBlog.getName());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(BaseResponse.success("Category blog created successfully", categoryBlog));
+    }
+
+    @DeleteMapping("/categories/{id}")
+    @Operation(
+        summary = "Delete Category Blog",
+        description = "Delete a category blog by ID. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Category blog deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Category blog not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> deleteCategoryBlog(@PathVariable Long id) {
+
+        log.info("Deleting category blog with ID: {} by ADMIN user", id);
+
+        categoryBlogService.deleteCategoryBlog(id);
+
+        log.info("Successfully deleted category blog with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Category blog deleted successfully", null));
+    }
+}
