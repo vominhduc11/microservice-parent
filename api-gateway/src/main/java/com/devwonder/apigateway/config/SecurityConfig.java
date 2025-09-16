@@ -83,16 +83,18 @@ public class SecurityConfig {
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            // Public product endpoints (no authentication required)
-            .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
-            .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll()
-            .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll()
-            
-            // ADMIN-only product endpoints (authentication + ADMIN role required)
+            // ADMIN-only product endpoints (authentication + ADMIN role required) - MUST BE FIRST
             .pathMatchers(HttpMethod.GET, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.POST, "/api/product/serials").hasRole(ROLE_ADMIN);
+            .pathMatchers(HttpMethod.DELETE, "/api/product/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/{productId}/serials").hasRole(ROLE_ADMIN)
+
+            // Public product endpoints (no authentication required) - AFTER specific rules
+            .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll();
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

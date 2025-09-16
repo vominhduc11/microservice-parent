@@ -167,4 +167,28 @@ public class ProductController {
         
         return ResponseEntity.ok(BaseResponse.success("Product updated successfully", product));
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+        summary = "Delete Product",
+        description = "Delete an existing product by ID. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> deleteProduct(@PathVariable Long id) {
+
+        log.info("Deleting product with ID: {} by ADMIN user", id);
+
+        productService.deleteProduct(id);
+
+        log.info("Successfully deleted product with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Product deleted successfully", null));
+    }
 }

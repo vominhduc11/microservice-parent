@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,5 +46,19 @@ public class ProductSerialService {
         log.info("Successfully created product serial with ID: {}", savedProductSerial.getId());
         
         return productSerialMapper.toProductSerialResponse(savedProductSerial);
+    }
+
+    public List<ProductSerialResponse> getProductSerialsByProductId(Long productId) {
+        log.info("Fetching product serials for product ID: {}", productId);
+
+        // Check if product exists
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+
+        List<ProductSerial> productSerials = productSerialRepository.findByProduct(product);
+
+        return productSerials.stream()
+                .map(productSerialMapper::toProductSerialResponse)
+                .toList();
     }
 }

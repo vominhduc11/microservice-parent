@@ -32,26 +32,28 @@ public class Product {
     @Column(nullable = false)
     private String name;
     
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
     private String image;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object descriptions;
-    
+    private String descriptions;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object videos;
-    
+    private String videos;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object specifications;
+    private String specifications;
     
     @Column(name = "retail_price", precision = 10, scale = 2)
     private BigDecimal price;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "wholesale_price", columnDefinition = "jsonb")
-    private Object wholesalePrice;
+    private String wholesalePrice;
     
     
     @Column(name = "show_on_homepage")

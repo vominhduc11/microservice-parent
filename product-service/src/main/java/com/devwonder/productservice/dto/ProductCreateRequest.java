@@ -1,7 +1,7 @@
 package com.devwonder.productservice.dto;
 
 import com.devwonder.productservice.entity.Product;
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -25,18 +24,18 @@ public class ProductCreateRequest {
     
     private String image;
 
-    private Object descriptions;
+    private String descriptions;
 
-    private Object videos;
+    private String videos;
 
-    private Object specifications;
+    private String specifications;
 
     @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
-    private BigDecimal price; // Changed from retailPrice to price
+    @Min(value = 1, message = "Price must be greater than 0")
+    private Long price;
 
     @NotNull(message = "Wholesale price is required")
-    private Object wholesalePrice;
+    private String wholesalePrice;
     
     
     private Boolean showOnHomepage = false;

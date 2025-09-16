@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -80,7 +81,7 @@ public class ProductService {
                 .descriptions(request.getDescriptions())
                 .videos(request.getVideos())
                 .specifications(request.getSpecifications())
-                .price(request.getPrice())
+                .price(BigDecimal.valueOf(request.getPrice()))
                 .wholesalePrice(request.getWholesalePrice())
                 .showOnHomepage(request.getShowOnHomepage())
                 .isFeatured(request.getIsFeatured())
@@ -124,7 +125,7 @@ public class ProductService {
             existingProduct.setSpecifications(request.getSpecifications());
         }
         if (request.getPrice() != null) {
-            existingProduct.setPrice(request.getPrice());
+            existingProduct.setPrice(BigDecimal.valueOf(request.getPrice()));
         }
         if (request.getWholesalePrice() != null) {
             existingProduct.setWholesalePrice(request.getWholesalePrice());
@@ -140,6 +141,17 @@ public class ProductService {
         log.info("Successfully updated product with ID: {} and SKU: {}", updatedProduct.getId(), updatedProduct.getSku());
         
         return productMapper.toProductResponse(updatedProduct);
+    }
+
+    @Transactional
+    public void deleteProduct(Long id) {
+        log.info("Deleting product with ID: {}", id);
+
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+
+        productRepository.delete(existingProduct);
+        log.info("Successfully deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
     }
 
 }

@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/product")
 @Tag(name = "Product Serial Management", description = "Product serial management endpoints")
@@ -50,5 +52,29 @@ public class ProductSerialController {
         
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(BaseResponse.success("Product serial created successfully", productSerial));
+    }
+
+    @GetMapping("/{productId}/serials")
+    @Operation(
+        summary = "Get Product Serials by Product ID",
+        description = "Retrieve all product serials for a specific product. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getProductSerialsByProductId(@PathVariable Long productId) {
+
+        log.info("Requesting product serials for product ID: {} by ADMIN user", productId);
+
+        List<ProductSerialResponse> productSerials = productSerialService.getProductSerialsByProductId(productId);
+
+        log.info("Retrieved {} product serials for product ID: {}", productSerials.size(), productId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
     }
 }

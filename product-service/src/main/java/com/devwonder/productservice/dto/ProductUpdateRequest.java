@@ -1,13 +1,11 @@
 package com.devwonder.productservice.dto;
 
 import com.devwonder.productservice.entity.Product;
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -21,16 +19,16 @@ public class ProductUpdateRequest {
     
     private String image;
 
-    private Object descriptions;
+    private String descriptions;
 
-    private Object videos;
+    private String videos;
 
-    private Object specifications;
+    private String specifications;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
-    private BigDecimal price;
-    
-    private Object wholesalePrice;
+    @Min(value = 1, message = "Price must be greater than 0")
+    private Long price;
+
+    private String wholesalePrice;
     
     
     private Boolean showOnHomepage;
