@@ -17,8 +17,8 @@ import java.util.List;
 @Configuration
 public abstract class BaseOpenApiConfig {
     
-    public static final String JWT_SECURITY_NAME = "JWT Authentication";
-    public static final String GATEWAY_HEADER_NAME = "Gateway Request";
+    public static final String JWT_SECURITY_NAME = "bearerAuth";
+    public static final String GATEWAY_HEADER_NAME = "gatewayAuth";
     
     @Value("${server.port:8080}")
     private String serverPort;
@@ -78,19 +78,18 @@ public abstract class BaseOpenApiConfig {
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
                 .bearerFormat("JWT")
-                .description("Enter JWT Bearer token"))
+                .description("JWT Bearer Token - Login via /api/auth/login to get token"))
             .addSecuritySchemes(GATEWAY_HEADER_NAME, new SecurityScheme()
                 .type(SecurityScheme.Type.APIKEY)
                 .in(SecurityScheme.In.HEADER)
                 .name("X-Gateway-Request")
-                .description("Gateway request header (required for all endpoints)"));
+                .description("Internal Gateway Header (automatically added by API Gateway)"));
     }
     
     protected List<SecurityRequirement> getSecurityRequirements() {
-        return List.of(
-            new SecurityRequirement().addList(GATEWAY_HEADER_NAME),
-            new SecurityRequirement().addList(JWT_SECURITY_NAME)
-        );
+        // Return empty list - let individual endpoints define their security requirements
+        // This provides better control and clearer documentation
+        return List.of();
     }
     
     @Bean
@@ -114,5 +113,14 @@ public abstract class BaseOpenApiConfig {
     
     protected OpenAPI customizeOpenAPI(OpenAPI openAPI) {
         return openAPI;
+    }
+
+    // Convenience methods for controllers to use in @SecurityRequirement annotations
+    public static String getBearerAuthName() {
+        return JWT_SECURITY_NAME;
+    }
+
+    public static String getGatewayAuthName() {
+        return GATEWAY_HEADER_NAME;
     }
 }

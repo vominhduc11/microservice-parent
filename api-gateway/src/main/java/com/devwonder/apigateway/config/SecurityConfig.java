@@ -88,8 +88,14 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/product/{id}").hasRole(ROLE_ADMIN)
+
+            // Product Serial endpoints - ADMIN only
+            .pathMatchers(HttpMethod.POST, "/api/product/serial").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/product/serial/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/product/serial/*/status").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/{productId}/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/{productId}/inventory").hasRole(ROLE_ADMIN)
 
             // Public product endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()

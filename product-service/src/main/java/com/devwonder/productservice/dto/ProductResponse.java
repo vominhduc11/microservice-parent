@@ -18,11 +18,11 @@ public class ProductResponse {
     private String sku;
     private String name;
     private String image;
-    private Object descriptions;
-    private Object videos;
-    private Object specifications;
+    private String descriptions;
+    private String videos;
+    private String specifications;
     private BigDecimal price;
-    private Object wholesalePrice;
+    private String wholesalePrice;
     private Boolean showOnHomepage;
     private Boolean isFeatured;
     private LocalDateTime createdAt;

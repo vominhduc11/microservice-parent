@@ -13,6 +13,7 @@ public class ProductSerialMapper {
                 .serial(productSerial.getSerial())
                 .productId(productSerial.getProduct().getId())
                 .productName(productSerial.getProduct().getName())
+                .status(productSerial.getStatus())
                 .build();
     }
 }

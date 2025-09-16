@@ -1,6 +1,7 @@
 package com.devwonder.productservice.dto;
 
 import com.devwonder.productservice.enums.ProductSerialStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,10 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductSerialResponse {
-    private Long id;
-    private String serial;
-    private Long productId;
-    private String productName;
+public class ProductSerialStatusUpdateRequest {
+
+    @NotNull(message = "Status is required")
     private ProductSerialStatus status;
 }

@@ -619,6 +619,55 @@ DELETE http://localhost:8080/api/media/delete?publicId=images/sample&resourceTyp
 Authorization: Bearer <JWT_TOKEN>
 ```
 
+### September 15, 2025 - Swagger JWT Bearer Token Configuration Enhancement
+**Modified Files:**
+- `common-service/src/main/java/com/devwonder/common/config/BaseOpenApiConfig.java:20,21,77-86,89-93,118-125`
+- `product-service` (and all services): Rebuilt with updated OpenAPI configuration
+
+**Changes Made:**
+1. **Security Scheme Name Standardization**: Fixed inconsistency between config and controller annotations
+   - **Before**: `JWT_SECURITY_NAME = "JWT Authentication"` (config) vs `name = "bearerAuth"` (controllers) → **MISMATCH**
+   - **After**: `JWT_SECURITY_NAME = "bearerAuth"` → **CONSISTENT**
+   - **Impact**: Swagger UI now properly recognizes JWT authentication
+
+2. **Enhanced Security Descriptions**: Improved user experience with clear guidance
+   - **Before**: `"Enter JWT Bearer token"`
+   - **After**: `"JWT Bearer Token - Login via /api/auth/login to get token"`
+   - **Impact**: Developers know exactly where to get tokens
+
+3. **Optimized Global Security Requirements**: Better documentation control
+   - **Before**: All endpoints forced to show JWT requirement (including public ones)
+   - **After**: Empty global requirements - individual endpoints define their own security
+   - **Impact**: Clearer distinction between public and secured endpoints
+
+4. **Security Scheme Naming Improvements**:
+   - `"JWT Authentication"` → `"bearerAuth"` (standard naming convention)
+   - `"Gateway Request"` → `"gatewayAuth"` (consistent pattern)
+
+**OpenAPI Security Configuration:**
+```json
+"securitySchemes": {
+  "bearerAuth": {
+    "type": "http",
+    "description": "JWT Bearer Token - Login via /api/auth/login to get token",
+    "scheme": "bearer",
+    "bearerFormat": "JWT"
+  },
+  "gatewayAuth": {
+    "type": "apiKey",
+    "description": "Internal Gateway Header (automatically added by API Gateway)",
+    "name": "X-Gateway-Request",
+    "in": "header"
+  }
+}
+```
+
+**Swagger UI Improvements:**
+- 🔐 Lock icons now appear correctly on secured endpoints
+- 📝 Clear instructions for obtaining JWT tokens
+- 🎯 Public endpoints no longer show unnecessary security requirements
+- 🚀 Enhanced developer testing experience
+
 ---
 
 **🏢 Enterprise-ready B2B/B2C microservices platform with complete authentication, media management, event-driven notifications, and comprehensive API documentation. Built for scalability, maintainability, and developer productivity.**

@@ -1,24 +1,24 @@
 package com.devwonder.productservice.dto;
 
-import com.devwonder.productservice.enums.ProductSerialStatus;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductSerialCreateRequest {
-
-    @NotBlank(message = "Serial number is required")
-    private String serial;
+public class ProductSerialBulkCreateRequest {
 
     @NotNull(message = "Product ID is required")
     private Long productId;
 
-    private ProductSerialStatus status = ProductSerialStatus.AVAILABLE;
+    @NotEmpty(message = "Serial numbers list cannot be empty")
+    private List<@NotBlank(message = "Serial number cannot be blank") String> serialNumbers;
 }

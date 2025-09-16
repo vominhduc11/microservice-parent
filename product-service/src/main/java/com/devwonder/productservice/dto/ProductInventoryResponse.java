@@ -1,6 +1,5 @@
 package com.devwonder.productservice.dto;
 
-import com.devwonder.productservice.enums.ProductSerialStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,10 +9,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductSerialResponse {
-    private Long id;
-    private String serial;
+public class ProductInventoryResponse {
     private Long productId;
     private String productName;
-    private ProductSerialStatus status;
+    private Long availableCount;
+    private Long soldCount;
+    private Long damagedCount;
+    private Long totalCount;
 }
