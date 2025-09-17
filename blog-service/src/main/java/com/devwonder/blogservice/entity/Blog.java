@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "blogs")
-@SQLRestriction("delete_at IS NULL")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,6 +25,8 @@ public class Blog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String image;
     
     @Column(nullable = false)
@@ -34,13 +35,16 @@ public class Blog {
     @Column(columnDefinition = "TEXT")
     private String description;
     
-    @Column(columnDefinition = "JSON")
+    @Column(columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private String introduction;
     
     @Column(name = "show_on_homepage")
     private Boolean showOnHomepage = false;
-    
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -49,8 +53,6 @@ public class Blog {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
     
-    @Column(name = "delete_at")
-    private LocalDateTime deleteAt;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ip_category_blog", nullable = false)

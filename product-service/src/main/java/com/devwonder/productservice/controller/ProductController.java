@@ -94,7 +94,7 @@ public class ProductController {
     @GetMapping("/products")
     @Operation(
         summary = "Get All Products",
-        description = "Retrieve all products in the catalog. Requires ADMIN role authentication via API Gateway.",
+        description = "Retrieve all active products in the catalog (not deleted). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -104,14 +104,37 @@ public class ProductController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<List<ProductResponse>>> getAllProducts() {
-        
-        log.info("Requesting all products by ADMIN user");
-        
+
+        log.info("Requesting all active products by ADMIN user");
+
         List<ProductResponse> products = productService.getAllProducts();
-        
-        log.info("Retrieved {} products", products.size());
-        
-        return ResponseEntity.ok(BaseResponse.success("Products retrieved successfully", products));
+
+        log.info("Retrieved {} active products", products.size());
+
+        return ResponseEntity.ok(BaseResponse.success("Active products retrieved successfully", products));
+    }
+
+    @GetMapping("/products/deleted")
+    @Operation(
+        summary = "Get All Deleted Products",
+        description = "Retrieve all soft deleted products in the catalog. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Deleted products retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> getDeletedProducts() {
+
+        log.info("Requesting all deleted products by ADMIN user");
+
+        List<ProductResponse> products = productService.getDeletedProducts();
+
+        log.info("Retrieved {} deleted products", products.size());
+
+        return ResponseEntity.ok(BaseResponse.success("Deleted products retrieved successfully", products));
     }
     
     @PostMapping("/products")
@@ -170,12 +193,12 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @Operation(
-        summary = "Delete Product",
-        description = "Delete an existing product by ID. Requires ADMIN role authentication via API Gateway.",
+        summary = "Soft Delete Product",
+        description = "Soft delete an existing product by ID (sets isDeleted=true). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+        @ApiResponse(responseCode = "200", description = "Product soft deleted successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
         @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
         @ApiResponse(responseCode = "404", description = "Product not found"),
@@ -183,12 +206,61 @@ public class ProductController {
     })
     public ResponseEntity<BaseResponse<String>> deleteProduct(@PathVariable Long id) {
 
-        log.info("Deleting product with ID: {} by ADMIN user", id);
+        log.info("Soft deleting product with ID: {} by ADMIN user", id);
 
         productService.deleteProduct(id);
 
-        log.info("Successfully deleted product with ID: {}", id);
+        log.info("Successfully soft deleted product with ID: {}", id);
 
-        return ResponseEntity.ok(BaseResponse.success("Product deleted successfully", null));
+        return ResponseEntity.ok(BaseResponse.success("Product soft deleted successfully", null));
+    }
+
+    @DeleteMapping("/{id}/hard")
+    @Operation(
+        summary = "Hard Delete Product",
+        description = "Permanently delete an existing product by ID from database. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product permanently deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> hardDeleteProduct(@PathVariable Long id) {
+
+        log.info("Hard deleting product with ID: {} by ADMIN user", id);
+
+        productService.hardDeleteProduct(id);
+
+        log.info("Successfully hard deleted product with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Product permanently deleted successfully", null));
+    }
+
+    @PatchMapping("/{id}/restore")
+    @Operation(
+        summary = "Restore Deleted Product",
+        description = "Restore a soft deleted product by ID (sets isDeleted=false). Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product restored successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "400", description = "Product is not deleted"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<ProductResponse>> restoreProduct(@PathVariable Long id) {
+
+        log.info("Restoring product with ID: {} by ADMIN user", id);
+
+        ProductResponse product = productService.restoreProduct(id);
+
+        log.info("Successfully restored product with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Product restored successfully", product));
     }
 }

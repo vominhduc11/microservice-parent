@@ -7,13 +7,32 @@ This document describes the JSON structure for creating/updating blogs and categ
 ### POST /api/blog/blogs (ADMIN Only)
 
 #### Request Body Structure
-hay 
+
 ```json
 {
+  "image": {
+    "public_id": "string",
+    "imageUrl": "string"
+  },
   "title": "string (required)",
-  "content": "string (required, rich text HTML)",
-  "categoryBlogId": 1,
-  "showOnHomepage": true
+  "description": "string",
+  "introduction": [
+    {
+      "type": "title",
+      "text": "string"
+    },
+    {
+      "type": "description",
+      "text": "<p>Rich text HTML content</p>"
+    },
+    {
+      "type": "image",
+      "public_id": "string",
+      "imageUrl": "string"
+    }
+  ],
+  "showOnHomepage": false,
+  "categoryId": "number"
 }
 ```
 
@@ -122,10 +141,26 @@ Update an existing blog by ID. Only provided fields will be updated (PATCH behav
 
 ```json
 {
+  "image": "string",
   "title": "Updated Blog Title",
-  "content": "<p>Updated content...</p>",
-  "categoryBlogId": 2,
-  "showOnHomepage": false
+  "description": "string",
+  "introduction": [
+    {
+      "type": "title",
+      "text": "string"
+    },
+    {
+      "type": "description",
+      "text": "<p>Updated rich text HTML content</p>"
+    },
+    {
+      "type": "image",
+      "public_id": "string",
+      "imageUrl": "string"
+    }
+  ],
+  "showOnHomepage": false,
+  "categoryId": 2
 }
 ```
 
@@ -144,6 +179,20 @@ Update an existing blog by ID. Only provided fields will be updated (PATCH behav
     "createdAt": "2025-09-16T10:30:00Z",
     "updatedAt": "2025-09-16T11:45:00Z"
   }
+}
+```
+
+### DELETE /api/blog/{id} (ADMIN Only)
+
+Delete a blog by ID. This is a hard delete operation.
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Blog deleted successfully",
+  "data": null
 }
 ```
 
@@ -221,10 +270,16 @@ Delete a category blog by ID.
 
 #### Required Fields
 - **`title`**: Blog post title (string, required)
-- **`content`**: Blog post content (string, required) - supports rich text HTML
-- **`categoryBlogId`**: Category ID reference (number, required for creation)
+- **`categoryId`**: Category ID reference (number, required for creation)
 
 #### Optional Fields
+- **`image`**: Blog main image (string or JSON object with url/public_id)
+- **`description`**: Blog description (string)
+- **`introduction`**: Array of content blocks with different types:
+  - **`type`**: Content type ("title", "description", "image")
+  - **`text`**: Text content for title and description types
+  - **`public_id`**: Image public ID for image type
+  - **`imageUrl`**: Image URL for image type
 - **`showOnHomepage`**: Display on homepage (boolean, default: false)
 
 ### Category Blog Fields
@@ -243,6 +298,7 @@ Delete a category blog by ID.
 - `GET /api/blog/blogs` - Get all blogs for admin
 - `POST /api/blog/blogs` - Create new blog
 - `PATCH /api/blog/{id}` - Update blog
+- `DELETE /api/blog/{id}` - Delete blog
 - `POST /api/blog/categories` - Create category
 - `DELETE /api/blog/categories/{id}` - Delete category
 
@@ -293,10 +349,26 @@ curl -X POST "http://localhost:8080/api/blog/blogs" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
+    "image": "https://example.com/gaming-setup.jpg",
     "title": "Ultimate Gaming Setup Guide 2025",
-    "content": "<h1>Gaming Setup</h1><p>Here is how to build the perfect gaming setup...</p>",
-    "categoryBlogId": 1,
-    "showOnHomepage": true
+    "description": "Complete guide to building the perfect gaming setup",
+    "introduction": [
+      {
+        "type": "title",
+        "text": "Getting Started"
+      },
+      {
+        "type": "description",
+        "text": "<h1>Gaming Setup</h1><p>Here is how to build the perfect gaming setup...</p>"
+      },
+      {
+        "type": "image",
+        "public_id": "gaming-setup-image",
+        "imageUrl": "https://example.com/setup-image.jpg"
+      }
+    ],
+    "showOnHomepage": true,
+    "categoryId": 1
   }'
 ```
 
@@ -321,6 +393,13 @@ curl "http://localhost:8080/api/blog/blogs/showhomepageandlimit6"
 
 ```bash
 curl "http://localhost:8080/api/blog/categories"
+```
+
+### Deleting a Blog
+
+```bash
+curl -X DELETE "http://localhost:8080/api/blog/1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ## Notes

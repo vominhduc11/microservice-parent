@@ -9,6 +9,10 @@ import java.util.List;
 @Repository
 public interface BlogRepository extends JpaRepository<Blog, Long> {
     
-    List<Blog> findByShowOnHomepageTrue();
+    List<Blog> findByShowOnHomepageTrueAndIsDeletedFalse();
+
+    List<Blog> findByIsDeletedFalse();
+
+    List<Blog> findByIsDeletedTrue();
     
 }

@@ -52,6 +52,29 @@ public class BlogController {
         return ResponseEntity.ok(BaseResponse.success("All blogs retrieved successfully", blogs));
     }
 
+    @GetMapping("/blogs/deleted")
+    @Operation(
+        summary = "Get All Deleted Blogs",
+        description = "Retrieve all soft deleted blogs. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Deleted blogs retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<BlogResponse>>> getDeletedBlogs() {
+
+        log.info("Requesting all deleted blogs by ADMIN user");
+
+        List<BlogResponse> blogs = blogService.getDeletedBlogs();
+
+        log.info("Retrieved {} deleted blogs", blogs.size());
+
+        return ResponseEntity.ok(BaseResponse.success("Deleted blogs retrieved successfully", blogs));
+    }
+
     @GetMapping("/blogs/showhomepageandlimit6")
     @Operation(
         summary = "Get Homepage Blogs",
@@ -145,5 +168,78 @@ public class BlogController {
         log.info("Successfully updated blog with ID: {} and title: {}", blog.getId(), blog.getTitle());
         
         return ResponseEntity.ok(BaseResponse.success("Blog updated successfully", blog));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+        summary = "Soft Delete Blog",
+        description = "Soft delete a blog by ID (sets isDeleted=true). Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Blog soft deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Blog not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> deleteBlog(@PathVariable Long id) {
+
+        log.info("Soft deleting blog with ID: {} by ADMIN user", id);
+
+        blogService.deleteBlog(id);
+
+        log.info("Successfully soft deleted blog with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Blog soft deleted successfully", null));
+    }
+
+    @DeleteMapping("/{id}/hard")
+    @Operation(
+        summary = "Hard Delete Blog",
+        description = "Permanently delete a blog by ID from database. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Blog permanently deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Blog not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> hardDeleteBlog(@PathVariable Long id) {
+
+        log.info("Hard deleting blog with ID: {} by ADMIN user", id);
+
+        blogService.hardDeleteBlog(id);
+
+        log.info("Successfully hard deleted blog with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Blog permanently deleted successfully", null));
+    }
+
+    @PatchMapping("/{id}/restore")
+    @Operation(
+        summary = "Restore Deleted Blog",
+        description = "Restore a soft deleted blog by ID (sets isDeleted=false). Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Blog restored successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Blog not found"),
+        @ApiResponse(responseCode = "400", description = "Blog is not deleted"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<BlogResponse>> restoreBlog(@PathVariable Long id) {
+
+        log.info("Restoring blog with ID: {} by ADMIN user", id);
+
+        BlogResponse blog = blogService.restoreBlog(id);
+
+        log.info("Successfully restored blog with ID: {}", id);
+
+        return ResponseEntity.ok(BaseResponse.success("Blog restored successfully", blog));
     }
 }

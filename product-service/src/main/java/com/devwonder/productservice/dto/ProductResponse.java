@@ -1,6 +1,7 @@
 package com.devwonder.productservice.dto;
 
 import com.devwonder.productservice.entity.Product;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductResponse {
     private Long id;
     private String sku;

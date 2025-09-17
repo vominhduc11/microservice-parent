@@ -29,7 +29,7 @@ public class BlogService {
     public List<BlogResponse> getAllBlogs(String fields) {
         log.info("Fetching all blogs with fields: {}", fields);
 
-        List<Blog> blogs = blogRepository.findAll();
+        List<Blog> blogs = blogRepository.findByIsDeletedFalse();
 
         return blogs.stream()
                 .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
@@ -39,7 +39,7 @@ public class BlogService {
     public List<BlogResponse> getHomepageBlogs(String fields, int limit) {
         log.info("Fetching homepage blogs with fields: {}, limit: {}", fields, limit);
 
-        List<Blog> blogs = blogRepository.findByShowOnHomepageTrue();
+        List<Blog> blogs = blogRepository.findByShowOnHomepageTrueAndIsDeletedFalse();
 
         return blogs.stream()
                 .limit(limit)
@@ -114,5 +114,56 @@ public class BlogService {
         log.info("Successfully updated blog with ID: {} and title: {}", updatedBlog.getId(), updatedBlog.getTitle());
         
         return blogMapper.toBlogResponse(updatedBlog);
+    }
+
+    @Transactional
+    public void deleteBlog(Long id) {
+        log.info("Soft deleting blog with ID: {}", id);
+
+        Blog existingBlog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + id));
+
+        existingBlog.setIsDeleted(true);
+        blogRepository.save(existingBlog);
+        log.info("Successfully soft deleted blog with ID: {} and title: {}", existingBlog.getId(), existingBlog.getTitle());
+    }
+
+    @Transactional
+    public void hardDeleteBlog(Long id) {
+        log.info("Hard deleting blog with ID: {}", id);
+
+        Blog existingBlog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + id));
+
+        blogRepository.delete(existingBlog);
+        log.info("Successfully hard deleted blog with ID: {} and title: {}", existingBlog.getId(), existingBlog.getTitle());
+    }
+
+    @Transactional
+    public BlogResponse restoreBlog(Long id) {
+        log.info("Restoring blog with ID: {}", id);
+
+        Blog existingBlog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + id));
+
+        if (!existingBlog.getIsDeleted()) {
+            throw new RuntimeException("Blog with ID: " + id + " is not deleted");
+        }
+
+        existingBlog.setIsDeleted(false);
+        Blog restoredBlog = blogRepository.save(existingBlog);
+        log.info("Successfully restored blog with ID: {} and title: {}", restoredBlog.getId(), restoredBlog.getTitle());
+
+        return blogMapper.toBlogResponse(restoredBlog);
+    }
+
+    public List<BlogResponse> getDeletedBlogs() {
+        log.info("Fetching all deleted blogs");
+
+        List<Blog> blogs = blogRepository.findByIsDeletedTrue();
+
+        return blogs.stream()
+                .map(blogMapper::toBlogResponse)
+                .toList();
     }
 }

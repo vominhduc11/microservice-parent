@@ -85,9 +85,12 @@ public class SecurityConfig {
         exchanges
             // ADMIN-only product endpoints (authentication + ADMIN role required) - MUST BE FIRST
             .pathMatchers(HttpMethod.GET, "/api/product/products").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/products/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/product/{id}/restore").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/product/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/product/{id}/hard").hasRole(ROLE_ADMIN)
 
             // Product Serial endpoints - ADMIN only
             .pathMatchers(HttpMethod.POST, "/api/product/serial").hasRole(ROLE_ADMIN)
@@ -107,8 +110,12 @@ public class SecurityConfig {
         exchanges
             // ADMIN-only blog endpoints (authentication + ADMIN role required) - MUST BE FIRST
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}/restore").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/blog/{id}").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/blog/{id}/hard").hasRole(ROLE_ADMIN)
 
             // ADMIN-only category blog endpoints
             .pathMatchers(HttpMethod.POST, "/api/blog/categories").hasRole(ROLE_ADMIN)

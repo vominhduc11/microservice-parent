@@ -9,9 +9,13 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     
-    List<Product> findByShowOnHomepageTrue();
-    
-    List<Product> findByIsFeaturedTrue();
-    
-    boolean existsBySku(String sku);
+    List<Product> findByShowOnHomepageTrueAndIsDeletedFalse();
+
+    List<Product> findByIsFeaturedTrueAndIsDeletedFalse();
+
+    List<Product> findByIsDeletedFalse();
+
+    List<Product> findByIsDeletedTrue();
+
+    boolean existsBySkuAndIsDeletedFalse(String sku);
 }

@@ -61,7 +61,10 @@ public class Product {
     
     @Column(name = "is_featured")
     private Boolean isFeatured = false;
-    
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -28,7 +28,7 @@ public class ProductService {
     public List<ProductResponse> getHomepageProducts(String fields, int limit) {
         log.info("Fetching homepage products with fields: {}, limit: {}", fields, limit);
         
-        List<Product> products = productRepository.findByShowOnHomepageTrue();
+        List<Product> products = productRepository.findByShowOnHomepageTrueAndIsDeletedFalse();
         
         return products.stream()
                 .limit(limit)
@@ -48,7 +48,7 @@ public class ProductService {
     public List<ProductResponse> getFeaturedProducts(String fields, int limit) {
         log.info("Fetching featured products with fields: {}, limit: {}", fields, limit);
         
-        List<Product> products = productRepository.findByIsFeaturedTrue();
+        List<Product> products = productRepository.findByIsFeaturedTrueAndIsDeletedFalse();
         
         return products.stream()
                 .limit(limit)
@@ -59,7 +59,7 @@ public class ProductService {
     public List<ProductResponse> getAllProducts() {
         log.info("Fetching all products");
         
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findByIsDeletedFalse();
         
         return products.stream()
                 .map(productMapper::toProductResponse)
@@ -70,7 +70,7 @@ public class ProductService {
     public ProductResponse createProduct(ProductCreateRequest request) {
         log.info("Creating new product with SKU: {}", request.getSku());
 
-        if (productRepository.existsBySku(request.getSku())) {
+        if (productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
             throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
         }
 
@@ -102,7 +102,7 @@ public class ProductService {
         
         // Check if SKU is being updated and if new SKU already exists
         if (request.getSku() != null && !request.getSku().equals(existingProduct.getSku())) {
-            if (productRepository.existsBySku(request.getSku())) {
+            if (productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
                 throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
             }
             existingProduct.setSku(request.getSku());
@@ -145,13 +145,53 @@ public class ProductService {
 
     @Transactional
     public void deleteProduct(Long id) {
-        log.info("Deleting product with ID: {}", id);
+        log.info("Soft deleting product with ID: {}", id);
+
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+
+        existingProduct.setIsDeleted(true);
+        productRepository.save(existingProduct);
+        log.info("Successfully soft deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
+    }
+
+    @Transactional
+    public void hardDeleteProduct(Long id) {
+        log.info("Hard deleting product with ID: {}", id);
 
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
 
         productRepository.delete(existingProduct);
-        log.info("Successfully deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
+        log.info("Successfully hard deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
+    }
+
+    @Transactional
+    public ProductResponse restoreProduct(Long id) {
+        log.info("Restoring product with ID: {}", id);
+
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+
+        if (!existingProduct.getIsDeleted()) {
+            throw new RuntimeException("Product with ID: " + id + " is not deleted");
+        }
+
+        existingProduct.setIsDeleted(false);
+        Product restoredProduct = productRepository.save(existingProduct);
+        log.info("Successfully restored product with ID: {} and SKU: {}", restoredProduct.getId(), restoredProduct.getSku());
+
+        return productMapper.toProductResponse(restoredProduct);
+    }
+
+    public List<ProductResponse> getDeletedProducts() {
+        log.info("Fetching all deleted products");
+
+        List<Product> products = productRepository.findByIsDeletedTrue();
+
+        return products.stream()
+                .map(productMapper::toProductResponse)
+                .toList();
     }
 
 }
