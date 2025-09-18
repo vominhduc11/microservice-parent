@@ -16,7 +16,9 @@ public class ProductUpdateRequest {
     private String sku;
     
     private String name;
-    
+
+    private String shortDescription;
+
     private String image;
 
     private String descriptions;

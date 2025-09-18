@@ -40,9 +40,11 @@ public class Blog {
     private String introduction;
     
     @Column(name = "show_on_homepage")
+    @Builder.Default
     private Boolean showOnHomepage = false;
 
     @Column(name = "is_deleted")
+    @Builder.Default
     private Boolean isDeleted = false;
 
     @CreationTimestamp

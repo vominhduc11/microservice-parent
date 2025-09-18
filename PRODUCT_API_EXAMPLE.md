@@ -10,6 +10,7 @@ This document describes the JSON structure for creating/updating products via th
 {
   "name": "string (required)",
   "sku": "string (required)",
+  "shortDescription": "string (optional, max 500 characters)",
 
   "descriptions": [
     {
@@ -136,6 +137,7 @@ The API returns the created product immediately, while media processing happens 
   "id": 1,
   "sku": "GP-100",
   "name": "Gaming Headset Pro",
+  "shortDescription": "High-quality gaming headset with 7.1 surround sound",
   "images": "data:image/jpeg;base64,/9j/4AAQ...",
   "descriptions": [...],
   "videos": [...],

@@ -90,7 +90,31 @@ public class ProductController {
         
         return ResponseEntity.ok(BaseResponse.success("Featured products retrieved successfully", products));
     }
-    
+
+    @GetMapping("/products/related/{productId}")
+    @Operation(
+        summary = "Get Related Products",
+        description = "Retrieve related products for a specific product. Public access - no authentication required."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Related products retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> getRelatedProducts(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "4") int limit,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Requesting related products for product ID: {} with limit: {}, fields: {}", productId, limit, fields);
+
+        List<ProductResponse> products = productService.getRelatedProducts(productId, limit, fields);
+
+        log.info("Retrieved {} related products for product ID: {}", products.size(), productId);
+
+        return ResponseEntity.ok(BaseResponse.success("Related products retrieved successfully", products));
+    }
+
     @GetMapping("/products")
     @Operation(
         summary = "Get All Products",

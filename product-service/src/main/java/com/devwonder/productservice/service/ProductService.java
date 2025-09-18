@@ -58,11 +58,27 @@ public class ProductService {
     
     public List<ProductResponse> getAllProducts() {
         log.info("Fetching all products");
-        
+
         List<Product> products = productRepository.findByIsDeletedFalse();
-        
+
         return products.stream()
                 .map(productMapper::toProductResponse)
+                .toList();
+    }
+
+    public List<ProductResponse> getRelatedProducts(Long productId, int limit, String fields) {
+        log.info("Fetching related products for product ID: {} with limit: {}, fields: {}", productId, limit, fields);
+
+        // First check if the product exists
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+
+        // Get related products (excluding the current product and deleted products)
+        List<Product> relatedProducts = productRepository.findByIsDeletedFalseAndIdNot(productId);
+
+        return relatedProducts.stream()
+                .limit(limit)
+                .map(p -> fieldFilterUtil.applyFieldFiltering(productMapper.toProductResponse(p), fields))
                 .toList();
     }
     
@@ -77,6 +93,7 @@ public class ProductService {
         Product product = Product.builder()
                 .sku(request.getSku())
                 .name(request.getName())
+                .shortDescription(request.getShortDescription())
                 .image(request.getImage())
                 .descriptions(request.getDescriptions())
                 .videos(request.getVideos())
@@ -85,6 +102,7 @@ public class ProductService {
                 .wholesalePrice(request.getWholesalePrice())
                 .showOnHomepage(request.getShowOnHomepage())
                 .isFeatured(request.getIsFeatured())
+                .isDeleted(false)
                 .build();
 
         Product savedProduct = productRepository.save(product);
@@ -111,6 +129,9 @@ public class ProductService {
         // Update only non-null fields (PATCH behavior)
         if (request.getName() != null) {
             existingProduct.setName(request.getName());
+        }
+        if (request.getShortDescription() != null) {
+            existingProduct.setShortDescription(request.getShortDescription());
         }
         if (request.getImage() != null) {
             existingProduct.setImage(request.getImage());

@@ -70,6 +70,7 @@ public class BlogService {
                 .image(request.getImage())
                 .introduction(request.getIntroduction())
                 .showOnHomepage(request.getShowOnHomepage())
+                .isDeleted(false)
                 .categoryBlog(categoryBlog)
                 .build();
         

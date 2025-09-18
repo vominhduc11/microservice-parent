@@ -31,7 +31,10 @@ public class Product {
     
     @Column(nullable = false)
     private String name;
-    
+
+    @Column(length = 500)
+    private String shortDescription;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String image;

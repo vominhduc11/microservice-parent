@@ -103,6 +103,7 @@ public class SecurityConfig {
             // Public product endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/products/featuredandlimit1").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/products/related/{id}").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll();
     }
 
