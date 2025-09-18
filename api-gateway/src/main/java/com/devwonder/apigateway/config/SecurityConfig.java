@@ -125,6 +125,7 @@ public class SecurityConfig {
             // Public blog endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/blog/categories").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/showhomepageandlimit6").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs/related/{id}").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll();
     }
 

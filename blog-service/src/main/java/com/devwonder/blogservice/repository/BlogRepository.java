@@ -14,5 +14,7 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     List<Blog> findByIsDeletedFalse();
 
     List<Blog> findByIsDeletedTrue();
-    
+
+    List<Blog> findByIsDeletedFalseAndIdNot(Long id);
+
 }

@@ -95,7 +95,31 @@ public class BlogController {
         
         return ResponseEntity.ok(BaseResponse.success("Blogs retrieved successfully", blogs));
     }
-    
+
+    @GetMapping("/blogs/related/{blogId}")
+    @Operation(
+        summary = "Get Related Blogs",
+        description = "Retrieve related blogs for a specific blog. Public access - no authentication required."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Related blogs retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Blog not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<BlogResponse>>> getRelatedBlogs(
+            @PathVariable Long blogId,
+            @RequestParam(defaultValue = "4") int limit,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Requesting related blogs for blog ID: {} with limit: {}, fields: {}", blogId, limit, fields);
+
+        List<BlogResponse> blogs = blogService.getRelatedBlogs(blogId, limit, fields);
+
+        log.info("Retrieved {} related blogs for blog ID: {}", blogs.size(), blogId);
+
+        return ResponseEntity.ok(BaseResponse.success("Related blogs retrieved successfully", blogs));
+    }
+
     @GetMapping("/{id}")
     @Operation(
         summary = "Get Blog Details",

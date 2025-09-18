@@ -46,7 +46,23 @@ public class BlogService {
                 .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
                 .toList();
     }
-    
+
+    public List<BlogResponse> getRelatedBlogs(Long blogId, int limit, String fields) {
+        log.info("Fetching related blogs for blog ID: {} with limit: {}, fields: {}", blogId, limit, fields);
+
+        // First check if the blog exists
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> new RuntimeException("Blog not found with ID: " + blogId));
+
+        // Get related blogs (excluding the current blog and deleted blogs)
+        List<Blog> relatedBlogs = blogRepository.findByIsDeletedFalseAndIdNot(blogId);
+
+        return relatedBlogs.stream()
+                .limit(limit)
+                .map(b -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(b), fields))
+                .toList();
+    }
+
     public BlogResponse getBlogById(Long id) {
         log.info("Fetching blog details for ID: {}", id);
         
