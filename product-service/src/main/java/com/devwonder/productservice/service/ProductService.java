@@ -1,6 +1,11 @@
 package com.devwonder.productservice.service;
 
 import com.devwonder.common.exception.ResourceAlreadyExistsException;
+import com.devwonder.common.exception.ResourceNotFoundException;
+import com.devwonder.common.exception.ProductNotDeletedException;
+import com.devwonder.common.util.RepositoryUtil;
+import com.devwonder.common.util.LoggingUtil;
+import com.devwonder.common.constants.ErrorMessages;
 import com.devwonder.productservice.dto.ProductCreateRequest;
 import com.devwonder.productservice.dto.ProductResponse;
 import com.devwonder.productservice.dto.ProductUpdateRequest;
@@ -26,7 +31,7 @@ public class ProductService {
     private final FieldFilterUtil fieldFilterUtil;
     
     public List<ProductResponse> getHomepageProducts(String fields, int limit) {
-        log.info("Fetching homepage products with fields: {}, limit: {}", fields, limit);
+        LoggingUtil.logFetchWithFieldsAndLimit(log, "homepage products", fields, limit);
         
         List<Product> products = productRepository.findByShowOnHomepageTrueAndIsDeletedFalse();
         
@@ -37,10 +42,10 @@ public class ProductService {
     }
     
     public ProductResponse getProductById(Long id, String fields) {
-        log.info("Fetching product details for ID: {} with fields: {}", id, fields);
+        LoggingUtil.logFetchWithFields(log, "product", fields, id);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
 
         ProductResponse response = productMapper.toProductResponse(product);
         return fieldFilterUtil.applyFieldFiltering(response, fields);
@@ -51,7 +56,7 @@ public class ProductService {
     }
     
     public List<ProductResponse> getFeaturedProducts(String fields, int limit) {
-        log.info("Fetching featured products with fields: {}, limit: {}", fields, limit);
+        LoggingUtil.logFetchWithFieldsAndLimit(log, "featured products", fields, limit);
         
         List<Product> products = productRepository.findByIsFeaturedTrueAndIsDeletedFalse();
         
@@ -62,7 +67,7 @@ public class ProductService {
     }
     
     public List<ProductResponse> getAllProducts(String fields) {
-        log.info("Fetching all products with fields: {}", fields);
+        LoggingUtil.logFetchWithFields(log, "products", fields, "all active");
 
         List<Product> products = productRepository.findByIsDeletedFalse();
 
@@ -75,8 +80,7 @@ public class ProductService {
         log.info("Fetching related products for product ID: {} with limit: {}, fields: {}", productId, limit, fields);
 
         // First check if the product exists
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+        Product product = findProductByIdOrThrow(productId);
 
         // Get related products (excluding the current product and deleted products)
         List<Product> relatedProducts = productRepository.findByIsDeletedFalseAndIdNot(productId);
@@ -92,7 +96,7 @@ public class ProductService {
         log.info("Creating new product with SKU: {}", request.getSku());
 
         if (productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
-            throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
+            throw new ResourceAlreadyExistsException(ErrorMessages.format(ErrorMessages.PRODUCT_SKU_EXISTS, request.getSku()));
         }
 
         Product product = Product.builder()
@@ -119,19 +123,38 @@ public class ProductService {
     @Transactional
     public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
         log.info("Updating product with ID: {}", id);
-        
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
-        
-        // Check if SKU is being updated and if new SKU already exists
+
+        Product existingProduct = findProductByIdOrThrow(id);
+        validateAndUpdateSku(request, existingProduct);
+        updateProductFields(request, existingProduct);
+
+        Product updatedProduct = productRepository.save(existingProduct);
+        log.info("Successfully updated product with ID: {} and SKU: {}", updatedProduct.getId(), updatedProduct.getSku());
+
+        return productMapper.toProductResponse(updatedProduct);
+    }
+
+    private Product findProductByIdOrThrow(Long id) {
+        return RepositoryUtil.findByIdOrThrow(productRepository, id, "Product");
+    }
+
+    private void validateAndUpdateSku(ProductUpdateRequest request, Product existingProduct) {
         if (request.getSku() != null && !request.getSku().equals(existingProduct.getSku())) {
             if (productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
-                throw new ResourceAlreadyExistsException("Product with SKU '" + request.getSku() + "' already exists");
+                throw new ResourceAlreadyExistsException(ErrorMessages.format(ErrorMessages.PRODUCT_SKU_EXISTS, request.getSku()));
             }
             existingProduct.setSku(request.getSku());
         }
-        
-        // Update only non-null fields (PATCH behavior)
+    }
+
+    private void updateProductFields(ProductUpdateRequest request, Product existingProduct) {
+        updateBasicFields(request, existingProduct);
+        updateContentFields(request, existingProduct);
+        updatePricingFields(request, existingProduct);
+        updateDisplayFields(request, existingProduct);
+    }
+
+    private void updateBasicFields(ProductUpdateRequest request, Product existingProduct) {
         if (request.getName() != null) {
             existingProduct.setName(request.getName());
         }
@@ -141,6 +164,9 @@ public class ProductService {
         if (request.getImage() != null) {
             existingProduct.setImage(request.getImage());
         }
+    }
+
+    private void updateContentFields(ProductUpdateRequest request, Product existingProduct) {
         if (request.getDescriptions() != null) {
             existingProduct.setDescriptions(request.getDescriptions());
         }
@@ -150,32 +176,31 @@ public class ProductService {
         if (request.getSpecifications() != null) {
             existingProduct.setSpecifications(request.getSpecifications());
         }
+    }
+
+    private void updatePricingFields(ProductUpdateRequest request, Product existingProduct) {
         if (request.getPrice() != null) {
             existingProduct.setPrice(BigDecimal.valueOf(request.getPrice()));
         }
         if (request.getWholesalePrice() != null) {
             existingProduct.setWholesalePrice(request.getWholesalePrice());
         }
+    }
+
+    private void updateDisplayFields(ProductUpdateRequest request, Product existingProduct) {
         if (request.getShowOnHomepage() != null) {
             existingProduct.setShowOnHomepage(request.getShowOnHomepage());
         }
         if (request.getIsFeatured() != null) {
             existingProduct.setIsFeatured(request.getIsFeatured());
         }
-        
-        Product updatedProduct = productRepository.save(existingProduct);
-        log.info("Successfully updated product with ID: {} and SKU: {}", updatedProduct.getId(), updatedProduct.getSku());
-        
-        return productMapper.toProductResponse(updatedProduct);
     }
 
     @Transactional
     public void deleteProduct(Long id) {
         log.info("Soft deleting product with ID: {}", id);
 
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
-
+        Product existingProduct = findProductByIdOrThrow(id);
         existingProduct.setIsDeleted(true);
         productRepository.save(existingProduct);
         log.info("Successfully soft deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
@@ -185,9 +210,7 @@ public class ProductService {
     public void hardDeleteProduct(Long id) {
         log.info("Hard deleting product with ID: {}", id);
 
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
-
+        Product existingProduct = findProductByIdOrThrow(id);
         productRepository.delete(existingProduct);
         log.info("Successfully hard deleted product with ID: {} and SKU: {}", existingProduct.getId(), existingProduct.getSku());
     }
@@ -196,11 +219,10 @@ public class ProductService {
     public ProductResponse restoreProduct(Long id) {
         log.info("Restoring product with ID: {}", id);
 
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+        Product existingProduct = findProductByIdOrThrow(id);
 
         if (!existingProduct.getIsDeleted()) {
-            throw new RuntimeException("Product with ID: " + id + " is not deleted");
+            throw new ProductNotDeletedException(ErrorMessages.format(ErrorMessages.PRODUCT_NOT_DELETED, id));
         }
 
         existingProduct.setIsDeleted(false);

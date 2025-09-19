@@ -16,7 +16,18 @@ import org.slf4j.LoggerFactory;
 public class JwksService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwksService.class);
-    
+
+    // RSA key configuration constants
+    private static final int RSA_KEY_SIZE = 2048;
+    private static final String RSA_ALGORITHM = "RSA";
+    private static final String JWT_ALGORITHM = "RS256";
+    private static final String KEY_TYPE = "RSA";
+    private static final String KEY_USE = "sig";
+
+    // Array manipulation constants
+    private static final int LEADING_ZERO_BYTE = 0;
+    private static final int MINIMUM_ARRAY_LENGTH = 1;
+
     private KeyPair keyPair;
     private String keyId;
 
@@ -27,8 +38,8 @@ public class JwksService {
 
     private void generateKeyPair() {
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+            keyPairGenerator.initialize(RSA_KEY_SIZE);
             this.keyPair = keyPairGenerator.generateKeyPair();
             this.keyId = UUID.randomUUID().toString();
             logger.info("Generated new RSA key pair with ID: {}", keyId);
@@ -42,10 +53,10 @@ public class JwksService {
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
         
         Map<String, Object> key = new HashMap<>();
-        key.put("kty", "RSA");
-        key.put("use", "sig");
+        key.put("kty", KEY_TYPE);
+        key.put("use", KEY_USE);
         key.put("kid", keyId);
-        key.put("alg", "RS256");
+        key.put("alg", JWT_ALGORITHM);
         key.put("n", encodeToBase64URL(publicKey.getModulus()));
         key.put("e", encodeToBase64URL(publicKey.getPublicExponent()));
 
@@ -71,7 +82,7 @@ public class JwksService {
         byte[] bytes = bigInteger.toByteArray();
         
         // Remove leading zero byte if present (for positive numbers)
-        if (bytes.length > 1 && bytes[0] == 0) {
+        if (bytes.length > MINIMUM_ARRAY_LENGTH && bytes[0] == LEADING_ZERO_BYTE) {
             byte[] tmp = new byte[bytes.length - 1];
             System.arraycopy(bytes, 1, tmp, 0, tmp.length);
             bytes = tmp;

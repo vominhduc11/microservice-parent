@@ -16,8 +16,10 @@ public class TokenBlacklistService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final AuthJwtService jwtService;
-    
+
+    // Blacklist configuration constants
     private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
+    private static final long MILLISECONDS_IN_SECOND = 1000;
     
     /**
      * Add token to blacklist until its expiration time
@@ -25,7 +27,7 @@ public class TokenBlacklistService {
     public void blacklistToken(String token) {
         String tokenId = extractTokenId(token);
         Date expiration = jwtService.extractExpiration(token);
-        long ttlSeconds = (expiration.getTime() - System.currentTimeMillis()) / 1000;
+        long ttlSeconds = (expiration.getTime() - System.currentTimeMillis()) / MILLISECONDS_IN_SECOND;
         
         if (ttlSeconds > 0) {
             String key = BLACKLIST_KEY_PREFIX + tokenId;

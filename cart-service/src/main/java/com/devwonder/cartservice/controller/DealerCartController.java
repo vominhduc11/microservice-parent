@@ -5,6 +5,7 @@ import com.devwonder.cartservice.dto.CartResponse;
 import com.devwonder.cartservice.service.DealerCartService;
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.common.exception.ResourceNotFoundException;
+import com.devwonder.common.validation.ValidId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,17 +13,24 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/cart")
 @Tag(name = "Dealer Cart Management", description = "Dealer cart management endpoints")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class DealerCartController {
 
     private final DealerCartService dealerCartService;
@@ -68,7 +76,7 @@ public class DealerCartController {
     })
     public ResponseEntity<BaseResponse<CartResponse>> getDealerCart(
             @Parameter(description = "Dealer ID", required = true)
-            @PathVariable Long dealerId) {
+            @PathVariable @ValidId Long dealerId) {
 
         log.info("Received get cart request for dealer: {}", dealerId);
 
@@ -96,9 +104,9 @@ public class DealerCartController {
     })
     public ResponseEntity<BaseResponse<String>> removeProductFromCart(
             @Parameter(description = "Dealer ID", required = true)
-            @PathVariable Long dealerId,
+            @PathVariable @ValidId Long dealerId,
             @Parameter(description = "Product ID", required = true)
-            @PathVariable Long productId) {
+            @PathVariable @ValidId Long productId) {
 
         log.info("Received remove from cart request - dealer: {}, product: {}", dealerId, productId);
 
@@ -131,13 +139,14 @@ public class DealerCartController {
     })
     public ResponseEntity<BaseResponse<CartResponse>> updateProductQuantity(
             @Parameter(description = "Dealer ID", required = true)
-            @PathVariable Long dealerId,
+            @PathVariable @ValidId Long dealerId,
             @Parameter(description = "Product ID", required = true)
-            @PathVariable Long productId,
+            @PathVariable @ValidId Long productId,
             @Parameter(description = "New quantity", required = true)
-            @RequestParam Integer quantity,
+            @RequestParam @Min(value = 1, message = "Quantity must be at least 1")
+            @Max(value = 999, message = "Quantity cannot exceed 999") Integer quantity,
             @Parameter(description = "Unit price", required = true)
-            @RequestParam Double unitPrice) {
+            @RequestParam @DecimalMin(value = "0.01", message = "Unit price must be greater than 0") BigDecimal unitPrice) {
 
         log.info("Received update quantity request - dealer: {}, product: {}, quantity: {}, price: {}",
                 dealerId, productId, quantity, unitPrice);

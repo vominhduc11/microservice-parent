@@ -1,6 +1,7 @@
 package com.devwonder.productservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.common.util.ResponseUtil;
 import com.devwonder.productservice.dto.ProductCreateRequest;
 import com.devwonder.productservice.dto.ProductResponse;
 import com.devwonder.productservice.dto.ProductUpdateRequest;
@@ -46,7 +47,7 @@ public class ProductController {
         
         log.info("Retrieved {} homepage products", products.size());
         
-        return ResponseEntity.ok(BaseResponse.success("Products retrieved successfully", products));
+        return ResponseUtil.success("Products retrieved successfully", products);
     }
     
     @GetMapping("/{id}")
