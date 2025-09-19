@@ -42,11 +42,12 @@
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
-		<!-- Cloudinary SDK for image/video upload and management -->
+
+		<!-- Cloudinary for media upload -->
 		<dependency>
 			<groupId>com.cloudinary</groupId>
 			<artifactId>cloudinary-http44</artifactId>
-			<version>1.34.0</version>
+			<version>1.37.0</version>
 		</dependency>
 
 		<!-- Swagger/OpenAPI Documentation -->

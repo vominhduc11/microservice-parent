@@ -41,7 +41,6 @@ This document describes the JSON structure for creating/updating products via th
 
   "videos": [
     {
-      "public_id": "string",
       "videoUrl": "https://youtube.com/watch?v=xyz",
       "title": "Product Review",
       "description": "Detailed review video"

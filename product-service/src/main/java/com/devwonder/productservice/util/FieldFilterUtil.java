@@ -19,6 +19,7 @@ public class FieldFilterUtil {
             switch (trimmedField) {
                 case "id" -> builder.id(response.getId());
                 case "name" -> builder.name(response.getName());
+                case "sku" -> builder.sku(response.getSku());
                 case "shortDescription" -> builder.shortDescription(response.getShortDescription());
                 case "image" -> builder.image(response.getImage());
                 case "descriptions" -> builder.descriptions(response.getDescriptions());

@@ -52,21 +52,23 @@ public class ProductController {
     @GetMapping("/{id}")
     @Operation(
         summary = "Get Product Details",
-        description = "Retrieve detailed information about a specific product by ID"
+        description = "Retrieve detailed information about a specific product by ID with optional field filtering"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Product details retrieved successfully"),
         @ApiResponse(responseCode = "404", description = "Product not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<BaseResponse<ProductResponse>> getProductById(@PathVariable Long id) {
-        
-        log.info("Requesting product details for ID: {}", id);
-        
-        ProductResponse product = productService.getProductById(id);
-        
+    public ResponseEntity<BaseResponse<ProductResponse>> getProductById(
+            @PathVariable Long id,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Requesting product details for ID: {} - fields: {}", id, fields);
+
+        ProductResponse product = productService.getProductById(id, fields);
+
         log.info("Retrieved product details for ID: {}", id);
-        
+
         return ResponseEntity.ok(BaseResponse.success("Product details retrieved successfully", product));
     }
     
@@ -118,20 +120,21 @@ public class ProductController {
     @GetMapping("/products")
     @Operation(
         summary = "Get All Products",
-        description = "Retrieve all active products in the catalog (not deleted). Requires ADMIN role authentication via API Gateway.",
+        description = "Retrieve all active products in the catalog (not deleted). Requires ADMIN or DEALER role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN or DEALER role required"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<BaseResponse<List<ProductResponse>>> getAllProducts() {
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> getAllProducts(
+            @RequestParam(required = false) String fields) {
 
-        log.info("Requesting all active products by ADMIN user");
+        log.info("Requesting all active products by ADMIN/DEALER user - fields: {}", fields);
 
-        List<ProductResponse> products = productService.getAllProducts();
+        List<ProductResponse> products = productService.getAllProducts(fields);
 
         log.info("Retrieved {} active products", products.size());
 

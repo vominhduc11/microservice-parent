@@ -1,19 +1,18 @@
 package com.devwonder.mediaservice.controller;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.mediaservice.service.MediaService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,128 +33,71 @@ public class MediaController {
 
     private final MediaService mediaService;
 
-    @PostMapping("/upload/image")
-    @Operation(summary = "Upload Image", description = "Upload an image file to Cloudinary. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/upload")
+    @Operation(summary = "Upload Image", description = "Upload image file to Cloudinary. Only images are supported. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid file or file is empty"),
+            @ApiResponse(responseCode = "400", description = "Invalid file, empty file, or unsupported file type"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<Map<String, Object>> uploadImage(
-            @Parameter(description = "Image file to upload", required = true) @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Optional folder name in Cloudinary") @RequestParam(value = "folder", required = false) String folder) {
+    public ResponseEntity<BaseResponse<Map<String, Object>>> uploadImage(
+            @Parameter(description = "Image file to upload", required = true) @RequestParam("file") MultipartFile file) {
 
-        log.info("Received image upload request - filename: {}, size: {} bytes",
-                file.getOriginalFilename(), file.getSize());
+        log.info("Received image upload request - filename: {}, size: {} bytes, type: {}",
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         try {
-            // Validate file
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest()
-                        .body(createErrorResponse("File is empty"));
+                        .body(BaseResponse.error("File is empty"));
             }
 
-            // Validate file type
             String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
+            if (contentType == null) {
                 return ResponseEntity.badRequest()
-                        .body(createErrorResponse("File must be an image"));
+                        .body(BaseResponse.error("Cannot determine file type"));
             }
 
-            // Upload to Cloudinary
-            Map<String, Object> result = mediaService.uploadImage(file, folder);
+            if (!contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest()
+                        .body(BaseResponse.error("File must be an image"));
+            }
 
-            return ResponseEntity.ok(createSuccessResponse("Image uploaded successfully", result));
+            Map<String, Object> result = mediaService.uploadImage(file);
+            return ResponseEntity.ok(BaseResponse.success("Image uploaded successfully to Cloudinary", result));
 
         } catch (IOException e) {
             log.error("Failed to upload image: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("Failed to upload image: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/upload/video")
-    @Operation(summary = "Upload Video", description = "Upload a video file to Cloudinary. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Video uploaded successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid file or file is empty"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<Map<String, Object>> uploadVideo(
-            @Parameter(description = "Video file to upload", required = true) @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Optional folder name in Cloudinary") @RequestParam(value = "folder", required = false) String folder) {
-
-        log.info("Received video upload request - filename: {}, size: {} bytes",
-                file.getOriginalFilename(), file.getSize());
-
-        try {
-            // Validate file
-            if (file.isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("File is empty"));
-            }
-
-            // Validate file type
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("video/")) {
-                return ResponseEntity.badRequest()
-                        .body(createErrorResponse("File must be a video"));
-            }
-
-            // Upload to Cloudinary
-            Map<String, Object> result = mediaService.uploadVideo(file, folder);
-
-            return ResponseEntity.ok(createSuccessResponse("Video uploaded successfully", result));
-
-        } catch (IOException e) {
-            log.error("Failed to upload video: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("Failed to upload video: " + e.getMessage()));
+                    .body(BaseResponse.error("Failed to upload image: " + e.getMessage()));
         }
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "Delete Media", description = "Delete a media file from Cloudinary by public ID. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Delete Image", description = "Delete an image from Cloudinary by public ID. Requires ADMIN role authentication via API Gateway.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Media deleted successfully"),
+            @ApiResponse(responseCode = "200", description = "Image deleted successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<Map<String, Object>> deleteMedia(
-            @RequestParam("publicId") String publicId,
-            @RequestParam(value = "resourceType", defaultValue = "image") String resourceType) {
+    public ResponseEntity<BaseResponse<Map<String, Object>>> deleteImage(
+            @RequestParam("publicId") String publicId) {
 
-        log.info("Received delete request - public_id: {}, resource_type: {}", publicId, resourceType);
+        log.info("Received delete request - public_id: {}", publicId);
 
         try {
-            Map<String, Object> result = mediaService.deleteMedia(publicId, resourceType);
-            return ResponseEntity.ok(createSuccessResponse("Media deleted successfully", result));
+            Map<String, Object> result = mediaService.deleteImage(publicId);
+            return ResponseEntity.ok(BaseResponse.success("Image deleted successfully from Cloudinary", result));
 
         } catch (IOException e) {
-            log.error("Failed to delete media: {}", e.getMessage(), e);
+            log.error("Failed to delete image: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("Failed to delete media: " + e.getMessage()));
+                    .body(BaseResponse.error("Failed to delete image: " + e.getMessage()));
         }
     }
 
-    private Map<String, Object> createSuccessResponse(String message, Map<String, Object> data) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", message);
-        response.put("data", data);
-        return response;
-    }
 
-    private Map<String, Object> createErrorResponse(String message) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", message);
-        response.put("data", null);
-        return response;
-    }
 }

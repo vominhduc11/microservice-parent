@@ -173,4 +173,18 @@ public class ProductSerialService {
                 .totalCount(totalCount)
                 .build();
     }
+
+    public Long getAvailableProductSerialCount(Long productId) {
+        log.info("Getting available product serial count for product ID: {}", productId);
+
+        // Check if product exists
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+
+        Long availableCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.AVAILABLE);
+
+        log.info("Available product serial count for product ID {}: {}", productId, availableCount);
+
+        return availableCount;
+    }
 }

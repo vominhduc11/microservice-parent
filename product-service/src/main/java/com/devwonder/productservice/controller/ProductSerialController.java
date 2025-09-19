@@ -186,4 +186,28 @@ public class ProductSerialController {
         return ResponseEntity.ok(BaseResponse.success("Product inventory retrieved successfully", inventory));
     }
 
+    @GetMapping("/{productId}/available-count")
+    @Operation(
+        summary = "Get Available Product Serial Count",
+        description = "Get count of available product serials for a specific product. Requires DEALER role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Available count retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Long>> getAvailableProductSerialCount(@PathVariable Long productId) {
+
+        log.info("Getting available product serial count for product ID: {} by DEALER user", productId);
+
+        Long availableCount = productSerialService.getAvailableProductSerialCount(productId);
+
+        log.info("Retrieved available count for product ID: {} - {} available", productId, availableCount);
+
+        return ResponseEntity.ok(BaseResponse.success("Available product serial count retrieved successfully", availableCount));
+    }
+
 }

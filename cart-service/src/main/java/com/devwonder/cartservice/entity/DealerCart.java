@@ -8,27 +8,25 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "product_of_carts")
+@Table(name = "dealer_carts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductOfCart {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
+public class DealerCart {
+
+    @EmbeddedId
+    private DealerCartId id;
+
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @Column(nullable = false)
+    private Double unitPrice;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-    
-    @Column(name = "id_product", nullable = false)
-    private Long idProduct;
-    
-    @OneToMany(mappedBy = "productOfCart", cascade = CascadeType.ALL)
-    private List<DealerProductOfCart> dealerProductOfCarts;
 }

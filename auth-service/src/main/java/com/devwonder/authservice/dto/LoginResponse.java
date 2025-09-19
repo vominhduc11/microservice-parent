@@ -34,6 +34,9 @@ public class LoginResponse {
     @Schema(description = "User roles", example = "[\"ADMIN\", \"USER\"]")
     private Set<String> roles;
 
+    @Schema(description = "Account ID of the authenticated user", example = "3")
+    private Long accountId;
+
     // Constructor for backward compatibility
     public LoginResponse(String accessToken, Long expiresIn, String username, Set<String> roles) {
         this.accessToken = accessToken;
@@ -43,7 +46,7 @@ public class LoginResponse {
     }
 
     // Full constructor with refresh token
-    public LoginResponse(String accessToken, String refreshToken, Long expiresIn, Long refreshExpiresIn, String username, Set<String> roles) {
+    public LoginResponse(String accessToken, String refreshToken, Long expiresIn, Long refreshExpiresIn, String username, Set<String> roles, Long accountId) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.tokenType = "Bearer";
@@ -51,5 +54,6 @@ public class LoginResponse {
         this.refreshExpiresIn = refreshExpiresIn;
         this.username = username;
         this.roles = roles;
+        this.accountId = accountId;
     }
 }

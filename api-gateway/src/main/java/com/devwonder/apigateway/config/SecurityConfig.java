@@ -17,6 +17,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 public class SecurityConfig {
 
     private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_DEALER = "DEALER";
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -83,8 +84,8 @@ public class SecurityConfig {
 
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            // ADMIN-only product endpoints (authentication + ADMIN role required) - MUST BE FIRST
-            .pathMatchers(HttpMethod.GET, "/api/product/products").hasRole(ROLE_ADMIN)
+            // ADMIN/DEALER product endpoints (authentication + ADMIN or DEALER role required) - MUST BE FIRST
+            .pathMatchers(HttpMethod.GET, "/api/product/products").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/product/products/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
@@ -99,6 +100,9 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.PATCH, "/api/product/serial/*/status").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/{productId}/serials").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/{productId}/inventory").hasRole(ROLE_ADMIN)
+
+            // Product Serial available count - DEALER only access
+            .pathMatchers(HttpMethod.GET, "/api/product/{productId}/available-count").hasRole(ROLE_DEALER)
 
             // Public product endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/product/products/showhomepageandlimit4").permitAll()
@@ -145,7 +149,12 @@ public class SecurityConfig {
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add cart service authorization rules when endpoints are implemented
+        exchanges
+            // Dealer cart endpoints - DEALER role required
+            .pathMatchers(HttpMethod.POST, "/api/cart/add").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/cart/dealer/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.DELETE, "/api/cart/dealer/*/product/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.PUT, "/api/cart/dealer/*/product/*").hasRole(ROLE_DEALER);
     }
 
     private void configureOrderServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -165,8 +174,7 @@ public class SecurityConfig {
     private void configureMediaServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
             // ADMIN-only media endpoints (authentication + ADMIN role required)
-            .pathMatchers(HttpMethod.POST, "/api/media/upload/image").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.POST, "/api/media/upload/video").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/media/upload").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/media/delete").hasRole(ROLE_ADMIN);
     }
 

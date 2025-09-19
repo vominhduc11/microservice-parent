@@ -82,7 +82,8 @@ public class AuthService {
             jwtService.getAccessTokenExpirationInSeconds(),
             jwtService.getRefreshTokenExpirationInSeconds(),
             account.getUsername(),
-            roles
+            roles,
+            account.getId()
         );
     }
 

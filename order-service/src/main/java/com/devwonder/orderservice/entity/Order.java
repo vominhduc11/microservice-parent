@@ -1,5 +1,6 @@
 package com.devwonder.orderservice.entity;
 
+import com.devwonder.orderservice.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,13 +46,6 @@ public class Order {
     @Column(name = "id_dealer", nullable = false)
     private Long idDealer;
     
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> orderItems;
-    
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL) 
-    private List<DealerOrderItem> dealerOrderItems;
-    
-    public enum OrderStatus {
-        PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
-    }
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderItemDetail> orderItemDetails;
 }

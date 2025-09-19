@@ -36,13 +36,18 @@ public class ProductService {
                 .toList();
     }
     
-    public ProductResponse getProductById(Long id) {
-        log.info("Fetching product details for ID: {}", id);
-        
+    public ProductResponse getProductById(Long id, String fields) {
+        log.info("Fetching product details for ID: {} with fields: {}", id, fields);
+
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
-        
-        return productMapper.toProductResponse(product);
+
+        ProductResponse response = productMapper.toProductResponse(product);
+        return fieldFilterUtil.applyFieldFiltering(response, fields);
+    }
+
+    public ProductResponse getProductById(Long id) {
+        return getProductById(id, null);
     }
     
     public List<ProductResponse> getFeaturedProducts(String fields, int limit) {
@@ -56,13 +61,13 @@ public class ProductService {
                 .toList();
     }
     
-    public List<ProductResponse> getAllProducts() {
-        log.info("Fetching all products");
+    public List<ProductResponse> getAllProducts(String fields) {
+        log.info("Fetching all products with fields: {}", fields);
 
         List<Product> products = productRepository.findByIsDeletedFalse();
 
         return products.stream()
-                .map(productMapper::toProductResponse)
+                .map(product -> fieldFilterUtil.applyFieldFiltering(productMapper.toProductResponse(product), fields))
                 .toList();
     }
 
