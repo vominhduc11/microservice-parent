@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class CartResponse {
     private Long dealerId;
     private List<CartItemResponse> items;
     private Integer totalItems;
-    private Double totalPrice;
+    private BigDecimal totalPrice;
     private LocalDateTime lastUpdated;
 
     @Data
@@ -25,10 +26,11 @@ public class CartResponse {
     @AllArgsConstructor
     @Builder
     public static class CartItemResponse {
+        private Long cartId;
         private Long productId;
         private Integer quantity;
-        private Double unitPrice;
-        private Double subtotal;
+        private BigDecimal unitPrice;
+        private BigDecimal subtotal;
         private LocalDateTime addedAt;
     }
 }

@@ -91,78 +91,123 @@ public class DealerCartController {
         }
     }
 
-    @DeleteMapping("/dealer/{dealerId}/product/{productId}")
-    @Operation(summary = "Remove Product from Cart",
-               description = "Remove a product from dealer's cart. Requires DEALER role authentication via API Gateway.",
+    @DeleteMapping("/item/{cartId}")
+    @Operation(summary = "Remove Cart Item",
+               description = "Remove a specific cart item by cart ID. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Product removed from cart successfully"),
-            @ApiResponse(responseCode = "404", description = "Product not found in cart"),
+            @ApiResponse(responseCode = "200", description = "Cart item removed successfully"),
+            @ApiResponse(responseCode = "404", description = "Cart item not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<BaseResponse<String>> removeProductFromCart(
-            @Parameter(description = "Dealer ID", required = true)
-            @PathVariable @ValidId Long dealerId,
-            @Parameter(description = "Product ID", required = true)
-            @PathVariable @ValidId Long productId) {
+    public ResponseEntity<BaseResponse<String>> removeCartItem(
+            @Parameter(description = "Cart Item ID", required = true)
+            @PathVariable @ValidId Long cartId) {
 
-        log.info("Received remove from cart request - dealer: {}, product: {}", dealerId, productId);
+        log.info("Received remove cart item request - cartId: {}", cartId);
 
         try {
-            dealerCartService.removeProductFromCart(dealerId, productId);
-            return ResponseEntity.ok(BaseResponse.success("Product removed from cart successfully", null));
+            dealerCartService.removeCartItem(cartId);
+            return ResponseEntity.ok(BaseResponse.success("Cart item removed successfully", null));
 
         } catch (ResourceNotFoundException e) {
-            log.error("Product not found in cart: {}", e.getMessage());
+            log.error("Cart item not found: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(BaseResponse.error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Failed to remove product from cart: {}", e.getMessage(), e);
+            log.error("Failed to remove cart item: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BaseResponse.error("Failed to remove product from cart: " + e.getMessage()));
+                    .body(BaseResponse.error("Failed to remove cart item: " + e.getMessage()));
         }
     }
 
-    @PutMapping("/dealer/{dealerId}/product/{productId}")
-    @Operation(summary = "Update Product Quantity",
-               description = "Update quantity and price of a product in dealer's cart. Requires DEALER role authentication via API Gateway.",
+
+    @PatchMapping("/item/{cartId}/quantity")
+    @Operation(summary = "Update Cart Item Quantity",
+               description = "Update quantity of a cart item. Supports increment (+), decrement (-), or set exact value. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Product quantity updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid quantity or price"),
-            @ApiResponse(responseCode = "404", description = "Product not found in cart"),
+            @ApiResponse(responseCode = "200", description = "Cart item quantity updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid action or quantity value"),
+            @ApiResponse(responseCode = "404", description = "Cart item not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<BaseResponse<CartResponse>> updateProductQuantity(
-            @Parameter(description = "Dealer ID", required = true)
-            @PathVariable @ValidId Long dealerId,
-            @Parameter(description = "Product ID", required = true)
-            @PathVariable @ValidId Long productId,
-            @Parameter(description = "New quantity", required = true)
-            @RequestParam @Min(value = 1, message = "Quantity must be at least 1")
-            @Max(value = 999, message = "Quantity cannot exceed 999") Integer quantity,
-            @Parameter(description = "Unit price", required = true)
-            @RequestParam @DecimalMin(value = "0.01", message = "Unit price must be greater than 0") BigDecimal unitPrice) {
+    public ResponseEntity<BaseResponse<CartResponse>> updateCartItemQuantity(
+            @Parameter(description = "Cart Item ID", required = true)
+            @PathVariable @ValidId Long cartId,
+            @Parameter(description = "Action: 'increment' to add 1, 'decrement' to subtract 1, 'set' to set exact quantity", required = true)
+            @RequestParam String action,
+            @Parameter(description = "Quantity value (only required when action=set)", required = false)
+            @RequestParam(required = false) @Min(value = 0, message = "Quantity must be at least 0")
+            @Max(value = 999, message = "Quantity cannot exceed 999") Integer quantity) {
 
-        log.info("Received update quantity request - dealer: {}, product: {}, quantity: {}, price: {}",
-                dealerId, productId, quantity, unitPrice);
+        log.info("Received quantity update request - cartId: {}, action: {}, quantity: {}", cartId, action, quantity);
 
         try {
-            CartResponse cartResponse = dealerCartService.updateProductQuantity(dealerId, productId, quantity, unitPrice);
-            return ResponseEntity.ok(BaseResponse.success("Product quantity updated successfully", cartResponse));
+            CartResponse cartResponse;
+
+            switch (action.toLowerCase()) {
+                case "increment":
+                    cartResponse = dealerCartService.incrementProductQuantity(cartId, 1);
+                    break;
+                case "decrement":
+                    cartResponse = dealerCartService.decrementProductQuantity(cartId, 1);
+                    break;
+                case "set":
+                    if (quantity == null) {
+                        throw new IllegalArgumentException("Quantity value is required when action is 'set'");
+                    }
+                    cartResponse = dealerCartService.setProductQuantity(cartId, quantity);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid action. Use 'increment', 'decrement', or 'set'");
+            }
+
+            return ResponseEntity.ok(BaseResponse.success("Cart item quantity updated successfully", cartResponse));
 
         } catch (ResourceNotFoundException e) {
-            log.error("Product not found in cart: {}", e.getMessage());
+            log.error("Cart item not found: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(BaseResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid quantity update request: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Failed to update product quantity: {}", e.getMessage(), e);
+            log.error("Failed to update cart item quantity: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BaseResponse.error("Failed to update product quantity: " + e.getMessage()));
+                    .body(BaseResponse.error("Failed to update cart item quantity: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/dealer/{dealerId}")
+    @Operation(summary = "Clear Dealer Cart",
+               description = "Clear all cart items for a specific dealer. Requires DEALER role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Dealer cart cleared successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> clearDealerCart(
+            @Parameter(description = "Dealer ID", required = true)
+            @PathVariable @ValidId Long dealerId) {
+
+        log.info("Received clear cart request for dealer: {}", dealerId);
+
+        try {
+            dealerCartService.clearDealerCart(dealerId);
+            return ResponseEntity.ok(BaseResponse.success("Dealer cart cleared successfully", null));
+
+        } catch (Exception e) {
+            log.error("Failed to clear dealer cart: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to clear dealer cart: " + e.getMessage()));
         }
     }
 

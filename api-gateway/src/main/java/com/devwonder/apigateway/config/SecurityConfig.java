@@ -153,12 +153,21 @@ public class SecurityConfig {
             // Dealer cart endpoints - DEALER role required
             .pathMatchers(HttpMethod.POST, "/api/cart/add").hasRole(ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/cart/dealer/*").hasRole(ROLE_DEALER)
-            .pathMatchers(HttpMethod.DELETE, "/api/cart/dealer/*/product/*").hasRole(ROLE_DEALER)
-            .pathMatchers(HttpMethod.PUT, "/api/cart/dealer/*/product/*").hasRole(ROLE_DEALER);
+            .pathMatchers(HttpMethod.DELETE, "/api/cart/dealer/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.DELETE, "/api/cart/item/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.PATCH, "/api/cart/item/*/quantity").hasRole(ROLE_DEALER);
     }
 
     private void configureOrderServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add order service authorization rules when endpoints are implemented
+        exchanges
+            // ADMIN-only endpoints - MUST BE FIRST
+            .pathMatchers(HttpMethod.GET, "/api/order/orders").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/order/orders/*/payment-status").hasRole(ROLE_ADMIN)
+
+            // DEALER endpoints
+            .pathMatchers(HttpMethod.POST, "/api/order/orders").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/*").hasRole(ROLE_DEALER);
     }
 
     private void configureWarrantyServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

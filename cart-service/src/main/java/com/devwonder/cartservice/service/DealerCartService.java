@@ -2,9 +2,8 @@ package com.devwonder.cartservice.service;
 
 import com.devwonder.cartservice.dto.AddToCartRequest;
 import com.devwonder.cartservice.dto.CartResponse;
-import com.devwonder.cartservice.entity.DealerCart;
-import com.devwonder.cartservice.entity.DealerCartId;
-import com.devwonder.cartservice.repository.DealerCartRepository;
+import com.devwonder.cartservice.entity.ProductOfCart;
+import com.devwonder.cartservice.repository.ProductOfCartRepository;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,33 +20,40 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DealerCartService {
 
-    private final DealerCartRepository dealerCartRepository;
+    private final ProductOfCartRepository productOfCartRepository;
 
     @Transactional
     public CartResponse addProductToCart(AddToCartRequest request) {
         log.info("Adding product {} to dealer {} cart with quantity {}",
                 request.getProductId(), request.getDealerId(), request.getQuantity());
 
-        // Check if dealer already has this product in cart
-        DealerCartId cartId = new DealerCartId(request.getDealerId(), request.getProductId());
-        Optional<DealerCart> existingCart = dealerCartRepository.findById(cartId);
+        // Check if dealer already has this exact product with same price in cart
+        Optional<ProductOfCart> existingCart = productOfCartRepository.findByDealerIdAndProductIdAndUnitPrice(
+                request.getDealerId(), request.getProductId(), request.getUnitPrice());
 
         if (existingCart.isPresent()) {
-            // Update quantity and price
-            DealerCart cart = existingCart.get();
-            cart.setQuantity(cart.getQuantity() + request.getQuantity());
-            cart.setUnitPrice(request.getUnitPrice().doubleValue());
-            dealerCartRepository.save(cart);
+            // Update quantity only (same product, same price)
+            ProductOfCart cart = existingCart.get();
+            int newQuantity = cart.getQuantity() + request.getQuantity();
+
+            // Validate total quantity doesn't exceed limit
+            if (newQuantity > 999) {
+                throw new IllegalArgumentException("Total quantity cannot exceed 999. Current: " + cart.getQuantity() + ", Adding: " + request.getQuantity());
+            }
+
+            cart.setQuantity(newQuantity);
+            productOfCartRepository.save(cart);
             log.info("Updated existing cart item for dealer {} product {}, new quantity: {}, price: {}",
-                    request.getDealerId(), request.getProductId(), cart.getQuantity(), cart.getUnitPrice());
+                    request.getDealerId(), request.getProductId(), cart.getQuantity(), request.getUnitPrice());
         } else {
-            // Create new cart item
-            DealerCart newCart = DealerCart.builder()
-                    .id(cartId)
+            // Create new cart item (different price or new product)
+            ProductOfCart newCart = ProductOfCart.builder()
+                    .dealerId(request.getDealerId())
+                    .productId(request.getProductId())
                     .quantity(request.getQuantity())
-                    .unitPrice(request.getUnitPrice().doubleValue())
+                    .unitPrice(request.getUnitPrice())
                     .build();
-            dealerCartRepository.save(newCart);
+            productOfCartRepository.save(newCart);
             log.info("Created new cart item for dealer {} product {} with quantity {} and price {}",
                     request.getDealerId(), request.getProductId(), request.getQuantity(), request.getUnitPrice());
         }
@@ -59,13 +65,14 @@ public class DealerCartService {
     public CartResponse getDealerCart(Long dealerId) {
         log.info("Retrieving cart for dealer {}", dealerId);
 
-        List<DealerCart> cartItems = dealerCartRepository.findByDealerId(dealerId);
+        List<ProductOfCart> cartItems = productOfCartRepository.findByDealerId(dealerId);
 
         List<CartResponse.CartItemResponse> items = cartItems.stream()
                 .map(cart -> {
-                    double subtotal = cart.getQuantity() * cart.getUnitPrice();
+                    BigDecimal subtotal = cart.getUnitPrice().multiply(BigDecimal.valueOf(cart.getQuantity()));
                     return CartResponse.CartItemResponse.builder()
-                            .productId(cart.getId().getIdProduct())
+                            .cartId(cart.getId())
+                            .productId(cart.getProductId())
                             .quantity(cart.getQuantity())
                             .unitPrice(cart.getUnitPrice())
                             .subtotal(subtotal)
@@ -76,12 +83,12 @@ public class DealerCartService {
 
         // Calculate totals in a single pass
         int totalItems = cartItems.stream()
-                .mapToInt(DealerCart::getQuantity)
+                .mapToInt(ProductOfCart::getQuantity)
                 .sum();
 
-        double totalPrice = cartItems.stream()
-                .mapToDouble(cart -> cart.getQuantity() * cart.getUnitPrice())
-                .sum();
+        BigDecimal totalPrice = cartItems.stream()
+                .map(cart -> cart.getUnitPrice().multiply(BigDecimal.valueOf(cart.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return CartResponse.builder()
                 .dealerId(dealerId)
@@ -89,40 +96,109 @@ public class DealerCartService {
                 .totalItems(totalItems)
                 .totalPrice(totalPrice)
                 .lastUpdated(cartItems.stream()
-                        .map(DealerCart::getCreatedAt)
+                        .map(ProductOfCart::getUpdatedAt)
                         .max(java.time.LocalDateTime::compareTo)
                         .orElse(null))
                 .build();
     }
 
     @Transactional
-    public void removeProductFromCart(Long dealerId, Long productId) {
-        log.info("Removing product {} from dealer {} cart", productId, dealerId);
+    public void removeCartItem(Long cartId) {
+        log.info("Removing cart item with ID: {}", cartId);
 
-        DealerCartId cartId = new DealerCartId(dealerId, productId);
-        dealerCartRepository.deleteById(cartId);
+        ProductOfCart cartItem = productOfCartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with ID: " + cartId));
 
-        log.info("Removed product {} from dealer {} cart", productId, dealerId);
+        productOfCartRepository.delete(cartItem);
+        log.info("Removed cart item with ID: {} (dealerId: {}, productId: {})",
+                cartId, cartItem.getDealerId(), cartItem.getProductId());
+    }
+
+
+    @Transactional
+    public CartResponse incrementProductQuantity(Long cartId, Integer increment) {
+        log.info("Incrementing cart item {} quantity by {}", cartId, increment);
+
+        ProductOfCart cart = productOfCartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with ID: " + cartId));
+
+        int newQuantity = cart.getQuantity() + increment;
+
+        // Validate quantity doesn't exceed limit
+        if (newQuantity > 999) {
+            throw new IllegalArgumentException("Total quantity cannot exceed 999. Current: " + cart.getQuantity() + ", Increment: " + increment);
+        }
+
+        cart.setQuantity(newQuantity);
+        productOfCartRepository.save(cart);
+        log.info("Incremented cart item {} quantity from {} to {} for dealer {} product {}",
+                cartId, cart.getQuantity() - increment, newQuantity, cart.getDealerId(), cart.getProductId());
+
+        return getDealerCart(cart.getDealerId());
     }
 
     @Transactional
-    public CartResponse updateProductQuantity(Long dealerId, Long productId, Integer quantity, BigDecimal unitPrice) {
-        log.info("Updating product {} quantity to {} with price {} for dealer {}", productId, quantity, unitPrice, dealerId);
+    public CartResponse decrementProductQuantity(Long cartId, Integer decrement) {
+        log.info("Decrementing cart item {} quantity by {}", cartId, decrement);
 
-        DealerCartId cartId = new DealerCartId(dealerId, productId);
-        DealerCart cart = dealerCartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found in dealer cart"));
+        ProductOfCart cart = productOfCartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with ID: " + cartId));
 
-        if (quantity <= 0) {
-            dealerCartRepository.delete(cart);
-            log.info("Removed product {} from dealer {} cart (quantity was 0 or negative)", productId, dealerId);
-        } else {
-            cart.setQuantity(quantity);
-            cart.setUnitPrice(unitPrice.doubleValue());
-            dealerCartRepository.save(cart);
-            log.info("Updated product {} quantity to {} with price {} for dealer {}", productId, quantity, unitPrice, dealerId);
+        int newQuantity = cart.getQuantity() - decrement;
+
+        if (newQuantity < 0) {
+            throw new IllegalArgumentException("Cannot decrement below 0. Current quantity: " + cart.getQuantity() + ", Decrement: " + decrement);
         }
 
-        return getDealerCart(dealerId);
+        if (newQuantity == 0) {
+            productOfCartRepository.delete(cart);
+            log.info("Removed cart item {} (dealer {} product {}) - quantity reached 0", cartId, cart.getDealerId(), cart.getProductId());
+        } else {
+            cart.setQuantity(newQuantity);
+            productOfCartRepository.save(cart);
+            log.info("Decremented cart item {} quantity from {} to {} for dealer {} product {}",
+                    cartId, cart.getQuantity() + decrement, newQuantity, cart.getDealerId(), cart.getProductId());
+        }
+
+        return getDealerCart(cart.getDealerId());
+    }
+
+    @Transactional
+    public CartResponse setProductQuantity(Long cartId, Integer newQuantity) {
+        log.info("Setting cart item {} quantity to {}", cartId, newQuantity);
+
+        ProductOfCart cart = productOfCartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with ID: " + cartId));
+
+        if (newQuantity == 0) {
+            productOfCartRepository.delete(cart);
+            log.info("Removed cart item {} (dealer {} product {}) - quantity set to 0", cartId, cart.getDealerId(), cart.getProductId());
+        } else {
+            cart.setQuantity(newQuantity);
+            productOfCartRepository.save(cart);
+            log.info("Set cart item {} quantity to {} for dealer {} product {}",
+                    cartId, newQuantity, cart.getDealerId(), cart.getProductId());
+        }
+
+        return getDealerCart(cart.getDealerId());
+    }
+
+    @Transactional
+    public void clearDealerCart(Long dealerId) {
+        log.info("Clearing all cart items for dealer {}", dealerId);
+
+        // Count items before deletion for logging
+        List<ProductOfCart> cartItems = productOfCartRepository.findByDealerId(dealerId);
+        int itemCount = cartItems.size();
+
+        if (itemCount == 0) {
+            log.info("No cart items found for dealer {}", dealerId);
+            return;
+        }
+
+        // Delete all cart items for the dealer
+        productOfCartRepository.deleteByDealerId(dealerId);
+
+        log.info("Cleared {} cart items for dealer {}", itemCount, dealerId);
     }
 }
