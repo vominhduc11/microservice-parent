@@ -1,6 +1,5 @@
 package com.devwonder.productservice.dto;
 
-import com.devwonder.productservice.entity.Product;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

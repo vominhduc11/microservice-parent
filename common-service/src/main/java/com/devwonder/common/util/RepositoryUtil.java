@@ -22,7 +22,7 @@ public class RepositoryUtil {
     /**
      * Find entity by ID or throw ResourceNotFoundException with custom message
      */
-    public static <T, ID> T findByIdOrThrow(JpaRepository<T, ID> repository, ID id, String errorMessage) {
+    public static <T, ID> T findByIdOrThrowWithMessage(JpaRepository<T, ID> repository, ID id, String errorMessage) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(errorMessage));
     }

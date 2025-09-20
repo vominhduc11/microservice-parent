@@ -5,8 +5,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public class TokenExpiredException extends BaseException {
-    
+
     private final HttpStatus httpStatus = HttpStatus.UNAUTHORIZED;
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
     
     public TokenExpiredException(String message) {
         super(message);

@@ -13,18 +13,18 @@ public class BaseResponse<T> {
     private T data;
     
     public static <T> BaseResponse<T> success(T data) {
-        return new BaseResponse<>(true, "Success", data);
+        return new BaseResponse<T>(true, "Success", data);
     }
-    
+
     public static <T> BaseResponse<T> success(String message, T data) {
-        return new BaseResponse<>(true, message, data);
+        return new BaseResponse<T>(true, message, data);
     }
-    
+
     public static <T> BaseResponse<T> error(String message) {
-        return new BaseResponse<>(false, message, null);
+        return new BaseResponse<T>(false, message, null);
     }
-    
+
     public static <T> BaseResponse<T> error(String message, T data) {
-        return new BaseResponse<>(false, message, data);
+        return new BaseResponse<T>(false, message, data);
     }
 }

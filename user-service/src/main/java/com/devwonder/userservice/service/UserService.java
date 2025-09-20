@@ -82,7 +82,7 @@ public class UserService {
             Dealer savedDealer = dealerRepository.save(dealer);
             log.info("Successfully created dealer with accountId: {}", savedDealer.getAccountId());
             
-            // Publish dealer events to Kafka (email và socket riêng biệt)
+            // Publish dealer events to Kafka (email and socket notifications)
             dealerEventService.publishDealerEmailEvent(savedDealer, username, password);
             dealerEventService.publishDealerSocketEvent(savedDealer);
             

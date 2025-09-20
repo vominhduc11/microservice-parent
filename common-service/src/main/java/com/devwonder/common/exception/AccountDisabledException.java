@@ -5,8 +5,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public class AccountDisabledException extends BaseException {
-    
+
     private final HttpStatus httpStatus = HttpStatus.FORBIDDEN;
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
     
     public AccountDisabledException(String message) {
         super(message);

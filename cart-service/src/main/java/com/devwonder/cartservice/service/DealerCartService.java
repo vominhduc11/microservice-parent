@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,7 +36,7 @@ public class DealerCartService {
             // Update quantity and price
             DealerCart cart = existingCart.get();
             cart.setQuantity(cart.getQuantity() + request.getQuantity());
-            cart.setUnitPrice(request.getUnitPrice());
+            cart.setUnitPrice(request.getUnitPrice().doubleValue());
             dealerCartRepository.save(cart);
             log.info("Updated existing cart item for dealer {} product {}, new quantity: {}, price: {}",
                     request.getDealerId(), request.getProductId(), cart.getQuantity(), cart.getUnitPrice());
@@ -44,7 +45,7 @@ public class DealerCartService {
             DealerCart newCart = DealerCart.builder()
                     .id(cartId)
                     .quantity(request.getQuantity())
-                    .unitPrice(request.getUnitPrice())
+                    .unitPrice(request.getUnitPrice().doubleValue())
                     .build();
             dealerCartRepository.save(newCart);
             log.info("Created new cart item for dealer {} product {} with quantity {} and price {}",
@@ -73,11 +74,12 @@ public class DealerCartService {
                 })
                 .collect(Collectors.toList());
 
-        Integer totalItems = cartItems.stream()
+        // Calculate totals in a single pass
+        int totalItems = cartItems.stream()
                 .mapToInt(DealerCart::getQuantity)
                 .sum();
 
-        Double totalPrice = cartItems.stream()
+        double totalPrice = cartItems.stream()
                 .mapToDouble(cart -> cart.getQuantity() * cart.getUnitPrice())
                 .sum();
 
@@ -104,7 +106,7 @@ public class DealerCartService {
     }
 
     @Transactional
-    public CartResponse updateProductQuantity(Long dealerId, Long productId, Integer quantity, Double unitPrice) {
+    public CartResponse updateProductQuantity(Long dealerId, Long productId, Integer quantity, BigDecimal unitPrice) {
         log.info("Updating product {} quantity to {} with price {} for dealer {}", productId, quantity, unitPrice, dealerId);
 
         DealerCartId cartId = new DealerCartId(dealerId, productId);
@@ -116,7 +118,7 @@ public class DealerCartService {
             log.info("Removed product {} from dealer {} cart (quantity was 0 or negative)", productId, dealerId);
         } else {
             cart.setQuantity(quantity);
-            cart.setUnitPrice(unitPrice);
+            cart.setUnitPrice(unitPrice.doubleValue());
             dealerCartRepository.save(cart);
             log.info("Updated product {} quantity to {} with price {} for dealer {}", productId, quantity, unitPrice, dealerId);
         }

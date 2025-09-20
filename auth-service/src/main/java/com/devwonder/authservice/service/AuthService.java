@@ -36,18 +36,12 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
-        // Find account by username
         Account account = accountRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new AuthenticationException("Invalid username or password"));
 
-
-        // Verify password
         if (!passwordEncoder.matches(loginRequest.getPassword(), account.getPassword())) {
             throw new AuthenticationException("Invalid username or password");
         }
-
-
-        // Extract roles
         log.info("Account {} has {} roles: {}", account.getUsername(),
                 account.getRoles().size(),
                 account.getRoles().stream().map(Role::getName).toList());
@@ -161,12 +155,9 @@ public class AuthService {
             .orElseThrow(() -> new AuthenticationException("User account not found"));
         
         
-        // Extract current roles
         Set<String> roles = account.getRoles().stream()
             .map(Role::getName)
             .collect(Collectors.toSet());
-        
-        // Create new JWT claims
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles);
         claims.put("userId", account.getId());
