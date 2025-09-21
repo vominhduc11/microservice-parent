@@ -1,7 +1,7 @@
 package com.devwonder.notificationservice.listener;
 
 import com.devwonder.notificationservice.entity.Notification;
-import com.devwonder.common.event.DealerSocketEvent;
+import com.devwonder.common.event.DealerRegistrationEvent;
 import com.devwonder.notificationservice.service.NotificationService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -19,11 +19,11 @@ public class DealerSocketListener {
     private final NotificationService notificationService;
     
     @KafkaListener(
-        topics = "websocket-notifications",
-        groupId = "notification-service-group-socket",
+        topics = "dealer-registration-notifications",
+        groupId = "notification-service-group-dealer-registration",
         containerFactory = "websocketNotificationKafkaListenerContainerFactory"
     )
-    public void consumeWebSocketNotification(DealerSocketEvent event) throws Exception {
+    public void consumeWebSocketNotification(DealerRegistrationEvent event) throws Exception {
         
         log.info("Received websocket notification event for accountId: {} and company: {}", 
             event.getAccountId(), event.getCompanyName());

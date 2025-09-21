@@ -57,11 +57,21 @@ public class KafkaConsumerConfig {
     
     @Bean
     public ConsumerFactory<String, Object> websocketNotificationConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-socket", "com.devwonder.common.event.DealerSocketEvent"));
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-dealer-registration", "com.devwonder.common.event.DealerRegistrationEvent"));
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> websocketNotificationKafkaListenerContainerFactory() {
         return createListenerFactory(websocketNotificationConsumerFactory(), 1);
+    }
+
+    @Bean
+    public ConsumerFactory<String, Object> orderNotificationConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-order", "com.devwonder.common.event.OrderNotificationEvent"));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> orderNotificationKafkaListenerContainerFactory() {
+        return createListenerFactory(orderNotificationConsumerFactory(), 1);
     }
 }

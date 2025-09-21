@@ -18,6 +18,7 @@ public class OrderResponse {
 
     private Long id;
     private Long idDealer;
+    private String orderCode;
     private LocalDateTime createAt;
     private PaymentStatus paymentStatus;
     private List<OrderItemResponse> orderItems;

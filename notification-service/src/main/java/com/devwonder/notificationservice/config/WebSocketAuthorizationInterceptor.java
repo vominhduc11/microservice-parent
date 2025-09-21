@@ -114,7 +114,7 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
             return;
         }
         
-        // Dealer registration topic - ADMIN only (optional feature)  
+        // Dealer registration topic - ADMIN only (optional feature)
         if ("/topic/dealer-registrations".equals(destination)) {
             log.info("🏪 Dealer registrations subscription check - Is Admin: {}", isAdmin);
             if (!isAdmin) {
@@ -122,6 +122,17 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
                 throw new AccessDeniedException("Access denied: Only ADMIN can subscribe to dealer registrations");
             }
             log.info("✅ SUBSCRIBE ACCESS GRANTED - ADMIN authorized to subscribe to dealer registrations");
+            return;
+        }
+
+        // Order notifications topic - ADMIN only
+        if ("/topic/order-notifications".equals(destination)) {
+            log.info("📦 Order notifications subscription check - Is Admin: {}", isAdmin);
+            if (!isAdmin) {
+                log.error("❌ SUBSCRIBE ACCESS DENIED - Only ADMIN can subscribe to order notifications (roles: {})", userRoles);
+                throw new AccessDeniedException("Access denied: Only ADMIN can subscribe to order notifications");
+            }
+            log.info("✅ SUBSCRIBE ACCESS GRANTED - ADMIN authorized to subscribe to order notifications");
             return;
         }
         

@@ -28,7 +28,7 @@ public class DataLoader {
         createAdminIfNotExists(1L, "System Administrator", "admin@devwonder.com", "+1234567890", "DevWonder Technology");
         
         // Create customer profile for accountId = 2 (customer account from auth-service)
-        createCustomerIfNotExists(2L, "John Customer", "customer@example.com");
+        createCustomerIfNotExists(2L, "John Customer", "customer@example.com", "+1234567891", "123 Customer Street, District 1, Ho Chi Minh City");
         
         // Create dealer profile for accountId = 3 (dealer account from auth-service)
         createDealerIfNotExists(3L, "ABC Trading Company", "123 Business St", "+1987654321", 
@@ -51,12 +51,14 @@ public class DataLoader {
         }
     }
 
-    private void createCustomerIfNotExists(Long accountId, String name, String email) {
+    private void createCustomerIfNotExists(Long accountId, String name, String email, String phone, String address) {
         if (!customerRepository.existsById(accountId)) {
             Customer customer = Customer.builder()
                     .accountId(accountId)
                     .name(name)
                     .email(email)
+                    .phone(phone)
+                    .address(address)
                     .build();
             customerRepository.save(customer);
             log.info("Created customer profile for accountId: {}", accountId);

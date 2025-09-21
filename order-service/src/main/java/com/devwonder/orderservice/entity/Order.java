@@ -26,6 +26,9 @@ public class Order {
     @Column(name = "id_dealer", nullable = false)
     private Long idDealer;
 
+    @Column(name = "order_code", nullable = false, unique = true)
+    private String orderCode;
+
     @CreationTimestamp
     @Column(name = "create_at", updatable = false)
     private LocalDateTime createAt;
@@ -34,6 +37,10 @@ public class Order {
     @Column(name = "payment_status", nullable = false)
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems;

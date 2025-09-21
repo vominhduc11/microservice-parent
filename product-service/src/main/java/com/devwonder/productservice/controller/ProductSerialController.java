@@ -7,6 +7,7 @@ import com.devwonder.productservice.dto.ProductSerialBulkCreateRequest;
 import com.devwonder.productservice.dto.ProductSerialBulkCreateResponse;
 import com.devwonder.productservice.dto.ProductSerialStatusUpdateRequest;
 import com.devwonder.productservice.dto.ProductInventoryResponse;
+import com.devwonder.productservice.enums.ProductSerialStatus;
 import com.devwonder.productservice.service.ProductSerialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -74,7 +75,7 @@ public class ProductSerialController {
     })
     public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getProductSerialsByProductId(@PathVariable Long productId) {
 
-        log.info("Requesting product serials for product ID: {} by ADMIN user", productId);
+        log.info("Requesting product serials for product ID: {} by authorized user", productId);
 
         List<ProductSerialResponse> productSerials = productSerialService.getProductSerialsByProductId(productId);
 
@@ -208,6 +209,33 @@ public class ProductSerialController {
         log.info("Retrieved available count for product ID: {} - {} available", productId, availableCount);
 
         return ResponseEntity.ok(BaseResponse.success("Available product serial count retrieved successfully", availableCount));
+    }
+
+    @GetMapping("/{productId}/serials/status/{status}")
+    @Operation(
+        summary = "Get Product Serials by Status",
+        description = "Retrieve all product serials for a specific product filtered by status (AVAILABLE/SOLD/DAMAGED). Requires ADMIN or DEALER role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials retrieved successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid status parameter"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN or DEALER role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getProductSerialsByStatus(
+            @PathVariable Long productId,
+            @PathVariable ProductSerialStatus status) {
+
+        log.info("Requesting product serials for product ID: {} with status: {} by authorized user", productId, status);
+
+        List<ProductSerialResponse> productSerials = productSerialService.getProductSerialsByProductIdAndStatus(productId, status);
+
+        log.info("Retrieved {} product serials for product ID: {} with status: {}", productSerials.size(), productId, status);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
     }
 
 }

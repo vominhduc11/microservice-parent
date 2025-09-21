@@ -27,18 +27,38 @@ public class UserService {
     private final DealerMapper dealerMapper;
     private final AuthServiceClient authServiceClient;
     private final DealerEventService dealerEventService;
+    private final CustomerService customerService;
+    private final com.devwonder.userservice.util.FieldFilterUtil fieldFilterUtil;
 
     @Transactional(readOnly = true)
     public List<DealerResponse> getAllDealers() {
         log.info("Fetching all dealers from database");
-        
+
         List<Dealer> dealers = dealerRepository.findAll();
-        
+
         log.info("Found {} dealers in system", dealers.size());
-        
+
         return dealers.stream()
                 .map(dealerMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DealerResponse getDealerById(Long dealerId, String fields) {
+        log.info("Fetching dealer with ID: {} - fields: {}", dealerId, fields);
+
+        Dealer dealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dealer not found with ID: " + dealerId));
+
+        log.info("Found dealer: {} with accountId: {}", dealer.getCompanyName(), dealer.getAccountId());
+
+        DealerResponse response = dealerMapper.toResponse(dealer);
+        return fieldFilterUtil.applyFieldFiltering(response, fields);
+    }
+
+    @Transactional(readOnly = true)
+    public DealerResponse getDealerById(Long dealerId) {
+        return getDealerById(dealerId, null);
     }
 
     @Transactional
@@ -84,7 +104,7 @@ public class UserService {
             
             // Publish dealer events to Kafka (email and socket notifications)
             dealerEventService.publishDealerEmailEvent(savedDealer, username, password);
-            dealerEventService.publishDealerSocketEvent(savedDealer);
+            dealerEventService.publishDealerRegistrationEvent(savedDealer);
             
             // Return response
             return dealerMapper.toResponse(savedDealer);
@@ -156,5 +176,9 @@ public class UserService {
             log.error("Failed to delete dealer or account: {}", e.getMessage());
             throw new RuntimeException("Failed to delete dealer and associated account: " + e.getMessage(), e);
         }
+    }
+
+    public Long findCustomerIdByIdentifier(String identifier) {
+        return customerService.findCustomerIdByIdentifier(identifier);
     }
 }

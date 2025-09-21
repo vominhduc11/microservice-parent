@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -186,5 +187,24 @@ public class ProductSerialService {
         log.info("Available product serial count for product ID {}: {}", productId, availableCount);
 
         return availableCount;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSerialResponse> getProductSerialsByProductIdAndStatus(Long productId, ProductSerialStatus status) {
+        log.info("Fetching product serials for product ID: {} with status: {}", productId, status);
+
+        // Check if product exists
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+
+        List<ProductSerial> productSerials = productSerialRepository.findByProductAndStatus(product, status);
+
+        List<ProductSerialResponse> responses = productSerials.stream()
+                .map(productSerialMapper::toProductSerialResponse)
+                .collect(Collectors.toList());
+
+        log.info("Found {} product serials for product ID {} with status {}", responses.size(), productId, status);
+
+        return responses;
     }
 }

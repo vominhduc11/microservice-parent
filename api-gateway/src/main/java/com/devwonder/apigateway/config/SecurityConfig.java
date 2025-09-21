@@ -99,6 +99,7 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.DELETE, "/api/product/serial/*").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/serial/*/status").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/{productId}/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/{productId}/serials/status/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/product/{productId}/inventory").hasRole(ROLE_ADMIN)
 
             // Product Serial available count - DEALER only access
@@ -137,10 +138,21 @@ public class SecurityConfig {
         exchanges
                 // Dealers endpoint - public access (for displaying dealer network)
                 .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll()
-                
+
                 // Dealer registration - public access (for dealer self-registration)
                 .pathMatchers(HttpMethod.POST, "/api/user/dealers").permitAll()
-                
+
+                // Customer management endpoints - DEALER only
+                .pathMatchers(HttpMethod.POST, "/api/customer").hasRole(ROLE_DEALER)
+                .pathMatchers(HttpMethod.GET, "/api/customer/**").hasRole(ROLE_DEALER)
+
+                // Customer existence check - DEALER only
+                .pathMatchers(HttpMethod.GET, "/api/user/customers/*/check-exists").hasRole(ROLE_DEALER)
+
+
+                // Dealer detail endpoint - ADMIN only
+                .pathMatchers(HttpMethod.GET, "/api/user/dealers/*").hasRole(ROLE_ADMIN)
+
                 // Update dealer - ADMIN only
                 .pathMatchers(HttpMethod.PUT, "/api/user/dealers/*").hasRole(ROLE_ADMIN)
 
@@ -160,18 +172,32 @@ public class SecurityConfig {
 
     private void configureOrderServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-            // ADMIN-only endpoints - MUST BE FIRST
-            .pathMatchers(HttpMethod.GET, "/api/order/orders").hasRole(ROLE_ADMIN)
+            // ADMIN-only endpoints - MUST BE FIRST (specific patterns first)
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/order/orders/*/payment-status").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/order/orders/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/order/orders/*/hard").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/order/orders/*/restore").hasRole(ROLE_ADMIN)
+
+            // ADMIN and DEALER endpoints
+            .pathMatchers(HttpMethod.GET, "/api/order/orders").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
 
             // DEALER endpoints
             .pathMatchers(HttpMethod.POST, "/api/order/orders").hasRole(ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*").hasRole(ROLE_DEALER)
-            .pathMatchers(HttpMethod.GET, "/api/order/orders/*").hasRole(ROLE_DEALER);
+
+            // Order detail endpoint - allow both ADMIN and DEALER
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER);
     }
 
     private void configureWarrantyServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add warranty service authorization rules when endpoints are implemented
+        exchanges
+            // DEALER-only warranty endpoints (authentication + DEALER role required)
+            .pathMatchers(HttpMethod.POST, "/api/warranty").hasRole(ROLE_DEALER)
+
+            // PUBLIC warranty lookup endpoints (authentication required but any role)
+            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").authenticated()
+            .pathMatchers(HttpMethod.GET, "/api/warranty/serial/**").authenticated();
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ import java.util.List;
 @RequestMapping("/user")
 @Tag(name = "User Management", description = "User management endpoints for customers, dealers, and admins")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -42,6 +44,35 @@ public class UserController {
             true,
             "Dealers retrieved successfully",
             dealers
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/dealers/{id}")
+    @Operation(
+        summary = "Get Dealer by ID (ADMIN Only)",
+        description = "Retrieve detailed information of a specific dealer by ID with optional field filtering. " +
+                    "This endpoint provides complete dealer profile including company information, contact details and location. " +
+                    "Use 'fields' parameter to specify which fields to return (e.g., ?fields=companyName,email,phone). " +
+                    "Available fields: accountId, companyName, address, phone, email, district, city. " +
+                    "Requires ADMIN role authorization.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Dealer retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "Dealer not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<DealerResponse>> getDealerById(
+            @PathVariable Long id,
+            @RequestParam(required = false) String fields) {
+        DealerResponse dealer = userService.getDealerById(id, fields);
+        BaseResponse<DealerResponse> response = new BaseResponse<>(
+            true,
+            "Dealer retrieved successfully",
+            dealer
         );
         return ResponseEntity.ok(response);
     }
@@ -120,5 +151,29 @@ public class UserController {
             "Dealer with ID " + id + " has been permanently removed"
         );
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/customers/{identifier}/check-exists")
+    @Operation(
+        summary = "Check if customer exists",
+        description = "Check if customer exists by phone or email. Returns customer ID if found.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Check completed"),
+        @ApiResponse(responseCode = "404", description = "Customer not found")
+    })
+    public ResponseEntity<BaseResponse<Long>> checkCustomerExists(
+            @PathVariable String identifier) {
+
+        log.info("Checking customer existence: {}", identifier);
+
+        Long customerId = userService.findCustomerIdByIdentifier(identifier);
+        if (customerId != null) {
+            return ResponseEntity.ok(BaseResponse.success("Customer found", customerId));
+        } else {
+            return ResponseEntity.status(404)
+                    .body(BaseResponse.error("Customer not found"));
+        }
     }
 }

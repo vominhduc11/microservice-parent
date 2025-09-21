@@ -2,7 +2,7 @@ package com.devwonder.userservice.service;
 
 import com.devwonder.userservice.entity.Dealer;
 import com.devwonder.common.event.DealerEmailEvent;
-import com.devwonder.common.event.DealerSocketEvent;
+import com.devwonder.common.event.DealerRegistrationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -35,8 +35,8 @@ public class DealerEventService {
         log.info("Published dealer email event for accountId: {}", dealer.getAccountId());
     }
     
-    public void publishDealerSocketEvent(Dealer dealer) throws Exception {
-        DealerSocketEvent socketEvent = DealerSocketEvent.builder()
+    public void publishDealerRegistrationEvent(Dealer dealer) throws Exception {
+        DealerRegistrationEvent registrationEvent = DealerRegistrationEvent.builder()
                 .accountId(dealer.getAccountId())
                 .companyName(dealer.getCompanyName())
                 .email(dealer.getEmail())
@@ -46,7 +46,7 @@ public class DealerEventService {
                 .registrationTime(LocalDateTime.now())
                 .build();
         
-        kafkaTemplate.send("websocket-notifications", dealer.getAccountId().toString(), socketEvent);
-        log.info("Published dealer socket event for accountId: {}", dealer.getAccountId());
+        kafkaTemplate.send("dealer-registration-notifications", dealer.getAccountId().toString(), registrationEvent);
+        log.info("Published dealer registration event for accountId: {}", dealer.getAccountId());
     }
 }

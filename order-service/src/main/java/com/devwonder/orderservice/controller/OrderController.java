@@ -180,4 +180,130 @@ public class OrderController {
                     .body(BaseResponse.error("Failed to update payment status: " + e.getMessage()));
         }
     }
+
+    @DeleteMapping("/{orderId}")
+    @Operation(summary = "Soft Delete Order",
+               description = "Soft delete an order (mark as deleted). Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order soft deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<OrderResponse>> softDeleteOrder(
+            @Parameter(description = "Order ID", required = true)
+            @PathVariable @ValidId Long orderId) {
+
+        log.info("Received soft delete request for order: {}", orderId);
+
+        try {
+            OrderResponse orderResponse = orderService.softDeleteOrder(orderId);
+            return ResponseEntity.ok(BaseResponse.success("Order soft deleted successfully", orderResponse));
+
+        } catch (ResourceNotFoundException e) {
+            log.error("Order not found: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BaseResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to soft delete order: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to soft delete order: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{orderId}/hard")
+    @Operation(summary = "Hard Delete Order",
+               description = "Permanently delete an order from database. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order hard deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> hardDeleteOrder(
+            @Parameter(description = "Order ID", required = true)
+            @PathVariable @ValidId Long orderId) {
+
+        log.info("Received hard delete request for order: {}", orderId);
+
+        try {
+            orderService.hardDeleteOrder(orderId);
+            return ResponseEntity.ok(BaseResponse.success("Order hard deleted successfully", null));
+
+        } catch (ResourceNotFoundException e) {
+            log.error("Order not found: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BaseResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to hard delete order: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to hard delete order: " + e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{orderId}/restore")
+    @Operation(summary = "Restore Order",
+               description = "Restore a soft deleted order. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order restored successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "400", description = "Order is not deleted"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<OrderResponse>> restoreOrder(
+            @Parameter(description = "Order ID", required = true)
+            @PathVariable @ValidId Long orderId) {
+
+        log.info("Received restore request for order: {}", orderId);
+
+        try {
+            OrderResponse orderResponse = orderService.restoreOrder(orderId);
+            return ResponseEntity.ok(BaseResponse.success("Order restored successfully", orderResponse));
+
+        } catch (ResourceNotFoundException e) {
+            log.error("Order not found: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BaseResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid operation: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to restore order: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to restore order: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/deleted")
+    @Operation(summary = "Get Deleted Orders",
+               description = "Retrieve all soft deleted orders. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Deleted orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<OrderResponse>>> getDeletedOrders() {
+
+        log.info("Received get deleted orders request");
+
+        try {
+            List<OrderResponse> orders = orderService.getDeletedOrders();
+            return ResponseEntity.ok(BaseResponse.success("Deleted orders retrieved successfully", orders));
+
+        } catch (Exception e) {
+            log.error("Failed to retrieve deleted orders: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve deleted orders: " + e.getMessage()));
+        }
+    }
 }

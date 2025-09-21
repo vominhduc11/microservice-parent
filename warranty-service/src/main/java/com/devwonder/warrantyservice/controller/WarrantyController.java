@@ -1,0 +1,104 @@
+package com.devwonder.warrantyservice.controller;
+
+import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.warrantyservice.dto.WarrantyCreateRequest;
+import com.devwonder.warrantyservice.dto.WarrantyResponse;
+import com.devwonder.warrantyservice.dto.WarrantyBulkCreateResponse;
+import com.devwonder.warrantyservice.service.WarrantyService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/warranty")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Warranty Management", description = "APIs for managing product warranties")
+@SecurityRequirement(name = "bearerAuth")
+public class WarrantyController {
+
+    private final WarrantyService warrantyService;
+
+    @PostMapping
+    @Operation(summary = "Create warranties for purchase",
+               description = "Creates warranties for purchased products. Handles both new and existing customers. DEALER role required via API Gateway.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Warranties created successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Some warranties already exist")
+    })
+    public ResponseEntity<BaseResponse<WarrantyBulkCreateResponse>> createWarranties(
+            @Valid @RequestBody WarrantyCreateRequest request) {
+
+        log.info("Creating warranties for product: {} with {} serials",
+                request.getProductId(), request.getSerialNumbers().size());
+
+        try {
+            WarrantyBulkCreateResponse response = warrantyService.createWarranties(request);
+
+            HttpStatus status = response.getFailedSerials().isEmpty() ?
+                    HttpStatus.CREATED : HttpStatus.PARTIAL_CONTENT;
+
+            String message = response.getFailedSerials().isEmpty() ?
+                    "All warranties created successfully" :
+                    String.format("Created %d/%d warranties. %d failed.",
+                            response.getTotalWarranties(),
+                            request.getSerialNumbers().size(),
+                            response.getFailedSerials().size());
+
+            return ResponseEntity.status(status)
+                    .body(BaseResponse.success(message, response));
+        } catch (Exception e) {
+            log.error("Error creating warranties: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/customer/{customerId}")
+    @Operation(summary = "Get warranties by customer", description = "Retrieves all warranties for a specific customer")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Warranties retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Customer not found")
+    })
+    public ResponseEntity<BaseResponse<List<WarrantyResponse>>> getWarrantiesByCustomer(
+            @PathVariable Long customerId) {
+
+        log.info("Retrieving warranties for customer: {}", customerId);
+
+        List<WarrantyResponse> warranties = warrantyService.getWarrantiesByCustomer(customerId);
+        return ResponseEntity.ok(BaseResponse.success("Warranties retrieved successfully", warranties));
+    }
+
+
+    @GetMapping("/serial/{productSerialId}")
+    @Operation(summary = "Check warranty by product serial",
+               description = "Checks active warranty for a product serial number. Used by customers to verify warranty before purchase.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Active warranty found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No active warranty found")
+    })
+    public ResponseEntity<BaseResponse<WarrantyResponse>> getWarrantyByProductSerial(
+            @PathVariable Long productSerialId) {
+
+        log.info("Checking warranty for product serial: {}", productSerialId);
+
+        try {
+            WarrantyResponse warranty = warrantyService.getWarrantyByProductSerial(productSerialId);
+            return ResponseEntity.ok(BaseResponse.success("Active warranty found", warranty));
+        } catch (Exception e) {
+            log.warn("No active warranty found for product serial {}: {}", productSerialId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BaseResponse.error(e.getMessage()));
+        }
+    }
+}
