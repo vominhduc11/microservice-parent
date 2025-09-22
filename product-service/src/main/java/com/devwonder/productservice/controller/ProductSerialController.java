@@ -238,4 +238,27 @@ public class ProductSerialController {
         return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
     }
 
+    @GetMapping("/product-serial/serial/{serial}")
+    @Operation(
+        summary = "Get Product Serial ID by Serial Number",
+        description = "Retrieve the database ID of a product serial by its serial number string. Used by inter-service calls (warranty service). Requires API key authentication.",
+        security = @SecurityRequirement(name = "apiKey")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serial ID retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Product serial not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Long>> getProductSerialIdBySerial(@PathVariable String serial) {
+
+        log.info("Looking up product serial ID for serial: {}", serial);
+
+        Long productSerialId = productSerialService.getProductSerialIdBySerial(serial);
+
+        log.info("Successfully retrieved product serial ID: {} for serial: {}", productSerialId, serial);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serial ID retrieved successfully", productSerialId));
+    }
+
 }

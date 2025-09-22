@@ -41,17 +41,6 @@ public class Warranty {
     @Column(name = "warranty_code", unique = true, nullable = false, length = 50)
     private String warrantyCode;
 
-    @Column(name = "warranty_period")
-    private Integer warrantyPeriod;
-
-    @NotNull
-    @Column(name = "start_date", nullable = false)
-    private LocalDateTime startDate;
-
-    @NotNull
-    @Column(name = "end_date", nullable = false)
-    private LocalDateTime endDate;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

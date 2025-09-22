@@ -9,10 +9,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductSerialRepository extends JpaRepository<ProductSerial, Long> {
     boolean existsBySerial(String serial);
+    Optional<ProductSerial> findBySerial(String serial);
     List<ProductSerial> findByProduct(Product product);
 
     @Query("SELECT ps.serial FROM ProductSerial ps WHERE ps.product = :product")

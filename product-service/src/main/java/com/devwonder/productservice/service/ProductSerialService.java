@@ -1,6 +1,7 @@
 package com.devwonder.productservice.service;
 
 import com.devwonder.common.exception.ResourceAlreadyExistsException;
+import com.devwonder.common.exception.ResourceNotFoundException;
 import com.devwonder.productservice.dto.ProductSerialCreateRequest;
 import com.devwonder.productservice.dto.ProductSerialResponse;
 import com.devwonder.productservice.dto.ProductSerialBulkCreateRequest;
@@ -206,5 +207,16 @@ public class ProductSerialService {
         log.info("Found {} product serials for product ID {} with status {}", responses.size(), productId, status);
 
         return responses;
+    }
+
+    @Transactional(readOnly = true)
+    public Long getProductSerialIdBySerial(String serial) {
+        log.info("Looking up product serial ID for serial: {}", serial);
+
+        ProductSerial productSerial = productSerialRepository.findBySerial(serial)
+                .orElseThrow(() -> new ResourceNotFoundException("Product serial not found: " + serial));
+
+        log.info("Found product serial ID: {} for serial: {}", productSerial.getId(), serial);
+        return productSerial.getId();
     }
 }

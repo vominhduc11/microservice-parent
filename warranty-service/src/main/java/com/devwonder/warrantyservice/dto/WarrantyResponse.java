@@ -18,9 +18,6 @@ public class WarrantyResponse {
     private Long idProductSerial;
     private Long idCustomer;
     private String warrantyCode;
-    private Integer warrantyPeriod;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
     private WarrantyStatus status;
     private LocalDateTime purchaseDate;
     private LocalDateTime createAt;

@@ -9,10 +9,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CheckCustomerExistsResponse {
+public class UserCustomerInfo {
 
-    private boolean exists;
-    private String matchedBy;
-    private String message;
-    private UserCustomerInfo customerInfo;
+    private Long accountId;
+    private String name;
+    private String email;
+    private String phone;
+    private String address;
 }

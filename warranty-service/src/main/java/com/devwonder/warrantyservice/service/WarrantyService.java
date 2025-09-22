@@ -43,10 +43,7 @@ public class WarrantyService {
         // 1. Handle customer (create new or find existing)
         Long customerId = handleCustomer(request.getCustomer());
 
-        // 2. Get product warranty period
-        Integer warrantyPeriod = getProductWarrantyPeriod(request.getProductId());
-
-        // 3. Create warranties for each serial
+        // 2. Create warranties for each serial
         List<WarrantyResponse> successfulWarranties = new ArrayList<>();
         List<String> failedSerials = new ArrayList<>();
 
@@ -55,7 +52,6 @@ public class WarrantyService {
                 WarrantyResponse warranty = createSingleWarranty(
                     serial,
                     customerId,
-                    warrantyPeriod,
                     request.getPurchaseDate()
                 );
                 successfulWarranties.add(warranty);
@@ -86,7 +82,13 @@ public class WarrantyService {
             if (!response.isSuccess() || response.getData() == null || !response.getData().isExists()) {
                 throw new CustomerOperationException("Customer not found: " + customerWrapper.getCustomerIdentifier());
             }
-            return response.getData().getCustomerInfo().getAccountId();
+
+            // Get accountId from the customer info returned by user service
+            Long accountId = response.getData().getCustomerInfo().getAccountId();
+            if (accountId == null) {
+                throw new CustomerOperationException("Customer found but accountId is missing");
+            }
+            return accountId;
         } else {
             // Create new customer
             log.info("Creating new customer: {}", customerWrapper.getCustomerInfo().getName());
@@ -99,16 +101,8 @@ public class WarrantyService {
         }
     }
 
-    private Integer getProductWarrantyPeriod(Long productId) {
-        var response = productServiceClient.getProductWarrantyPeriod(productId, authApiKey);
-        if (!response.isSuccess() || response.getData() == null) {
-            log.warn("Could not get warranty period for product {}, using default 12 months", productId);
-            return 12; // Default warranty period
-        }
-        return response.getData();
-    }
 
-    private WarrantyResponse createSingleWarranty(String serial, Long customerId, Integer warrantyPeriod, java.time.LocalDate purchaseDate) {
+    private WarrantyResponse createSingleWarranty(String serial, Long customerId, java.time.LocalDate purchaseDate) {
         // Get product serial ID
         var serialResponse = productServiceClient.getProductSerialIdBySerial(serial, authApiKey);
         if (!serialResponse.isSuccess() || serialResponse.getData() == null) {
@@ -125,20 +119,13 @@ public class WarrantyService {
         // Generate warranty code
         String warrantyCode = generateWarrantyCode(serial);
 
-        // Calculate dates
-        LocalDateTime startDate = purchaseDate.atStartOfDay();
-        LocalDateTime endDate = startDate.plusMonths(warrantyPeriod);
-
         // Create warranty
         Warranty warranty = Warranty.builder()
                 .idProductSerial(productSerialId)
                 .idCustomer(customerId)
                 .warrantyCode(warrantyCode)
-                .warrantyPeriod(warrantyPeriod)
-                .startDate(startDate)
-                .endDate(endDate)
                 .status(WarrantyStatus.ACTIVE)
-                .purchaseDate(startDate)
+                .purchaseDate(purchaseDate.atStartOfDay())
                 .build();
 
         Warranty savedWarranty = warrantyRepository.save(warranty);
@@ -183,12 +170,14 @@ public class WarrantyService {
     }
 
     public boolean isWarrantyActive(Warranty warranty) {
+        LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
         return warranty.getStatus() == WarrantyStatus.ACTIVE &&
-               warranty.getEndDate().isAfter(LocalDateTime.now());
+               endDate.isAfter(LocalDateTime.now());
     }
 
     public boolean isWarrantyExpired(Warranty warranty) {
-        return warranty.getEndDate().isBefore(LocalDateTime.now()) ||
+        LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
+        return endDate.isBefore(LocalDateTime.now()) ||
                warranty.getStatus() == WarrantyStatus.EXPIRED;
     }
 
@@ -198,9 +187,6 @@ public class WarrantyService {
                 .idProductSerial(warranty.getIdProductSerial())
                 .idCustomer(warranty.getIdCustomer())
                 .warrantyCode(warranty.getWarrantyCode())
-                .warrantyPeriod(warranty.getWarrantyPeriod())
-                .startDate(warranty.getStartDate())
-                .endDate(warranty.getEndDate())
                 .status(warranty.getStatus())
                 .purchaseDate(warranty.getPurchaseDate())
                 .createAt(warranty.getCreateAt())
