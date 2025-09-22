@@ -220,6 +220,8 @@ services:
     container_name: config-server
     ports:
       - "8888:8888"
+    volumes:
+      - maven-cache:/root/.m2
     networks:
       - microservices-network
     restart: unless-stopped
@@ -237,6 +239,8 @@ services:
     container_name: api-gateway
     ports:
       - "8080:8080"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       config-server:
         condition: service_healthy
@@ -271,6 +275,8 @@ services:
     container_name: auth-service
     ports:
       - "8081:8081"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       config-server:
         condition: service_healthy
@@ -305,6 +311,8 @@ services:
     container_name: user-service
     ports:
       - "8082:8082"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -330,6 +338,8 @@ services:
     container_name: product-service
     ports:
       - "8083:8083"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -353,6 +363,8 @@ services:
     container_name: cart-service
     ports:
       - "8084:8084"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -383,6 +395,8 @@ services:
     container_name: order-service
     ports:
       - "8085:8085"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -416,6 +430,8 @@ services:
     container_name: warranty-service
     ports:
       - "8086:8086"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -443,6 +459,8 @@ services:
     container_name: notification-service
     ports:
       - "8087:8087"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres  # Thêm PostgreSQL cho notification storage
@@ -477,6 +495,8 @@ services:
     container_name: blog-service
     ports:
       - "8088:8088"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -502,6 +522,8 @@ services:
     container_name: media-service
     ports:
       - "8095:8090"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
     environment:
@@ -523,6 +545,8 @@ services:
     container_name: report-service
     ports:
       - "8089:8089"
+    volumes:
+      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
@@ -556,6 +580,7 @@ volumes:
   kafka1_data:
   kafka2_data:
   kafka3_data:
+  maven-cache:
 
 networks:
   microservices-network:

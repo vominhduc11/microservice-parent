@@ -4,22 +4,19 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 # Set working directory
 WORKDIR /app
 
-# First, build common-service library
+# Step 1: Build and cache common-service (rarely changes)
 COPY common-service/pom.xml common-service/
+RUN cd common-service && mvn dependency:go-offline -B
 COPY common-service/src common-service/src/
 RUN cd common-service && mvn clean install -DskipTests
 
-# Copy service pom.xml for dependency resolution
+# Step 2: Download service dependencies (cache until pom.xml changes)
 COPY media-service/pom.xml .
-
-# Download dependencies (better caching)
 RUN mvn dependency:go-offline -B
 
-# Copy source code
+# Step 3: Copy source and build (invalidates cache when code changes)
 COPY media-service/src ./src
-
-# Build the application
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -o
 
 # Add build timestamp to force rebuild
 ARG BUILD_TIME
