@@ -192,12 +192,14 @@ public class SecurityConfig {
 
     private void configureWarrantyServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
+            // PUBLIC warranty check endpoint (no authentication required)
+            .pathMatchers(HttpMethod.GET, "/api/warranty/check/**").permitAll()
+
             // DEALER-only warranty endpoints (authentication + DEALER role required)
             .pathMatchers(HttpMethod.POST, "/api/warranty").hasRole(ROLE_DEALER)
 
-            // PUBLIC warranty lookup endpoints (authentication required but any role)
-            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").authenticated()
-            .pathMatchers(HttpMethod.GET, "/api/warranty/serial/**").authenticated();
+            // Customer warranty lookup endpoints (CUSTOMER role required)
+            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").hasRole("CUSTOMER");
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

@@ -14,7 +14,7 @@ public interface ProductServiceClient {
             @RequestHeader("X-API-Key") String apiKey
     );
 
-    @PatchMapping("/product-serial/bulk-status")
+    @PostMapping("/product-serial/bulk-status")
     BaseResponse<String> updateProductSerialsToSoldToCustomer(
             @RequestBody ProductSerialBulkStatusUpdateRequest request,
             @RequestHeader("X-API-Key") String apiKey

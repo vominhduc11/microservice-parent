@@ -10,7 +10,11 @@ public class SecurityConfig extends BaseSecurityConfig {
     @Override
     protected void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<org.springframework.security.config.annotation.web.builders.HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
-            // Customer endpoints - Inter-service access with API key
+            // Lookup endpoints for inter-service calls - API key required
+            .requestMatchers("/user-service/customers/**").access(authApiKeyRequired())       // Customer lookup calls
+            .requestMatchers("/user-service/dealers/**").access(authApiKeyRequired())         // Dealer lookup calls
+
+            // Customer endpoints - Inter-service access with API key (legacy, keep for compatibility)
             .requestMatchers("/customer").access(authApiKeyRequired())                    // POST /customer - create customer
             .requestMatchers("/customer/*").access(authApiKeyRequired())                  // GET /customer/{id} - get customer name
 

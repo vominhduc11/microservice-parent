@@ -80,23 +80,23 @@ public class WarrantyController {
     }
 
 
-    @GetMapping("/serial/{productSerialId}")
-    @Operation(summary = "Check warranty by product serial",
-               description = "Checks active warranty for a product serial number. Used by customers to verify warranty before purchase.")
+    @GetMapping("/check/{serialNumber}")
+    @Operation(summary = "Check warranty by serial number",
+               description = "Checks active warranty for a product by its serial number (e.g., SN003). Public endpoint - no authentication required.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Active warranty found"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No active warranty found")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No active warranty found or product serial not found")
     })
-    public ResponseEntity<BaseResponse<WarrantyResponse>> getWarrantyByProductSerial(
-            @PathVariable Long productSerialId) {
+    public ResponseEntity<BaseResponse<WarrantyResponse>> checkWarrantyBySerialNumber(
+            @PathVariable String serialNumber) {
 
-        log.info("Checking warranty for product serial: {}", productSerialId);
+        log.info("Checking warranty for serial number: {}", serialNumber);
 
         try {
-            WarrantyResponse warranty = warrantyService.getWarrantyByProductSerial(productSerialId);
+            WarrantyResponse warranty = warrantyService.getWarrantyBySerialNumber(serialNumber);
             return ResponseEntity.ok(BaseResponse.success("Active warranty found", warranty));
         } catch (Exception e) {
-            log.warn("No active warranty found for product serial {}: {}", productSerialId, e.getMessage());
+            log.warn("No active warranty found for serial number {}: {}", serialNumber, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(BaseResponse.error(e.getMessage()));
         }

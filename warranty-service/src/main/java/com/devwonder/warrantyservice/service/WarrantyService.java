@@ -230,6 +230,27 @@ public class WarrantyService {
         return mapToResponse(warranty);
     }
 
+    @Transactional(readOnly = true)
+    public WarrantyResponse getWarrantyBySerialNumber(String serialNumber) {
+        log.info("Checking warranty for serial number: {}", serialNumber);
+
+        // 1. Get product serial ID from product service
+        var serialResponse = productServiceClient.getProductSerialIdBySerial(serialNumber, authApiKey);
+        if (!serialResponse.isSuccess() || serialResponse.getData() == null) {
+            log.warn("Product serial not found for serial number: {}", serialNumber);
+            throw new WarrantyNotFoundException("Product serial not found: " + serialNumber);
+        }
+
+        Long productSerialId = serialResponse.getData();
+        log.debug("Found product serial ID: {} for serial number: {}", productSerialId, serialNumber);
+
+        // 2. Check warranty for this product serial ID
+        Warranty warranty = warrantyRepository.findActiveWarrantyByProductSerial(productSerialId)
+                .orElseThrow(() -> new WarrantyNotFoundException("No active warranty found for serial number: " + serialNumber));
+
+        return mapToResponse(warranty);
+    }
+
     public boolean isWarrantyActive(Warranty warranty) {
         LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
         return warranty.getStatus() == WarrantyStatus.ACTIVE &&
