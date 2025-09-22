@@ -46,6 +46,7 @@ public class WarrantyService {
         // 2. Create warranties for each serial
         List<WarrantyResponse> successfulWarranties = new ArrayList<>();
         List<String> failedSerials = new ArrayList<>();
+        List<String> successfulSerials = new ArrayList<>();
 
         for (String serial : request.getSerialNumbers()) {
             try {
@@ -55,13 +56,27 @@ public class WarrantyService {
                     request.getPurchaseDate()
                 );
                 successfulWarranties.add(warranty);
+                successfulSerials.add(serial);
+                log.info("Successfully created warranty for serial: {} with code: {}",
+                         serial, warranty.getWarrantyCode());
+            } catch (WarrantyAlreadyExistsException e) {
+                log.warn("Warranty already exists for serial {}: {}", serial, e.getMessage());
+                failedSerials.add(serial);
+            } catch (ResourceNotFoundException e) {
+                log.warn("Product serial not found {}: {}", serial, e.getMessage());
+                failedSerials.add(serial);
             } catch (Exception e) {
-                log.error("Failed to create warranty for serial {}: {}", serial, e.getMessage());
+                log.error("Unexpected error creating warranty for serial {}: {}", serial, e.getMessage(), e);
                 failedSerials.add(serial);
             }
         }
 
-        // 4. Get customer name for response
+        // 4. Update product serials to SOLD_TO_CUSTOMER status
+        if (!successfulSerials.isEmpty()) {
+            updateProductSerialsStatus(successfulSerials);
+        }
+
+        // 5. Get customer name for response
         String customerName = getCustomerName(customerId);
 
         return WarrantyBulkCreateResponse.builder()
@@ -88,38 +103,78 @@ public class WarrantyService {
             if (accountId == null) {
                 throw new CustomerOperationException("Customer found but accountId is missing");
             }
+            log.info("Found existing customer with accountId: {}", accountId);
             return accountId;
         } else {
-            // Create new customer
+            // Create new customer with fallback to existing lookup
             log.info("Creating new customer: {}", customerWrapper.getCustomerInfo().getName());
 
-            var response = userServiceClient.createCustomer(customerWrapper.getCustomerInfo(), authApiKey);
-            if (!response.isSuccess() || response.getData() == null) {
-                throw new CustomerOperationException("Failed to create customer: " + response.getMessage());
+            try {
+                var response = userServiceClient.createCustomer(customerWrapper.getCustomerInfo(), authApiKey);
+                if (!response.isSuccess() || response.getData() == null) {
+                    throw new CustomerOperationException("Failed to create customer: " + response.getMessage());
+                }
+                log.info("Successfully created new customer with accountId: {}", response.getData());
+                return response.getData();
+            } catch (Exception e) {
+                // Check if error is due to customer already existing
+                if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                    log.info("Customer already exists, attempting fallback lookup by phone: {}",
+                             customerWrapper.getCustomerInfo().getPhone());
+
+                    // Fallback: Try to find existing customer by phone
+                    try {
+                        var existingResponse = userServiceClient.checkCustomerExists(
+                            customerWrapper.getCustomerInfo().getPhone(), authApiKey);
+
+                        if (existingResponse.isSuccess() && existingResponse.getData() != null &&
+                            existingResponse.getData().isExists()) {
+
+                            Long accountId = existingResponse.getData().getCustomerInfo().getAccountId();
+                            if (accountId != null) {
+                                log.info("Fallback successful: Found existing customer with accountId: {}", accountId);
+                                return accountId;
+                            }
+                        }
+                    } catch (Exception fallbackException) {
+                        log.error("Fallback lookup also failed: {}", fallbackException.getMessage());
+                    }
+                }
+
+                // If fallback failed or error is not about existing customer, re-throw original error
+                log.error("Customer creation failed and no fallback available: {}", e.getMessage());
+                throw new CustomerOperationException("Failed to create or find customer: " + e.getMessage());
             }
-            return response.getData();
         }
     }
 
 
     private WarrantyResponse createSingleWarranty(String serial, Long customerId, java.time.LocalDate purchaseDate) {
+        log.debug("Creating warranty for serial: {}, customer: {}, purchaseDate: {}", serial, customerId, purchaseDate);
+
         // Get product serial ID
+        log.debug("Calling product service with API key: {}", authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
         var serialResponse = productServiceClient.getProductSerialIdBySerial(serial, authApiKey);
         if (!serialResponse.isSuccess() || serialResponse.getData() == null) {
+            log.error("Failed to get product serial ID for serial: {}, response: {}, API key used: {}",
+                     serial, serialResponse.getMessage(), authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
             throw new ResourceNotFoundException("Product serial not found: " + serial);
         }
 
         Long productSerialId = serialResponse.getData();
+        log.debug("Retrieved product serial ID: {} for serial: {}", productSerialId, serial);
 
         // Check if warranty already exists
         if (warrantyRepository.findActiveWarrantyByProductSerial(productSerialId).isPresent()) {
+            log.warn("Active warranty already exists for product serial ID: {}, serial: {}", productSerialId, serial);
             throw new WarrantyAlreadyExistsException("Active warranty already exists for serial: " + serial);
         }
 
         // Generate warranty code
         String warrantyCode = generateWarrantyCode(serial);
+        log.debug("Generated warranty code: {} for serial: {}", warrantyCode, serial);
 
-        // Create warranty
+        // Create warranty entity
         Warranty warranty = Warranty.builder()
                 .idProductSerial(productSerialId)
                 .idCustomer(customerId)
@@ -128,10 +183,16 @@ public class WarrantyService {
                 .purchaseDate(purchaseDate.atStartOfDay())
                 .build();
 
-        Warranty savedWarranty = warrantyRepository.save(warranty);
-        log.info("Warranty created for serial {} with code {}", serial, warrantyCode);
+        try {
+            Warranty savedWarranty = warrantyRepository.save(warranty);
+            log.info("Successfully saved warranty to database - ID: {}, Code: {}, Serial: {}",
+                     savedWarranty.getId(), warrantyCode, serial);
 
-        return mapToResponse(savedWarranty);
+            return mapToResponse(savedWarranty);
+        } catch (Exception e) {
+            log.error("Failed to save warranty to database for serial: {}, error: {}", serial, e.getMessage(), e);
+            throw new RuntimeException("Failed to save warranty: " + e.getMessage(), e);
+        }
     }
 
     private String generateWarrantyCode(String serial) {
@@ -179,6 +240,25 @@ public class WarrantyService {
         LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
         return endDate.isBefore(LocalDateTime.now()) ||
                warranty.getStatus() == WarrantyStatus.EXPIRED;
+    }
+
+    private void updateProductSerialsStatus(List<String> serialNumbers) {
+        try {
+            ProductSerialBulkStatusUpdateRequest request = ProductSerialBulkStatusUpdateRequest.builder()
+                    .serialNumbers(serialNumbers)
+                    .status("SOLD_TO_CUSTOMER")
+                    .build();
+
+            var response = productServiceClient.updateProductSerialsToSoldToCustomer(request, authApiKey);
+
+            if (response.isSuccess()) {
+                log.info("Successfully updated {} product serials to SOLD_TO_CUSTOMER status", serialNumbers.size());
+            } else {
+                log.error("Failed to update product serials status: {}", response.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("Error updating product serials status: {}", e.getMessage());
+        }
     }
 
     private WarrantyResponse mapToResponse(Warranty warranty) {

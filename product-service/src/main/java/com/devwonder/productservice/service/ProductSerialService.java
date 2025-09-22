@@ -159,7 +159,7 @@ public class ProductSerialService {
 
         // Count by status
         Long availableCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.AVAILABLE);
-        Long soldCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.SOLD);
+        Long soldCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.SOLD_TO_DEALER);
         Long damagedCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.DAMAGED);
         Long totalCount = productSerialRepository.countByProduct(product);
 
@@ -218,5 +218,30 @@ public class ProductSerialService {
 
         log.info("Found product serial ID: {} for serial: {}", productSerial.getId(), serial);
         return productSerial.getId();
+    }
+
+    @Transactional
+    public int updateProductSerialsToSoldToCustomer(List<String> serialNumbers) {
+        log.info("Updating {} product serials to SOLD_TO_CUSTOMER status", serialNumbers.size());
+
+        int updatedCount = 0;
+        for (String serial : serialNumbers) {
+            try {
+                ProductSerial productSerial = productSerialRepository.findBySerial(serial)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product serial not found: " + serial));
+
+                productSerial.setStatus(ProductSerialStatus.SOLD_TO_CUSTOMER);
+                productSerialRepository.save(productSerial);
+                updatedCount++;
+
+                log.debug("Updated product serial {} to SOLD_TO_CUSTOMER", serial);
+            } catch (Exception e) {
+                log.error("Failed to update product serial {}: {}", serial, e.getMessage());
+            }
+        }
+
+        log.info("Successfully updated {} out of {} product serials to SOLD_TO_CUSTOMER",
+                updatedCount, serialNumbers.size());
+        return updatedCount;
     }
 }

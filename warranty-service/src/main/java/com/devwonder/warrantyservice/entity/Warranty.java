@@ -13,12 +13,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "warranties", indexes = {
-    @Index(name = "idx_warranty_product_serial", columnList = "id_product_serial"),
-    @Index(name = "idx_warranty_customer", columnList = "id_customer"),
-    @Index(name = "idx_warranty_code", columnList = "warranty_code"),
-    @Index(name = "idx_warranty_status", columnList = "status")
-})
+@Table(name = "warranties")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

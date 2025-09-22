@@ -6,6 +6,7 @@ import com.devwonder.productservice.dto.ProductSerialResponse;
 import com.devwonder.productservice.dto.ProductSerialBulkCreateRequest;
 import com.devwonder.productservice.dto.ProductSerialBulkCreateResponse;
 import com.devwonder.productservice.dto.ProductSerialStatusUpdateRequest;
+import com.devwonder.productservice.dto.ProductSerialBulkStatusUpdateRequest;
 import com.devwonder.productservice.dto.ProductInventoryResponse;
 import com.devwonder.productservice.enums.ProductSerialStatus;
 import com.devwonder.productservice.service.ProductSerialService;
@@ -138,7 +139,7 @@ public class ProductSerialController {
     @PatchMapping("/serial/{serialId}/status")
     @Operation(
         summary = "Update Product Serial Status",
-        description = "Update status of a specific product serial (AVAILABLE/SOLD). Requires ADMIN role authentication via API Gateway.",
+        description = "Update status of a specific product serial (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -165,7 +166,7 @@ public class ProductSerialController {
     @GetMapping("/{productId}/inventory")
     @Operation(
         summary = "Get Product Inventory Count",
-        description = "Get detailed inventory count for a product by status (AVAILABLE/SOLD/DAMAGED). Requires ADMIN role authentication via API Gateway.",
+        description = "Get detailed inventory count for a product by status (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -214,7 +215,7 @@ public class ProductSerialController {
     @GetMapping("/{productId}/serials/status/{status}")
     @Operation(
         summary = "Get Product Serials by Status",
-        description = "Retrieve all product serials for a specific product filtered by status (AVAILABLE/SOLD/DAMAGED). Requires ADMIN or DEALER role authentication via API Gateway.",
+        description = "Retrieve all product serials for a specific product filtered by status (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN or DEALER role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -259,6 +260,32 @@ public class ProductSerialController {
         log.info("Successfully retrieved product serial ID: {} for serial: {}", productSerialId, serial);
 
         return ResponseEntity.ok(BaseResponse.success("Product serial ID retrieved successfully", productSerialId));
+    }
+
+    @PatchMapping("/product-serial/bulk-status")
+    @Operation(
+        summary = "Update Multiple Product Serial Status to SOLD_TO_CUSTOMER",
+        description = "Update status of multiple product serials to SOLD_TO_CUSTOMER. Used by warranty service after warranty creation. Requires API key authentication.",
+        security = @SecurityRequirement(name = "apiKey")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serial statuses updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "404", description = "Some product serials not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> updateProductSerialsToSoldToCustomer(
+            @Valid @RequestBody ProductSerialBulkStatusUpdateRequest request) {
+
+        log.info("Updating {} product serials to SOLD_TO_CUSTOMER status", request.getSerialNumbers().size());
+
+        int updatedCount = productSerialService.updateProductSerialsToSoldToCustomer(request.getSerialNumbers());
+
+        String message = String.format("Successfully updated %d product serials to SOLD_TO_CUSTOMER", updatedCount);
+        log.info(message);
+
+        return ResponseEntity.ok(BaseResponse.success(message, null));
     }
 
 }
