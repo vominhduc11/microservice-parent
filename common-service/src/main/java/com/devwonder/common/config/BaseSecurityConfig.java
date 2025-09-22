@@ -23,7 +23,7 @@ public abstract class BaseSecurityConfig {
 
     public static final String GATEWAY_HEADER_EXPRESSION = "request.getHeader('X-Gateway-Request') == 'true'";
     
-    @Value("${auth.api.key:AUTH_TO_USER_SERVICE_KEY}")
+    @Value("${auth.api.key:INTER_SERVICE_KEY}")
     private String authApiKey;
     
     protected abstract void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth);
@@ -89,6 +89,11 @@ public abstract class BaseSecurityConfig {
     
     protected WebExpressionAuthorizationManager authApiKeyRequired() {
         String expression = "request.getHeader('X-API-Key') == '" + authApiKey + "'";
+        return new WebExpressionAuthorizationManager(expression);
+    }
+
+    protected WebExpressionAuthorizationManager authApiKeyOrGatewayRequired() {
+        String expression = "request.getHeader('X-API-Key') == '" + authApiKey + "' or " + GATEWAY_HEADER_EXPRESSION;
         return new WebExpressionAuthorizationManager(expression);
     }
     

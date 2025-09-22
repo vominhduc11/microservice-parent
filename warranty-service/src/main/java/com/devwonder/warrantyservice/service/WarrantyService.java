@@ -12,6 +12,7 @@ import com.devwonder.warrantyservice.exception.WarrantyNotFoundException;
 import com.devwonder.warrantyservice.repository.WarrantyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,9 @@ public class WarrantyService {
     private final WarrantyRepository warrantyRepository;
     private final UserServiceClient userServiceClient;
     private final ProductServiceClient productServiceClient;
+
+    @Value("${auth.api.key:INTER_SERVICE_KEY}")
+    private String authApiKey;
 
     public WarrantyBulkCreateResponse createWarranties(WarrantyCreateRequest request) {
         log.info("Creating warranties for product: {} with {} serials",
@@ -78,16 +82,16 @@ public class WarrantyService {
             // Find existing customer
             log.info("Looking up existing customer: {}", customerWrapper.getCustomerIdentifier());
 
-            var response = userServiceClient.checkCustomerExists(customerWrapper.getCustomerIdentifier());
-            if (!response.isSuccess() || response.getData() == null) {
+            var response = userServiceClient.checkCustomerExists(customerWrapper.getCustomerIdentifier(), authApiKey);
+            if (!response.isSuccess() || response.getData() == null || !response.getData().isExists()) {
                 throw new CustomerOperationException("Customer not found: " + customerWrapper.getCustomerIdentifier());
             }
-            return response.getData();
+            return response.getData().getCustomerInfo().getAccountId();
         } else {
             // Create new customer
             log.info("Creating new customer: {}", customerWrapper.getCustomerInfo().getName());
 
-            var response = userServiceClient.createCustomer(customerWrapper.getCustomerInfo());
+            var response = userServiceClient.createCustomer(customerWrapper.getCustomerInfo(), authApiKey);
             if (!response.isSuccess() || response.getData() == null) {
                 throw new CustomerOperationException("Failed to create customer: " + response.getMessage());
             }
@@ -96,7 +100,7 @@ public class WarrantyService {
     }
 
     private Integer getProductWarrantyPeriod(Long productId) {
-        var response = productServiceClient.getProductWarrantyPeriod(productId);
+        var response = productServiceClient.getProductWarrantyPeriod(productId, authApiKey);
         if (!response.isSuccess() || response.getData() == null) {
             log.warn("Could not get warranty period for product {}, using default 12 months", productId);
             return 12; // Default warranty period
@@ -106,7 +110,7 @@ public class WarrantyService {
 
     private WarrantyResponse createSingleWarranty(String serial, Long customerId, Integer warrantyPeriod, java.time.LocalDate purchaseDate) {
         // Get product serial ID
-        var serialResponse = productServiceClient.getProductSerialIdBySerial(serial);
+        var serialResponse = productServiceClient.getProductSerialIdBySerial(serial, authApiKey);
         if (!serialResponse.isSuccess() || serialResponse.getData() == null) {
             throw new ResourceNotFoundException("Product serial not found: " + serial);
         }
@@ -151,7 +155,7 @@ public class WarrantyService {
 
     private String getCustomerName(Long customerId) {
         try {
-            var response = userServiceClient.getCustomerName(customerId);
+            var response = userServiceClient.getCustomerName(customerId, authApiKey);
             return response.isSuccess() ? response.getData() : "Unknown Customer";
         } catch (Exception e) {
             log.warn("Could not get customer name for ID {}: {}", customerId, e.getMessage());

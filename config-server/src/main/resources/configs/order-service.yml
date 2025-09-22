@@ -21,6 +21,10 @@ spring:
       host: ${REDIS_HOST:redis}
       port: 6379
 
+auth:
+  api:
+    key: ${AUTH_API_KEY:INTER_SERVICE_KEY}
+
 services:
   cart-service:
     url: ${CART_SERVICE_URL:http://cart-service:8084}

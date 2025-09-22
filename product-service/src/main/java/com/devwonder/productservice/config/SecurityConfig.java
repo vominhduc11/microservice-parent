@@ -12,7 +12,11 @@ public class SecurityConfig extends BaseSecurityConfig {
     @Override
     protected void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<org.springframework.security.config.annotation.web.builders.HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
-            // All product endpoints - ONLY accessible via API Gateway
+            // Specific product endpoints for inter-service calls - API key required
+            .requestMatchers("/product/*/warranty-period").access(authApiKeyRequired())     // Warranty service calls
+            .requestMatchers("/product-serial/serial/*").access(authApiKeyRequired())       // Serial lookup calls
+
+            // All other product endpoints - ONLY accessible via API Gateway
             .requestMatchers("/product/**").access(gatewayHeaderRequired());
     }
 }

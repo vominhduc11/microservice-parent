@@ -23,6 +23,10 @@ spring:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+auth:
+  api:
+    key: ${AUTH_API_KEY:INTER_SERVICE_KEY}
+
 services:
   auth-service:
     url: ${AUTH_SERVICE_URL:http://auth-service:8081}

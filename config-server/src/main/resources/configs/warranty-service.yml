@@ -21,7 +21,13 @@ spring:
       host: ${REDIS_HOST:redis}
       port: 6379
 
+auth:
+  api:
+    key: ${AUTH_API_KEY:INTER_SERVICE_KEY}
+
 services:
+  user-service:
+    url: ${USER_SERVICE_URL:http://user-service:8082}
   product-service:
     url: ${PRODUCT_SERVICE_URL:http://product-service:8083}
   order-service:

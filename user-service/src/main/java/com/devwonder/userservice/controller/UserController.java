@@ -1,6 +1,7 @@
 package com.devwonder.userservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.DealerRequest;
 import com.devwonder.userservice.dto.DealerResponse;
 import com.devwonder.userservice.dto.DealerUpdateRequest;
@@ -156,24 +157,18 @@ public class UserController {
     @GetMapping("/customers/{identifier}/check-exists")
     @Operation(
         summary = "Check if customer exists",
-        description = "Check if customer exists by phone or email. Returns customer ID if found.",
+        description = "Check if customer exists by phone or email. Returns detailed customer information if found.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Check completed"),
-        @ApiResponse(responseCode = "404", description = "Customer not found")
+        @ApiResponse(responseCode = "200", description = "Check completed successfully")
     })
-    public ResponseEntity<BaseResponse<Long>> checkCustomerExists(
+    public ResponseEntity<BaseResponse<CheckCustomerExistsResponse>> checkCustomerExists(
             @PathVariable String identifier) {
 
         log.info("Checking customer existence: {}", identifier);
 
-        Long customerId = userService.findCustomerIdByIdentifier(identifier);
-        if (customerId != null) {
-            return ResponseEntity.ok(BaseResponse.success("Customer found", customerId));
-        } else {
-            return ResponseEntity.status(404)
-                    .body(BaseResponse.error("Customer not found"));
-        }
+        CheckCustomerExistsResponse response = userService.checkCustomerExistsByIdentifier(identifier);
+        return ResponseEntity.ok(BaseResponse.success("Customer check completed", response));
     }
 }

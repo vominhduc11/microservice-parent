@@ -4,6 +4,7 @@ import com.devwonder.common.exception.AccountCreationException;
 import com.devwonder.common.exception.ResourceAlreadyExistsException;
 import com.devwonder.userservice.client.AuthServiceClient;
 import com.devwonder.userservice.dto.*;
+import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import com.devwonder.userservice.entity.Dealer;
 import com.devwonder.userservice.mapper.DealerMapper;
@@ -180,5 +181,9 @@ public class UserService {
 
     public Long findCustomerIdByIdentifier(String identifier) {
         return customerService.findCustomerIdByIdentifier(identifier);
+    }
+
+    public CheckCustomerExistsResponse checkCustomerExistsByIdentifier(String identifier) {
+        return customerService.checkCustomerExistsByIdentifier(identifier);
     }
 }

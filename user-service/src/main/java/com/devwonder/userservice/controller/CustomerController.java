@@ -1,8 +1,10 @@
 package com.devwonder.userservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
+import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.CustomerInfo;
 import com.devwonder.userservice.service.CustomerService;
+import com.devwonder.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

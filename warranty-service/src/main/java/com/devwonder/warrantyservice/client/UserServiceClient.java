@@ -2,18 +2,28 @@ package com.devwonder.warrantyservice.client;
 
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.warrantyservice.dto.CustomerInfo;
+import com.devwonder.warrantyservice.dto.CheckCustomerExistsResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "user-service")
+@FeignClient(name = "user-service", url = "${services.user-service.url:http://user-service:8082}")
 public interface UserServiceClient {
 
     @GetMapping("/user/customers/{identifier}/check-exists")
-    BaseResponse<Long> checkCustomerExists(@PathVariable String identifier);
+    BaseResponse<CheckCustomerExistsResponse> checkCustomerExists(
+            @PathVariable String identifier,
+            @RequestHeader("X-API-Key") String apiKey
+    );
 
     @PostMapping("/customer")
-    BaseResponse<Long> createCustomer(@RequestBody CustomerInfo customerInfo);
+    BaseResponse<Long> createCustomer(
+            @RequestBody CustomerInfo customerInfo,
+            @RequestHeader("X-API-Key") String apiKey
+    );
 
     @GetMapping("/customer/{customerId}")
-    BaseResponse<String> getCustomerName(@PathVariable Long customerId);
+    BaseResponse<String> getCustomerName(
+            @PathVariable Long customerId,
+            @RequestHeader("X-API-Key") String apiKey
+    );
 }

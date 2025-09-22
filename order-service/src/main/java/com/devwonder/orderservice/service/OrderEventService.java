@@ -8,6 +8,7 @@ import com.devwonder.orderservice.dto.DealerInfo;
 import com.devwonder.orderservice.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,9 @@ public class OrderEventService {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final UserServiceClient userServiceClient;
+
+    @Value("${auth.api.key:INTER_SERVICE_KEY}")
+    private String authApiKey;
 
     public void publishOrderNotificationEvent(Order order, BigDecimal totalAmount) {
         try {
@@ -49,7 +53,7 @@ public class OrderEventService {
 
     private DealerInfo getDealerInfo(Long dealerId) {
         try {
-            BaseResponse<DealerInfo> response = userServiceClient.getDealerInfo(dealerId);
+            BaseResponse<DealerInfo> response = userServiceClient.getDealerInfo(dealerId, authApiKey);
             if (response != null && response.isSuccess() && response.getData() != null) {
                 return response.getData();
             }

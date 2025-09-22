@@ -1,5 +1,6 @@
 package com.devwonder.userservice.service;
 
+import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.CustomerInfo;
 import com.devwonder.userservice.entity.Customer;
 import com.devwonder.userservice.repository.CustomerRepository;
@@ -28,6 +29,66 @@ public class CustomerService {
         "^[+]?[0-9\\s\\-\\(\\)]{10,15}$"
     );
 
+    @Transactional(readOnly = true)
+    public CheckCustomerExistsResponse checkCustomerExistsByIdentifier(String identifier) {
+        log.info("Checking customer existence with identifier: {}", identifier);
+
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return CheckCustomerExistsResponse.builder()
+                .exists(false)
+                .message("Identifier cannot be empty")
+                .build();
+        }
+
+        String trimmedIdentifier = identifier.trim();
+
+        // Determine if identifier is email or phone
+        if (EMAIL_PATTERN.matcher(trimmedIdentifier).matches()) {
+            // Check by email
+            Optional<Customer> customerByEmail = customerRepository.findByEmail(trimmedIdentifier);
+            if (customerByEmail.isPresent()) {
+                Customer customer = customerByEmail.get();
+                log.info("Customer found by email: {} with accountId: {}",
+                    trimmedIdentifier, customer.getAccountId());
+
+                return CheckCustomerExistsResponse.builder()
+                    .exists(true)
+                    .matchedBy("email")
+                    .message("Customer account found by email")
+                    .customerInfo(buildCustomerInfo(customer))
+                    .build();
+            }
+        } else if (PHONE_PATTERN.matcher(trimmedIdentifier).matches()) {
+            // Check by phone
+            Optional<Customer> customerByPhone = customerRepository.findByPhone(trimmedIdentifier);
+            if (customerByPhone.isPresent()) {
+                Customer customer = customerByPhone.get();
+                log.info("Customer found by phone: {} with accountId: {}",
+                    trimmedIdentifier, customer.getAccountId());
+
+                return CheckCustomerExistsResponse.builder()
+                    .exists(true)
+                    .matchedBy("phone")
+                    .message("Customer account found by phone number")
+                    .customerInfo(buildCustomerInfo(customer))
+                    .build();
+            }
+        } else {
+            // Invalid format
+            return CheckCustomerExistsResponse.builder()
+                .exists(false)
+                .message("Invalid identifier format. Must be a valid email or phone number")
+                .build();
+        }
+
+        // No customer found
+        log.info("No customer found with identifier: {}", trimmedIdentifier);
+
+        return CheckCustomerExistsResponse.builder()
+            .exists(false)
+            .message("No customer account found with the provided identifier")
+            .build();
+    }
 
     @Transactional
     public Long createCustomer(CustomerInfo customerInfo) {
