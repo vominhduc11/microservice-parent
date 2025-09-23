@@ -13,7 +13,9 @@
       "Bash(docker-compose logs:*)",
       "Bash(docker compose:*)",
       "Bash(find:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(for service in auth-service blog-service cart-service notification-service order-service product-service user-service warranty-service)",
+      "Bash(do echo \"=== $service ===\")"
     ],
     "deny": [],
     "ask": []

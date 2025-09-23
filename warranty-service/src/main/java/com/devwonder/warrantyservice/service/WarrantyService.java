@@ -9,6 +9,7 @@ import com.devwonder.warrantyservice.enums.WarrantyStatus;
 import com.devwonder.warrantyservice.exception.CustomerOperationException;
 import com.devwonder.warrantyservice.exception.WarrantyAlreadyExistsException;
 import com.devwonder.warrantyservice.exception.WarrantyNotFoundException;
+import com.devwonder.warrantyservice.mapper.WarrantyMapper;
 import com.devwonder.warrantyservice.repository.WarrantyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class WarrantyService {
     private final WarrantyRepository warrantyRepository;
     private final UserServiceClient userServiceClient;
     private final ProductServiceClient productServiceClient;
+    private final WarrantyMapper warrantyMapper;
 
     @Value("${auth.api.key:INTER_SERVICE_KEY}")
     private String authApiKey;
@@ -248,7 +250,7 @@ public class WarrantyService {
         Warranty warranty = warrantyRepository.findActiveWarrantyByProductSerial(productSerialId)
                 .orElseThrow(() -> new WarrantyNotFoundException("No active warranty found for serial number: " + serialNumber));
 
-        return mapToResponse(warranty);
+        return mapToResponseWithDetails(warranty);
     }
 
     public boolean isWarrantyActive(Warranty warranty) {
@@ -283,14 +285,59 @@ public class WarrantyService {
     }
 
     private WarrantyResponse mapToResponse(Warranty warranty) {
-        return WarrantyResponse.builder()
-                .id(warranty.getId())
-                .idProductSerial(warranty.getIdProductSerial())
-                .idCustomer(warranty.getIdCustomer())
-                .warrantyCode(warranty.getWarrantyCode())
-                .status(warranty.getStatus())
-                .purchaseDate(warranty.getPurchaseDate())
-                .createAt(warranty.getCreateAt())
+        return warrantyMapper.toWarrantyResponse(warranty);
+    }
+
+    private WarrantyResponse mapToResponseWithDetails(Warranty warranty) {
+        // Start with basic mapping
+        WarrantyResponse response = warrantyMapper.toWarrantyResponse(warranty);
+
+        // Add customer information
+        CustomerInfo customerInfo = getCustomerInfo(warranty.getIdCustomer());
+        response.setCustomer(customerInfo);
+
+        // Add product serial information
+        ProductSerialInfo productSerialInfo = getProductSerialInfo(warranty.getIdProductSerial());
+        response.setProductSerial(productSerialInfo);
+
+        return response;
+    }
+
+    private CustomerInfo getCustomerInfo(Long customerId) {
+        try {
+            var response = userServiceClient.getCustomerById(customerId, authApiKey);
+            if (response.isSuccess() && response.getData() != null) {
+                return response.getData(); // Direct return since response already contains CustomerInfo
+            }
+        } catch (Exception e) {
+            log.warn("Could not get customer details for ID {}: {}", customerId, e.getMessage());
+        }
+
+        return CustomerInfo.builder()
+                .name("Unknown Customer")
+                .email("")
+                .phone("")
+                .address("")
+                .build();
+    }
+
+    private ProductSerialInfo getProductSerialInfo(Long productSerialId) {
+        try {
+            var response = productServiceClient.getProductSerialDetails(productSerialId, authApiKey);
+            if (response.isSuccess() && response.getData() != null) {
+                return response.getData(); // Direct return since DTOs are now the same
+            }
+        } catch (Exception e) {
+            log.warn("Could not get product serial details for ID {}: {}", productSerialId, e.getMessage());
+        }
+
+        // Fallback data
+        return ProductSerialInfo.builder()
+                .id(productSerialId)
+                .serialNumber("Unknown")
+                .productName("Unknown Product")
+                .productSku("")
+                .status("UNKNOWN")
                 .build();
     }
 }

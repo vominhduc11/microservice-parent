@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/blog")
-@Tag(name = "Blog Management", description = "Blog management endpoints")
+@Tag(name = "Blogs", description = "📝 Blog content management - Public reading & Admin operations")
 @RequiredArgsConstructor
 @Slf4j
 public class BlogController {
@@ -75,21 +75,23 @@ public class BlogController {
         return ResponseEntity.ok(BaseResponse.success("Deleted blogs retrieved successfully", blogs));
     }
 
-    @GetMapping("/blogs/showhomepageandlimit6")
+    @GetMapping("/blogs/homepage")
     @Operation(
         summary = "Get Homepage Blogs",
-        description = "Retrieve 6 blogs to display on homepage with show_on_homepage=true. Public access - no authentication required."
+        description = "Retrieve blogs to display on homepage with show_on_homepage=true. Default limit is 6 but can be customized via limit parameter. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Blogs retrieved successfully"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<List<BlogResponse>>> getHomepageBlogs(
+            @RequestParam(defaultValue = "6") int limit,
             @RequestParam(required = false) String fields) {
         
-        log.info("Requesting homepage blogs - fields: {}", fields);
-        
-        List<BlogResponse> blogs = blogService.getHomepageBlogs(fields, 6);
+        log.info("Requesting homepage blogs - limit: {}, fields: {}", limit, fields);
+
+        List<BlogResponse> blogs = blogService.getHomepageBlogs(fields, limit);
         
         log.info("Retrieved {} homepage blogs", blogs.size());
         
@@ -99,7 +101,8 @@ public class BlogController {
     @GetMapping("/blogs/related/{blogId}")
     @Operation(
         summary = "Get Related Blogs",
-        description = "Retrieve related blogs for a specific blog. Public access - no authentication required."
+        description = "Retrieve related blogs for a specific blog. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Related blogs retrieved successfully"),
@@ -123,7 +126,8 @@ public class BlogController {
     @GetMapping("/{id}")
     @Operation(
         summary = "Get Blog Details",
-        description = "Retrieve detailed information about a specific blog by ID. Public access - no authentication required."
+        description = "Retrieve detailed information about a specific blog by ID. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Blog details retrieved successfully"),

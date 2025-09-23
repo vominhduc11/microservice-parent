@@ -19,18 +19,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/blog")
-@Tag(name = "Category Blog Management", description = "Category blog management endpoints")
+@RequestMapping("/categories")
+@Tag(name = "Blog Categories", description = "📁 Blog category organization & management")
 @RequiredArgsConstructor
 @Slf4j
 public class CategoryBlogController {
 
     private final CategoryBlogService categoryBlogService;
 
-    @GetMapping("/categories")
+    @GetMapping
     @Operation(
         summary = "Get All Category Blogs",
-        description = "Retrieve all category blogs. Public access - no authentication required."
+        description = "Retrieve all category blogs. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Category blogs retrieved successfully"),
@@ -47,7 +48,7 @@ public class CategoryBlogController {
         return ResponseEntity.ok(BaseResponse.success("Category blogs retrieved successfully", categoryBlogs));
     }
 
-    @PostMapping("/categories")
+    @PostMapping
     @Operation(
         summary = "Create New Category Blog",
         description = "Create a new category blog. Requires ADMIN role authentication via API Gateway.",
@@ -72,7 +73,7 @@ public class CategoryBlogController {
                 .body(BaseResponse.success("Category blog created successfully", categoryBlog));
     }
 
-    @DeleteMapping("/categories/{id}")
+    @DeleteMapping("/{id}")
     @Operation(
         summary = "Delete Category Blog",
         description = "Delete a category blog by ID. Requires ADMIN role authentication via API Gateway.",

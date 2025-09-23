@@ -1,15 +1,19 @@
 package com.devwonder.authservice.exception;
 
 import com.devwonder.common.exception.BaseException;
-import org.springframework.http.HttpStatus;
 
 public class InvalidCredentialsException extends BaseException {
 
     public InvalidCredentialsException(String message) {
-        super(message, HttpStatus.UNAUTHORIZED);
+        super(message);
     }
 
     public InvalidCredentialsException(String message, Throwable cause) {
-        super(message, HttpStatus.UNAUTHORIZED, cause);
+        super(message, cause);
+    }
+
+    @Override
+    protected String getDefaultErrorCode() {
+        return "AUTH_INVALID_CREDENTIALS";
     }
 }

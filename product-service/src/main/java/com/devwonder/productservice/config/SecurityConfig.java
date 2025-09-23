@@ -15,6 +15,7 @@ public class SecurityConfig extends BaseSecurityConfig {
             // Specific product endpoints for inter-service calls - API key required
             .requestMatchers("/product-serial/serial/*").access(authApiKeyRequired())       // Serial lookup calls
             .requestMatchers("/product-serial/bulk-status").access(authApiKeyRequired())    // Bulk status update calls
+            .requestMatchers("/product-serial/*/details").access(authApiKeyRequired())      // Product serial details lookup
 
             // All other product endpoints - ONLY accessible via API Gateway
             .requestMatchers("/product/**").access(gatewayHeaderRequired());

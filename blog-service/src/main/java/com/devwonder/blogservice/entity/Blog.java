@@ -52,8 +52,8 @@ public class Blog {
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
-    @Column(name = "update_at")
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     
     @ManyToOne(fetch = FetchType.LAZY)

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/customer")
-@Tag(name = "Customer Management", description = "Customer management endpoints")
+@Tag(name = "Customers (Gateway)", description = "👥 Customer operations via API Gateway")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
@@ -29,8 +29,8 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping
-    @Operation(summary = "Create new customer",
-               description = "Creates a new customer record. Used by warranty service for new customer creation.",
+    @Operation(summary = "Create new customer via Gateway",
+               description = "Creates a new customer record via API Gateway. Requires DEALER role authentication.",
                security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Customer created successfully"),
@@ -59,8 +59,8 @@ public class CustomerController {
 
 
     @GetMapping("/{customerId}")
-    @Operation(summary = "Get customer name",
-               description = "Get customer name by customer ID",
+    @Operation(summary = "Get customer name via Gateway",
+               description = "Get customer name by customer ID via API Gateway. Requires authentication.",
                security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Customer name retrieved"),
@@ -74,6 +74,28 @@ public class CustomerController {
         String customerName = customerService.getCustomerName(customerId);
         if (customerName != null) {
             return ResponseEntity.ok(BaseResponse.success("Customer name retrieved", customerName));
+        } else {
+            return ResponseEntity.status(404)
+                    .body(BaseResponse.error("Customer not found"));
+        }
+    }
+
+    @GetMapping("/{customerId}/details")
+    @Operation(summary = "Get customer details",
+               description = "Get detailed customer information by customer ID. Supports both Gateway and inter-service access.",
+               security = {@SecurityRequirement(name = "apiKey"), @SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Customer details retrieved"),
+            @ApiResponse(responseCode = "404", description = "Customer not found")
+    })
+    public ResponseEntity<BaseResponse<CustomerInfo>> getCustomerDetails(
+            @PathVariable Long customerId) {
+
+        log.info("Getting customer details for ID: {}", customerId);
+
+        CustomerInfo customerDetails = customerService.getCustomerDetails(customerId);
+        if (customerDetails != null) {
+            return ResponseEntity.ok(BaseResponse.success("Customer details retrieved", customerDetails));
         } else {
             return ResponseEntity.status(404)
                     .body(BaseResponse.error("Customer not found"));

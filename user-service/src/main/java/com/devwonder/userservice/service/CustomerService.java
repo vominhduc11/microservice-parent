@@ -162,6 +162,14 @@ public class CustomerService {
         return customer.map(Customer::getName).orElse(null);
     }
 
+    @Transactional(readOnly = true)
+    public CustomerInfo getCustomerDetails(Long customerId) {
+        log.info("Getting customer details for ID: {}", customerId);
+
+        Optional<Customer> customer = customerRepository.findByAccountId(customerId);
+        return customer.map(this::buildCustomerInfo).orElse(null);
+    }
+
     private Long generateAccountId() {
         // Simple approach: find max accountId and increment
         // In production, consider using sequences or UUID

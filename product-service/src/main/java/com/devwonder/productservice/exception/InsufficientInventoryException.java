@@ -1,15 +1,19 @@
 package com.devwonder.productservice.exception;
 
 import com.devwonder.common.exception.BaseException;
-import org.springframework.http.HttpStatus;
 
 public class InsufficientInventoryException extends BaseException {
 
     public InsufficientInventoryException(String message) {
-        super(message, HttpStatus.BAD_REQUEST);
+        super(message);
     }
 
     public InsufficientInventoryException(String message, Throwable cause) {
-        super(message, HttpStatus.BAD_REQUEST, cause);
+        super(message, cause);
+    }
+
+    @Override
+    protected String getDefaultErrorCode() {
+        return "PRODUCT_INSUFFICIENT_INVENTORY";
     }
 }

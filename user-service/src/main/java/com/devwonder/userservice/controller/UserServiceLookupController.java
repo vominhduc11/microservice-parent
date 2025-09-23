@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user-service")
-@Tag(name = "User Service Lookup", description = "User service lookup endpoints for inter-service communication")
+@Tag(name = "Inter-Service APIs", description = "🔗 Direct service-to-service communication (API Key required)")
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceLookupController {

@@ -3,6 +3,7 @@ package com.devwonder.cartservice.service;
 import com.devwonder.cartservice.dto.AddToCartRequest;
 import com.devwonder.cartservice.dto.CartResponse;
 import com.devwonder.cartservice.entity.ProductOfCart;
+import com.devwonder.cartservice.mapper.CartMapper;
 import com.devwonder.cartservice.repository.ProductOfCartRepository;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class DealerCartService {
 
     private final ProductOfCartRepository productOfCartRepository;
+    private final CartMapper cartMapper;
 
     @Transactional
     public CartResponse addProductToCart(AddToCartRequest request) {
@@ -67,19 +68,7 @@ public class DealerCartService {
 
         List<ProductOfCart> cartItems = productOfCartRepository.findByDealerId(dealerId);
 
-        List<CartResponse.CartItemResponse> items = cartItems.stream()
-                .map(cart -> {
-                    BigDecimal subtotal = cart.getUnitPrice().multiply(BigDecimal.valueOf(cart.getQuantity()));
-                    return CartResponse.CartItemResponse.builder()
-                            .cartId(cart.getId())
-                            .productId(cart.getProductId())
-                            .quantity(cart.getQuantity())
-                            .unitPrice(cart.getUnitPrice())
-                            .subtotal(subtotal)
-                            .addedAt(cart.getCreatedAt())
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<CartResponse.CartItemResponse> items = cartMapper.toCartItemResponseList(cartItems);
 
         // Calculate totals in a single pass
         int totalItems = cartItems.stream()

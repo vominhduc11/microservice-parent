@@ -26,7 +26,8 @@ public class JwksController {
     @Operation(
         summary = "Get JSON Web Key Set",
         description = "Returns the JSON Web Key Set (JWKS) containing public keys used for JWT verification. " +
-                     "This endpoint is used by other services to verify JWT tokens issued by the auth service."
+                     "This endpoint is used by other services to verify JWT tokens issued by the auth service.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "JWKS retrieved successfully"),

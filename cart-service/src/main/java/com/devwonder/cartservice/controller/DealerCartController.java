@@ -35,7 +35,7 @@ public class DealerCartController {
 
     private final DealerCartService dealerCartService;
 
-    @PostMapping("/add")
+    @PostMapping("/items")
     @Operation(summary = "Add Product to Dealer Cart",
                description = "Add a product to dealer's cart. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))
@@ -91,7 +91,7 @@ public class DealerCartController {
         }
     }
 
-    @DeleteMapping("/item/{cartId}")
+    @DeleteMapping("/items/{cartId}")
     @Operation(summary = "Remove Cart Item",
                description = "Remove a specific cart item by cart ID. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))
@@ -124,7 +124,7 @@ public class DealerCartController {
     }
 
 
-    @PatchMapping("/item/{cartId}/quantity")
+    @PatchMapping("/items/{cartId}/quantity")
     @Operation(summary = "Update Cart Item Quantity",
                description = "Update quantity of a cart item. Supports increment (+), decrement (-), or set exact value. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))

@@ -2,6 +2,7 @@ package com.devwonder.productservice.service;
 
 import com.devwonder.common.exception.ResourceAlreadyExistsException;
 import com.devwonder.common.exception.ResourceNotFoundException;
+import com.devwonder.productservice.exception.ProductNotFoundException;
 import com.devwonder.productservice.dto.ProductSerialCreateRequest;
 import com.devwonder.productservice.dto.ProductSerialResponse;
 import com.devwonder.productservice.dto.ProductSerialBulkCreateRequest;
@@ -45,7 +46,7 @@ public class ProductSerialService {
         
         // Check if product exists
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + request.getProductId()));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + request.getProductId()));
         
         ProductSerial productSerial = ProductSerial.builder()
                 .serial(request.getSerial())
@@ -64,7 +65,7 @@ public class ProductSerialService {
 
         // Check if product exists
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
 
         List<ProductSerial> productSerials = productSerialRepository.findByProduct(product);
 
@@ -80,7 +81,7 @@ public class ProductSerialService {
 
         // Check if product exists
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + request.getProductId()));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + request.getProductId()));
 
         // Get existing serials to avoid duplicates
         Set<String> existingSerials = new HashSet<>(productSerialRepository.findSerialsByProduct(product));
@@ -128,7 +129,7 @@ public class ProductSerialService {
 
         // Check if serial exists
         ProductSerial productSerial = productSerialRepository.findById(serialId)
-                .orElseThrow(() -> new RuntimeException("Product serial not found with ID: " + serialId));
+                .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
 
         productSerialRepository.delete(productSerial);
         log.info("Successfully deleted product serial with ID: {}", serialId);
@@ -140,7 +141,7 @@ public class ProductSerialService {
 
         // Check if serial exists
         ProductSerial productSerial = productSerialRepository.findById(serialId)
-                .orElseThrow(() -> new RuntimeException("Product serial not found with ID: " + serialId));
+                .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
 
         productSerial.setStatus(request.getStatus());
         ProductSerial savedProductSerial = productSerialRepository.save(productSerial);
@@ -155,7 +156,7 @@ public class ProductSerialService {
 
         // Check if product exists
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
 
         // Count by status
         Long availableCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.AVAILABLE);
@@ -181,7 +182,7 @@ public class ProductSerialService {
 
         // Check if product exists
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
 
         Long availableCount = productSerialRepository.countByProductAndStatus(product, ProductSerialStatus.AVAILABLE);
 
@@ -196,7 +197,7 @@ public class ProductSerialService {
 
         // Check if product exists
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
 
         List<ProductSerial> productSerials = productSerialRepository.findByProductAndStatus(product, status);
 
@@ -243,5 +244,29 @@ public class ProductSerialService {
         log.info("Successfully updated {} out of {} product serials to SOLD_TO_CUSTOMER",
                 updatedCount, serialNumbers.size());
         return updatedCount;
+    }
+
+    @Transactional(readOnly = true)
+    public com.devwonder.productservice.dto.ProductSerialDetailsResponse getProductSerialDetails(Long productSerialId) {
+        log.info("Getting product serial details for ID: {}", productSerialId);
+
+        ProductSerial productSerial = productSerialRepository.findById(productSerialId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product serial not found with ID: " + productSerialId));
+
+        Product product = productSerial.getProduct();
+
+        com.devwonder.productservice.dto.ProductSerialDetailsResponse response =
+            com.devwonder.productservice.dto.ProductSerialDetailsResponse.builder()
+                .id(productSerial.getId())
+                .serialNumber(productSerial.getSerial())
+                .productName(product.getName())
+                .productSku(product.getSku())
+                .status(productSerial.getStatus().toString())
+                .build();
+
+        log.info("Retrieved product serial details for ID: {} - serial: {}, product: {}",
+                productSerialId, productSerial.getSerial(), product.getName());
+
+        return response;
     }
 }

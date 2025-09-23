@@ -2,6 +2,7 @@ package com.devwonder.warrantyservice.client;
 
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.warrantyservice.dto.ProductSerialBulkStatusUpdateRequest;
+import com.devwonder.warrantyservice.dto.ProductSerialInfo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,12 @@ public interface ProductServiceClient {
     @PostMapping("/product-serial/bulk-status")
     BaseResponse<String> updateProductSerialsToSoldToCustomer(
             @RequestBody ProductSerialBulkStatusUpdateRequest request,
+            @RequestHeader("X-API-Key") String apiKey
+    );
+
+    @GetMapping("/product-serial/{productSerialId}/details")
+    BaseResponse<ProductSerialInfo> getProductSerialDetails(
+            @PathVariable Long productSerialId,
             @RequestHeader("X-API-Key") String apiKey
     );
 }

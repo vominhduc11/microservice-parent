@@ -5,6 +5,7 @@ import com.devwonder.orderservice.dto.OrderResponse;
 import com.devwonder.orderservice.entity.Order;
 import com.devwonder.orderservice.entity.OrderItem;
 import com.devwonder.orderservice.enums.PaymentStatus;
+import com.devwonder.orderservice.mapper.OrderMapper;
 import com.devwonder.orderservice.repository.OrderRepository;
 import com.devwonder.orderservice.repository.OrderItemRepository;
 import com.devwonder.common.exception.ResourceNotFoundException;
@@ -13,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -28,6 +28,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderEventService orderEventService;
+    private final OrderMapper orderMapper;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -196,33 +197,9 @@ public class OrderService {
     }
 
     private OrderResponse buildOrderResponse(Order order, List<OrderItem> orderItems) {
-        List<OrderResponse.OrderItemResponse> itemResponses = orderItems.stream()
-                .map(item -> {
-                    BigDecimal subtotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                    return OrderResponse.OrderItemResponse.builder()
-                            .id(item.getId())
-                            .idProduct(item.getIdProduct())
-                            .unitPrice(item.getUnitPrice())
-                            .quantity(item.getQuantity())
-                            .subtotal(subtotal)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // Calculate total price
-        BigDecimal totalPrice = itemResponses.stream()
-                .map(OrderResponse.OrderItemResponse::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return OrderResponse.builder()
-                .id(order.getId())
-                .idDealer(order.getIdDealer())
-                .orderCode(order.getOrderCode())
-                .createAt(order.getCreateAt())
-                .paymentStatus(order.getPaymentStatus())
-                .orderItems(itemResponses)
-                .totalPrice(totalPrice)
-                .build();
+        // Set order items for mapping
+        order.setOrderItems(orderItems);
+        return orderMapper.toOrderResponse(order);
     }
 
     private String generateOrderCode() {

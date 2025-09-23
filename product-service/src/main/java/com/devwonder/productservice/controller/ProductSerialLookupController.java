@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/product-serial")
-@Tag(name = "Product Serial Lookup", description = "Product serial lookup endpoints for inter-service communication")
+@Tag(name = "Product Inventory", description = "📋 Serial number tracking & Inventory management")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductSerialLookupController {
@@ -70,5 +70,28 @@ public class ProductSerialLookupController {
         log.info(message);
 
         return ResponseEntity.ok(BaseResponse.success(message, null));
+    }
+
+    @GetMapping("/{productSerialId}/details")
+    @Operation(
+        summary = "Get Product Serial Details by ID",
+        description = "Retrieve detailed product serial information including product details by product serial ID. Used by inter-service calls (warranty service). Requires API key authentication.",
+        security = @SecurityRequirement(name = "apiKey")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serial details retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Product serial not found"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<com.devwonder.productservice.dto.ProductSerialDetailsResponse>> getProductSerialDetails(@PathVariable Long productSerialId) {
+
+        log.info("Looking up product serial details for ID: {}", productSerialId);
+
+        com.devwonder.productservice.dto.ProductSerialDetailsResponse productSerialDetails = productSerialService.getProductSerialDetails(productSerialId);
+
+        log.info("Successfully retrieved product serial details for ID: {}", productSerialId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serial details retrieved successfully", productSerialDetails));
     }
 }

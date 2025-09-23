@@ -21,28 +21,30 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/product")
-@Tag(name = "Product Management", description = "Product management endpoints")
+@Tag(name = "Products", description = "📦 Product catalog management - Public browsing & Admin operations")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductController {
     
     private final ProductService productService;
     
-    @GetMapping("/products/showhomepageandlimit4")
+    @GetMapping("/products/homepage")
     @Operation(
         summary = "Get Homepage Products",
-        description = "Retrieve 4 products to display on homepage with show_on_homepage=true"
+        description = "Retrieve products to display on homepage with show_on_homepage=true. Default limit is 4 but can be customized via limit parameter.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<List<ProductResponse>>> getHomepageProducts(
+            @RequestParam(defaultValue = "4") int limit,
             @RequestParam(required = false) String fields) {
         
-        log.info("Requesting homepage products - fields: {}", fields);
-        
-        List<ProductResponse> products = productService.getHomepageProducts(fields, 4);
+        log.info("Requesting homepage products - limit: {}, fields: {}", limit, fields);
+
+        List<ProductResponse> products = productService.getHomepageProducts(fields, limit);
         
         log.info("Retrieved {} homepage products", products.size());
         
@@ -52,7 +54,8 @@ public class ProductController {
     @GetMapping("/{id}")
     @Operation(
         summary = "Get Product Details",
-        description = "Retrieve detailed information about a specific product by ID with optional field filtering"
+        description = "Retrieve detailed information about a specific product by ID with optional field filtering",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Product details retrieved successfully"),
@@ -72,21 +75,23 @@ public class ProductController {
         return ResponseEntity.ok(BaseResponse.success("Product details retrieved successfully", product));
     }
     
-    @GetMapping("/products/featuredandlimit1")
+    @GetMapping("/products/featured")
     @Operation(
         summary = "Get Featured Products",
-        description = "Retrieve 1 featured product with is_featured=true"
+        description = "Retrieve featured products with is_featured=true. Default limit is 1 but can be customized via limit parameter.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Featured products retrieved successfully"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<List<ProductResponse>>> getFeaturedProducts(
+            @RequestParam(defaultValue = "1") int limit,
             @RequestParam(required = false) String fields) {
         
-        log.info("Requesting featured products - fields: {}", fields);
-        
-        List<ProductResponse> products = productService.getFeaturedProducts(fields, 1);
+        log.info("Requesting featured products - limit: {}, fields: {}", limit, fields);
+
+        List<ProductResponse> products = productService.getFeaturedProducts(fields, limit);
         
         log.info("Retrieved {} featured products", products.size());
         
@@ -96,7 +101,8 @@ public class ProductController {
     @GetMapping("/products/related/{productId}")
     @Operation(
         summary = "Get Related Products",
-        description = "Retrieve related products for a specific product. Public access - no authentication required."
+        description = "Retrieve related products for a specific product. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Related products retrieved successfully"),

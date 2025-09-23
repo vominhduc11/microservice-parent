@@ -30,8 +30,8 @@ public class Order {
     private String orderCode;
 
     @CreationTimestamp
-    @Column(name = "create_at", updatable = false)
-    private LocalDateTime createAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)

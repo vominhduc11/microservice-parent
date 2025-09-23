@@ -73,8 +73,8 @@ public class Product {
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
-    @Column(name = "update_at")
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<ProductSerial> productSerials;

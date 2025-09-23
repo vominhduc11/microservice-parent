@@ -42,11 +42,11 @@ public class Account {
     private Set<Role> roles = new HashSet<>();
     
     @CreationTimestamp
-    @Column(name = "create_at", updatable = false)
-    private LocalDateTime createAt;
-    
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
     @UpdateTimestamp
-    @Column(name = "update_at")
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
 }

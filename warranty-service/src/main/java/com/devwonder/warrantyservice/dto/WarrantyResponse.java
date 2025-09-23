@@ -21,4 +21,8 @@ public class WarrantyResponse {
     private WarrantyStatus status;
     private LocalDateTime purchaseDate;
     private LocalDateTime createAt;
+
+    // Enhanced fields with detailed information
+    private CustomerInfo customer;
+    private ProductSerialInfo productSerial;
 }

@@ -23,14 +23,14 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Warranty Management", description = "APIs for managing product warranties")
-@SecurityRequirement(name = "bearerAuth")
 public class WarrantyController {
 
     private final WarrantyService warrantyService;
 
     @PostMapping
     @Operation(summary = "Create warranties for purchase",
-               description = "Creates warranties for purchased products. Handles both new and existing customers. DEALER role required via API Gateway.")
+               description = "Creates warranties for purchased products. Handles both new and existing customers. DEALER role required via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Warranties created successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data"),
@@ -65,7 +65,8 @@ public class WarrantyController {
     }
 
     @GetMapping("/customer/{customerId}")
-    @Operation(summary = "Get warranties by customer", description = "Retrieves all warranties for a specific customer")
+    @Operation(summary = "Get warranties by customer", description = "Retrieves all warranties for a specific customer",
+               security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Warranties retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Customer not found")
@@ -82,7 +83,8 @@ public class WarrantyController {
 
     @GetMapping("/check/{serialNumber}")
     @Operation(summary = "Check warranty by serial number",
-               description = "Checks active warranty for a product by its serial number (e.g., SN003). Public endpoint - no authentication required.")
+               description = "Checks active warranty for a product by its serial number (e.g., SN003). Public endpoint - no authentication required.",
+               security = {})
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Active warranty found"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "No active warranty found or product serial not found")

@@ -45,6 +45,6 @@ public class Warranty {
     private LocalDateTime purchaseDate;
 
     @CreationTimestamp
-    @Column(name = "create_at", updatable = false)
-    private LocalDateTime createAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }

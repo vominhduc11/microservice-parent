@@ -1,15 +1,19 @@
 package com.devwonder.productservice.exception;
 
 import com.devwonder.common.exception.BaseException;
-import org.springframework.http.HttpStatus;
 
 public class ProductSerialNotFoundException extends BaseException {
 
     public ProductSerialNotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND);
+        super(message);
     }
 
     public ProductSerialNotFoundException(String message, Throwable cause) {
-        super(message, HttpStatus.NOT_FOUND, cause);
+        super(message, cause);
+    }
+
+    @Override
+    protected String getDefaultErrorCode() {
+        return "PRODUCT_SERIAL_NOT_FOUND";
     }
 }

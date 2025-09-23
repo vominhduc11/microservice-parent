@@ -28,7 +28,8 @@ public class AuthController {
         summary = "User Login",
         description = "Authenticate user credentials and return JWT access token. " +
                     "Optional userType field can be provided to validate against specific user role. " +
-                    "The token can be used for accessing protected resources in other microservices."
+                    "The token can be used for accessing protected resources in other microservices.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Login successful, JWT token returned"),
@@ -65,7 +66,8 @@ public class AuthController {
         summary = "Refresh JWT Token",
         description = "Refresh an expired or soon-to-expire JWT token and get a new access token. " +
                     "The old token must have valid signature but can be expired. " +
-                    "After refresh, the old token becomes invalid and should not be used."
+                    "After refresh, the old token becomes invalid and should not be used.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Token refreshed successfully, new token returned"),
@@ -79,34 +81,6 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.success("Token refreshed successfully", response));
     }
 
-    @PostMapping("/accounts")
-    @Operation(
-        summary = "Create New Account (Internal Only)",
-        description = "Create a new user account with specified roles. " +
-                    "⚠️ INTERNAL USE ONLY: Requires X-Internal-Service header. " +
-                    "This endpoint is for service-to-service communication. " +
-                    "Password will be encrypted and stored securely.",
-        tags = {"Internal APIs"},
-        hidden = true
-    )
-    @Parameter(
-        name = "X-Internal-Service",
-        description = "Required header for internal service authentication",
-        required = true,
-        in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER,
-        schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "user-service")
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Account created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request payload"),
-        @ApiResponse(responseCode = "409", description = "Account with this username already exists"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<BaseResponse<AccountCreateResponse>> createAccount(@Valid @RequestBody AccountCreateRequest request) {
-        AccountCreateResponse response = authService.createAccount(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(BaseResponse.success("Account created successfully", response));
-    }
 
     @GetMapping("/validate")
     @Operation(
@@ -128,33 +102,4 @@ public class AuthController {
         ));
     }
 
-    @DeleteMapping("/accounts/{accountId}")
-    @Operation(
-        summary = "Delete Account (Internal Only)",
-        description = "Delete an existing user account by ID. " +
-                    "⚠️ INTERNAL USE ONLY: Requires X-Internal-Service header. " +
-                    "This endpoint is for service-to-service communication. " +
-                    "Account will be permanently removed from the system.",
-        tags = {"Internal APIs"},
-        hidden = true
-    )
-    @Parameter(
-        name = "X-Internal-Service",
-        description = "Required header for internal service authentication",
-        required = true,
-        in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER,
-        schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "user-service")
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Account deleted successfully"),
-        @ApiResponse(responseCode = "404", description = "Account not found"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<BaseResponse<String>> deleteAccount(@PathVariable Long accountId) {
-        authService.deleteAccount(accountId);
-        return ResponseEntity.ok(BaseResponse.success(
-            "Account deleted successfully", 
-            "Account with ID " + accountId + " has been permanently removed"
-        ));
-    }
 }

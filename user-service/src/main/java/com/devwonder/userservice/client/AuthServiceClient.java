@@ -13,15 +13,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(name = "auth-service", url = "${services.auth-service.url:http://auth-service:8081}")
 public interface AuthServiceClient {
     
-    @PostMapping("/auth/accounts")
+    @PostMapping("/auth-service/accounts")
     BaseResponse<AuthAccountCreateResponse> createAccount(
             @RequestBody AuthAccountCreateRequest request,
-            @RequestHeader("X-Internal-Service") String serviceIdentifier
+            @RequestHeader("X-API-Key") String apiKey
     );
-    
-    @DeleteMapping("/auth/accounts/{accountId}")
+
+    @DeleteMapping("/auth-service/accounts/{accountId}")
     BaseResponse<String> deleteAccount(
             @PathVariable Long accountId,
-            @RequestHeader("X-Internal-Service") String serviceIdentifier
+            @RequestHeader("X-API-Key") String apiKey
     );
 }

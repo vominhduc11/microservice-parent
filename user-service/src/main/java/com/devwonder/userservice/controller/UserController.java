@@ -22,7 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user")
-@Tag(name = "User Management", description = "User management endpoints for customers, dealers, and admins")
+@Tag(name = "Users & Dealers", description = "👥 User & dealer management - Public registration & Admin operations")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
@@ -33,7 +33,8 @@ public class UserController {
     @Operation(
         summary = "Get All Dealers",
         description = "Retrieve a list of all dealers (business partners) in the system. " +
-                    "This endpoint provides dealer company information including contact details and location."
+                    "This endpoint provides dealer company information including contact details and location.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Dealers retrieved successfully"),
@@ -83,7 +84,8 @@ public class UserController {
         summary = "Register New Dealer",
         description = "Register a new dealer (business partner) in the system. " +
                     "This endpoint creates dealer profile with company information, contact details and location. " +
-                    "The accountId must correspond to an existing account in the auth service with DEALER role."
+                    "The accountId must correspond to an existing account in the auth service with DEALER role.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Dealer registered successfully"),
