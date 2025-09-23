@@ -13,9 +13,12 @@ public class SecurityConfig extends BaseSecurityConfig {
     protected void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<org.springframework.security.config.annotation.web.builders.HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
             // Specific product endpoints for inter-service calls - API key required
-            .requestMatchers("/product-serial/serial/*").access(authApiKeyRequired())       // Serial lookup calls
-            .requestMatchers("/product-serial/bulk-status").access(authApiKeyRequired())    // Bulk status update calls
-            .requestMatchers("/product-serial/*/details").access(authApiKeyRequired())      // Product serial details lookup
+            .requestMatchers("/product/product-serial/serial/*").access(authApiKeyRequired())       // Serial lookup calls
+            .requestMatchers("/product/product-serial/bulk-status").access(authApiKeyRequired())    // Bulk status update calls
+            .requestMatchers("/product/product-serial/*/details").access(authApiKeyRequired())      // Product serial details lookup
+
+            // Product serials endpoints - Gateway required (DEALER role for inventory management)
+            .requestMatchers("/product/product-serials/**").access(gatewayHeaderRequired())
 
             // All other product endpoints - ONLY accessible via API Gateway
             .requestMatchers("/product/**").access(gatewayHeaderRequired());

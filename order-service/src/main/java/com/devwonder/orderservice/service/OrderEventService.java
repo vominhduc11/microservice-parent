@@ -40,7 +40,7 @@ public class OrderEventService {
                     .dealerCity(dealerInfo != null ? dealerInfo.getCity() : "")
                     .totalAmount(totalAmount)
                     .paymentStatus(order.getPaymentStatus().toString())
-                    .orderTime(order.getCreateAt())
+                    .orderTime(order.getCreatedAt())
                     .build();
 
             kafkaTemplate.send(KafkaTopics.ORDER_NOTIFICATIONS, order.getId().toString(), event);

@@ -1,15 +1,20 @@
 package com.devwonder.userservice.service;
 
+import com.devwonder.userservice.client.AuthServiceClient;
+import com.devwonder.userservice.dto.AuthAccountCreateRequest;
 import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.CustomerInfo;
 import com.devwonder.userservice.entity.Customer;
 import com.devwonder.userservice.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -18,6 +23,11 @@ import java.util.regex.Pattern;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final AuthServiceClient authServiceClient;
+    private final CustomerEventService customerEventService;
+
+    @Value("${auth.api.key:user-service-key}")
+    private String authApiKey;
 
     // Email regex pattern
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -28,6 +38,10 @@ public class CustomerService {
     private static final Pattern PHONE_PATTERN = Pattern.compile(
         "^[+]?[0-9\\s\\-\\(\\)]{10,15}$"
     );
+
+    // Password generation
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final SecureRandom random = new SecureRandom();
 
     @Transactional(readOnly = true)
     public CheckCustomerExistsResponse checkCustomerExistsByIdentifier(String identifier) {
@@ -102,7 +116,7 @@ public class CustomerService {
             throw new IllegalArgumentException("Customer phone is required");
         }
 
-        // Check if customer already exists
+        // Check if customer already exists in user-service
         if (customerRepository.findByPhone(customerInfo.getPhone()).isPresent()) {
             throw new RuntimeException("Customer with phone " + customerInfo.getPhone() + " already exists");
         }
@@ -111,22 +125,44 @@ public class CustomerService {
             throw new RuntimeException("Customer with email " + customerInfo.getEmail() + " already exists");
         }
 
-        // Generate accountId (simple auto-increment approach)
-        Long accountId = generateAccountId();
+        // Cross-service validation: Check if username already exists in auth-service
+        String username = customerInfo.getPhone().trim();
+        if (checkUsernameExistsInAuthService(username)) {
+            throw new RuntimeException("Account with username " + username + " already exists");
+        }
 
-        // Create customer
-        Customer customer = Customer.builder()
-                .accountId(accountId)
-                .name(customerInfo.getName().trim())
-                .email(customerInfo.getEmail() != null ? customerInfo.getEmail().trim() : null)
-                .phone(customerInfo.getPhone().trim())
-                .address(customerInfo.getAddress())
-                .build();
+        // 1. Create account in auth-service first
+        String tempPassword = generateTempPassword();
+        Long realAccountId = createAccountInAuthService(customerInfo, username, tempPassword);
 
-        Customer savedCustomer = customerRepository.save(customer);
-        log.info("Customer created successfully with accountId: {}", savedCustomer.getAccountId());
+        try {
+            // 2. Create customer with real accountId
+            Customer customer = Customer.builder()
+                    .accountId(realAccountId)
+                    .name(customerInfo.getName().trim())
+                    .email(customerInfo.getEmail() != null ? customerInfo.getEmail().trim() : null)
+                    .phone(customerInfo.getPhone().trim())
+                    .address(customerInfo.getAddress())
+                    .build();
 
-        return savedCustomer.getAccountId();
+            Customer savedCustomer = customerRepository.save(customer);
+            log.info("Customer created successfully with real accountId: {}", savedCustomer.getAccountId());
+
+            // 3. Publish Kafka event for email notification
+            customerEventService.publishCustomerCreatedEvent(savedCustomer, username, tempPassword);
+
+            return savedCustomer.getAccountId();
+        } catch (Exception e) {
+            // If customer creation fails, delete the created account
+            log.error("Failed to create customer, rolling back account creation: {}", e.getMessage());
+            try {
+                authServiceClient.deleteAccount(realAccountId, authApiKey);
+                log.info("Successfully rolled back account creation for accountId: {}", realAccountId);
+            } catch (Exception rollbackException) {
+                log.error("Failed to rollback account creation for accountId {}: {}", realAccountId, rollbackException.getMessage());
+            }
+            throw new RuntimeException("Failed to create customer: " + e.getMessage(), e);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -170,11 +206,61 @@ public class CustomerService {
         return customer.map(this::buildCustomerInfo).orElse(null);
     }
 
-    private Long generateAccountId() {
-        // Simple approach: find max accountId and increment
-        // In production, consider using sequences or UUID
-        Long maxAccountId = customerRepository.findMaxAccountId();
-        return maxAccountId != null ? maxAccountId + 1 : 1L;
+    private Long createAccountInAuthService(CustomerInfo customerInfo, String username, String tempPassword) {
+        log.info("Creating account in auth-service for customer: {}", customerInfo.getName());
+
+        // Create account request
+        AuthAccountCreateRequest authRequest = AuthAccountCreateRequest.builder()
+                .username(username)
+                .password(tempPassword)
+                .roleNames(Set.of("CUSTOMER"))
+                .build();
+
+        try {
+            var authResponse = authServiceClient.createAccount(authRequest, authApiKey);
+
+            if (!authResponse.isSuccess() || authResponse.getData() == null) {
+                throw new RuntimeException("Failed to create account in auth-service: " + authResponse.getMessage());
+            }
+
+            Long accountId = authResponse.getData().getId();
+            log.info("Successfully created account in auth-service with ID: {} for customer: {}", accountId, customerInfo.getName());
+
+            return accountId;
+        } catch (Exception e) {
+            log.error("Error creating account in auth-service for customer {}: {}", customerInfo.getName(), e.getMessage());
+            throw new RuntimeException("Failed to create customer account: " + e.getMessage(), e);
+        }
+    }
+
+    private boolean checkUsernameExistsInAuthService(String username) {
+        log.info("Checking if username exists in auth-service: {}", username);
+
+        try {
+            var response = authServiceClient.checkUsernameExists(username, authApiKey);
+
+            if (!response.isSuccess()) {
+                log.error("Failed to check username existence in auth-service: {}", response.getMessage());
+                throw new RuntimeException("Failed to validate username: " + response.getMessage());
+            }
+
+            boolean exists = response.getData();
+            log.info("Username {} exists in auth-service: {}", username, exists);
+
+            return exists;
+        } catch (Exception e) {
+            log.error("Error checking username existence in auth-service for {}: {}", username, e.getMessage());
+            throw new RuntimeException("Failed to validate username: " + e.getMessage(), e);
+        }
+    }
+
+    private String generateTempPassword() {
+        // Generate 8-character temporary password
+        StringBuilder password = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            password.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
+        }
+        return password.toString();
     }
 
     private CustomerInfo buildCustomerInfo(Customer customer) {

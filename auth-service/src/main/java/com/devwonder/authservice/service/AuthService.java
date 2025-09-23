@@ -250,16 +250,26 @@ public class AuthService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public boolean checkUsernameExists(String username) {
+        log.info("Checking if username exists: {}", username);
+
+        boolean exists = accountRepository.existsByUsername(username);
+        log.info("Username {} exists: {}", username, exists);
+
+        return exists;
+    }
+
     @Transactional
     public void deleteAccount(Long accountId) {
         log.info("Deleting account with ID: {}", accountId);
-        
+
         // Check if account exists
         if (!accountRepository.existsById(accountId)) {
             log.warn("Account not found with ID: {}", accountId);
             throw new RuntimeException("Account not found with ID: " + accountId);
         }
-        
+
         // Delete account (hard delete)
         accountRepository.deleteById(accountId);
         log.info("Successfully deleted account with ID: {}", accountId);

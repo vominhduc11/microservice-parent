@@ -1,3 +1,19 @@
+x-java-service: &java-service-template
+  volumes:
+    - maven-cache:/root/.m2
+  networks:
+    - microservices-network
+  restart: unless-stopped
+  environment: &common-env
+    CONFIG_SERVER_URL: http://config-server:8888
+    SWAGGER_UI_ENABLED: true
+    SWAGGER_API_DOCS_ENABLED: true
+
+x-build-args: &build-args
+  context: .
+  args:
+    BUILDKIT_INLINE_CACHE: 1
+
 services:
   # Infrastructure Services
   postgres:
@@ -115,8 +131,6 @@ services:
     container_name: kafka1
     depends_on:
       - zookeeper1
-      - zookeeper2
-      - zookeeper3
     ports:
       - "9092:9092"
     environment:
@@ -143,8 +157,6 @@ services:
     container_name: kafka2
     depends_on:
       - zookeeper1
-      - zookeeper2
-      - zookeeper3
     ports:
       - "9093:9093"
     environment:
@@ -171,8 +183,6 @@ services:
     container_name: kafka3
     depends_on:
       - zookeeper1
-      - zookeeper2
-      - zookeeper3
     ports:
       - "9094:9094"
     environment:
@@ -206,8 +216,6 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper1:2181,zookeeper2:2182,zookeeper3:2183
     depends_on:
       - kafka1
-      - kafka2
-      - kafka3
     networks:
       - microservices-network
     restart: unless-stopped
@@ -215,16 +223,12 @@ services:
   # Service Discovery & Configuration
   config-server:
     build:
-      context: .
+      <<: *build-args
       dockerfile: config-server/Dockerfile
+    <<: *java-service-template
     container_name: config-server
     ports:
       - "8888:8888"
-    volumes:
-      - maven-cache:/root/.m2
-    networks:
-      - microservices-network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
       interval: 30s
@@ -234,33 +238,27 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: .
+      <<: *build-args
       dockerfile: api-gateway/Dockerfile
+    <<: *java-service-template
     container_name: api-gateway
     ports:
       - "8080:8080"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       config-server:
         condition: service_healthy
-      auth-service:
-        condition: service_healthy  # Cần cho JWT validation
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - AUTH_SERVICE_URI=http://auth-service:8081
-      - USER_SERVICE_URI=http://user-service:8082
-      - PRODUCT_SERVICE_URI=http://product-service:8083
-      - CART_SERVICE_URI=http://cart-service:8084
-      - ORDER_SERVICE_URI=http://order-service:8085
-      - WARRANTY_SERVICE_URI=http://warranty-service:8086
-      - NOTIFICATION_SERVICE_URI=http://notification-service:8087
-      - BLOG_SERVICE_URI=http://blog-service:8088
-      - MEDIA_SERVICE_URI=http://media-service:8090
-      - REPORT_SERVICE_URI=http://report-service:8089
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      AUTH_SERVICE_URI: http://auth-service:8081
+      USER_SERVICE_URI: http://user-service:8082
+      PRODUCT_SERVICE_URI: http://product-service:8083
+      CART_SERVICE_URI: http://cart-service:8084
+      ORDER_SERVICE_URI: http://order-service:8085
+      WARRANTY_SERVICE_URI: http://warranty-service:8086
+      NOTIFICATION_SERVICE_URI: http://notification-service:8087
+      BLOG_SERVICE_URI: http://blog-service:8088
+      MEDIA_SERVICE_URI: http://media-service:8090
+      REPORT_SERVICE_URI: http://report-service:8089
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -270,34 +268,26 @@ services:
   # Core Services
   auth-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: auth-service/Dockerfile
+    <<: *java-service-template
     container_name: auth-service
     ports:
       - "8081:8081"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       config-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=auth_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: auth_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 30s
@@ -306,268 +296,198 @@ services:
 
   user-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: user-service/Dockerfile
+    <<: *java-service-template
     container_name: user-service
     ports:
       - "8082:8082"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
-      # Không cần depends on auth-service cho startup
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=user_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: user_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      AUTH_SERVICE_URL: http://auth-service:8081
 
   product-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: product-service/Dockerfile
+    <<: *java-service-template
     container_name: product-service
     ports:
       - "8083:8083"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=product_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: product_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
 
   cart-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: cart-service/Dockerfile
+    <<: *java-service-template
     container_name: cart-service
     ports:
       - "8084:8084"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
       - redis
-      - product-service
-      - user-service
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=cart_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PRODUCT_SERVICE_URL=http://product-service:8083
-      - USER_SERVICE_URL=http://user-service:8082
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cart_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PRODUCT_SERVICE_URL: http://product-service:8083
+      USER_SERVICE_URL: http://user-service:8082
 
   order-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: order-service/Dockerfile
+    <<: *java-service-template
     container_name: order-service
     ports:
       - "8085:8085"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
-      - cart-service
-      - product-service
-      - user-service
-      - kafka1  # Thêm Kafka cho order events
-      - kafka2
-      - kafka3
+      - kafka1
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=order_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - CART_SERVICE_URL=http://cart-service:8084
-      - PRODUCT_SERVICE_URL=http://product-service:8083
-      - USER_SERVICE_URL=http://user-service:8082
-      - KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9093,kafka3:9094
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: order_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      CART_SERVICE_URL: http://cart-service:8084
+      PRODUCT_SERVICE_URL: http://product-service:8083
+      USER_SERVICE_URL: http://user-service:8082
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
 
   warranty-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: warranty-service/Dockerfile
+    <<: *java-service-template
     container_name: warranty-service
     ports:
       - "8086:8086"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
-      - product-service
-      - order-service
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=warranty_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - PRODUCT_SERVICE_URL=http://product-service:8083
-      - ORDER_SERVICE_URL=http://order-service:8085
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: warranty_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      PRODUCT_SERVICE_URL: http://product-service:8083
+      ORDER_SERVICE_URL: http://order-service:8085
 
   notification-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: notification-service/Dockerfile
+    <<: *java-service-template
     container_name: notification-service
     ports:
       - "8087:8087"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
-      - postgres  # Thêm PostgreSQL cho notification storage
+      - postgres
       - redis
-      - kafka1    # Thêm Kafka dependency cho messaging
-      - kafka2
-      - kafka3
+      - kafka1
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=notification_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9093,kafka3:9094
-      - MAIL_HOST=smtp.gmail.com
-      - MAIL_PORT=587
-      - MAIL_USERNAME=vominhduc760@gmail.com
-      - MAIL_PASSWORD=osvxpsnfohbpwiqz
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: notification_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: vominhduc760@gmail.com
+      MAIL_PASSWORD: osvxpsnfohbpwiqz
 
   blog-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: blog-service/Dockerfile
+    <<: *java-service-template
     container_name: blog-service
     ports:
       - "8088:8088"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
-      - user-service
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=blog_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - USER_SERVICE_URL=http://user-service:8082
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: blog_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      USER_SERVICE_URL: http://user-service:8082
 
   media-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: media-service/Dockerfile
+    <<: *java-service-template
     container_name: media-service
     ports:
       - "8095:8090"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - SERVER_PORT=8090
-      - CLOUDINARY_CLOUD_NAME=daohufjec
-      - CLOUDINARY_API_KEY=872317127931114
-      - CLOUDINARY_API_SECRET=N4qcHq42OqjlyK5GiQoZfk1UXfE
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      SERVER_PORT: 8090
+      CLOUDINARY_CLOUD_NAME: daohufjec
+      CLOUDINARY_API_KEY: 872317127931114
+      CLOUDINARY_API_SECRET: N4qcHq42OqjlyK5GiQoZfk1UXfE
 
   report-service:
     build:
-      context: .
+      <<: *build-args
       dockerfile: report-service/Dockerfile
+    <<: *java-service-template
     container_name: report-service
     ports:
       - "8089:8089"
-    volumes:
-      - maven-cache:/root/.m2
     depends_on:
       - config-server
       - postgres
-      - order-service
-      - product-service
-      - user-service
     environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=report_service_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - ORDER_SERVICE_URL=http://order-service:8085
-      - PRODUCT_SERVICE_URL=http://product-service:8083
-      - USER_SERVICE_URL=http://user-service:8082
-      - SWAGGER_UI_ENABLED=true
-      - SWAGGER_API_DOCS_ENABLED=true
-    networks:
-      - microservices-network
-    restart: unless-stopped
+      <<: *common-env
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: report_service_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      ORDER_SERVICE_URL: http://order-service:8085
+      PRODUCT_SERVICE_URL: http://product-service:8083
+      USER_SERVICE_URL: http://user-service:8082
 
 volumes:
   postgres_data:

@@ -57,6 +57,36 @@ public class AuthServiceLookupController {
         }
     }
 
+    @GetMapping("/accounts/check-username/{username}")
+    @Operation(
+        summary = "Check if username exists",
+        description = "Check if a username already exists in the system. Used by user service before creating customer accounts. Requires API key authentication.",
+        security = @SecurityRequirement(name = "apiKey")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Username check completed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Boolean>> checkUsernameExists(@PathVariable String username) {
+
+        log.info("Inter-service call: Checking if username exists: {}", username);
+
+        try {
+            boolean exists = authService.checkUsernameExists(username);
+            log.info("Username check result for {}: {}", username, exists);
+
+            return ResponseEntity.ok(BaseResponse.success(
+                "Username check completed",
+                exists
+            ));
+        } catch (Exception e) {
+            log.error("Username check failed for {}: {}", username, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Username check failed: " + e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/accounts/{accountId}")
     @Operation(
         summary = "Delete account",

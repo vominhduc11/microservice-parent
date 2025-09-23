@@ -1,11 +1,14 @@
 # E-Commerce Microservice Architecture - Complete Project Overview
+*🎯 Definitive Single-Source-of-Truth Documentation - Version 2.4.0*
 
 ## 📋 Table of Contents
 - [Project Structure](#project-structure)
 - [Architecture Overview](#architecture-overview)
+- [Complete API Reference](#complete-api-reference)
 - [Service Details](#service-details)
 - [Database Design](#database-design)
-- [API Documentation](#api-documentation)
+- [Inter-Service Communication](#inter-service-communication)
+- [Event-Driven Architecture](#event-driven-architecture)
 - [Security Implementation](#security-implementation)
 - [Configuration & Deployment](#configuration--deployment)
 - [Recent Enhancements](#recent-enhancements)
@@ -52,6 +55,208 @@ microservice-parent/
 - **Object Mapping**: MapStruct 1.5.5.Final with Lombok integration for type-safe mapping
 - **Containerization**: Docker with Alpine Linux optimization and multi-stage builds
 
+## 🌐 Complete API Reference
+
+### Authentication Service (Port 8081)
+
+#### Public Endpoints (No Authentication)
+```
+POST   /auth/login                    # User authentication
+POST   /auth/refresh                  # Token refresh mechanism
+GET    /auth/.well-known/jwks.json    # JWKS public key distribution
+```
+
+#### Protected Endpoints (JWT Required)
+```
+POST   /auth/logout                   # Secure logout with token blacklisting
+GET    /auth/validate                 # Token validation for services
+```
+
+#### Inter-Service Endpoints (API Key Required)
+```
+POST   /auth-service/accounts                     # Internal account creation
+GET    /auth-service/accounts/check-username/{username}  # Username existence check
+DELETE /auth-service/accounts/{accountId}       # Internal account deletion
+```
+
+### Product Service (Port 8083)
+
+#### Public Endpoints (No Authentication)
+```
+GET    /product/products/homepage?limit=4&fields=...     # Homepage products
+GET    /product/products/featured?limit=1&fields=...     # Featured products
+GET    /product/products/related/{id}?limit=4&fields=... # Related products
+GET    /product/{id}?fields=...                          # Product details
+```
+
+#### ADMIN Only Endpoints
+```
+# Product Management
+GET    /product/products                          # All products
+GET    /product/products/deleted                  # Soft-deleted products
+POST   /product/products                          # Create product
+PATCH  /product/{id}                              # Update product
+DELETE /product/{id}                              # Soft delete
+DELETE /product/{id}/hard                        # Hard delete
+PATCH  /product/{id}/restore                      # Restore deleted
+
+# Serial Number Management
+POST   /product/product-serials/serial            # Create single serial
+POST   /product/product-serials/serials           # Bulk create serials
+GET    /product/product-serials/{productId}/serials        # Get all serials by product
+DELETE /product/product-serials/serial/{serialId}         # Delete serial
+PATCH  /product/product-serials/serial/{serialId}/status   # Update serial status
+GET    /product/product-serials/{productId}/inventory      # Inventory report
+```
+
+#### ADMIN & DEALER Endpoints
+```
+GET    /product/product-serials/{productId}/serials/status/{status}  # Serials by status
+```
+
+#### DEALER Only Endpoints
+```
+GET    /product/product-serials/{productId}/available-count  # Available inventory count
+```
+
+#### Inter-Service Endpoints (API Key Required)
+```
+GET    /product/product-serial/serial/{serial}    # Serial lookup by serial number
+POST   /product/product-serial/bulk-status       # Bulk status update
+GET    /product/product-serial/{productSerialId}/details  # Serial details lookup
+```
+
+### User Service (Port 8082)
+
+#### Public Endpoints (No Authentication)
+```
+GET    /user/dealers                              # Public dealer directory
+POST   /user/dealers                              # Dealer registration
+```
+
+#### ADMIN Only Endpoints
+```
+GET    /user/dealers/{id}?fields=...              # Dealer details
+PUT    /user/dealers/{id}                         # Update dealer
+DELETE /user/dealers/{id}                         # Delete dealer
+```
+
+#### DEALER Only Endpoints
+```
+POST   /customer                                  # Create customer
+GET    /customer/{customerId}                     # Get customer name
+GET    /user/customers/{identifier}/check-exists # Customer verification
+```
+
+#### DEALER & CUSTOMER Endpoints
+```
+GET    /customer/{customerId}/details             # Customer details
+```
+
+#### Inter-Service Endpoints (API Key Required)
+```
+GET    /user-service/customers/{identifier}/check-exists  # Customer existence check
+POST   /user-service/customers                    # Customer creation
+GET    /user-service/customers/{customerId}       # Customer info
+GET    /user-service/dealers/{dealerId}?fields=...        # Dealer info
+```
+
+### Cart Service (Port 8084)
+
+#### DEALER Only Endpoints (JWT Required)
+```
+POST   /cart/items                                # Add to cart
+GET    /cart/dealer/{dealerId}                    # Get dealer cart
+DELETE /cart/dealer/{dealerId}                    # Clear cart
+DELETE /cart/items/{cartId}                       # Remove cart item
+PATCH  /cart/items/{cartId}/quantity?action=...&quantity=... # Update quantity
+```
+
+### Order Service (Port 8085)
+
+#### DEALER Only Endpoints
+```
+POST   /order/orders                              # Create order
+GET    /order/orders/dealer/{dealerId}            # Get dealer orders
+```
+
+#### ADMIN & DEALER Endpoints
+```
+GET    /order/orders                              # All orders
+GET    /order/orders/{orderId}                    # Order details
+```
+
+#### ADMIN Only Endpoints
+```
+GET    /order/orders/deleted                      # Deleted orders
+PATCH  /order/orders/{orderId}/payment-status     # Update payment status
+DELETE /order/orders/{orderId}                    # Soft delete order
+DELETE /order/orders/{orderId}/hard               # Hard delete order
+PATCH  /order/orders/{orderId}/restore            # Restore order
+```
+
+### Warranty Service (Port 8086)
+
+#### Public Endpoints (No Authentication)
+```
+GET    /warranty/check/{serialNumber}             # Public warranty verification
+```
+
+#### DEALER Only Endpoints
+```
+POST   /warranty                                  # Create warranties
+```
+
+#### CUSTOMER Only Endpoints
+```
+GET    /warranty/customer/{customerId}            # Customer warranties
+```
+
+### Blog Service (Port 8088)
+
+#### Public Endpoints (No Authentication)
+```
+GET    /blog/blogs/homepage?limit=6&fields=...    # Homepage blogs
+GET    /blog/blogs/related/{id}?limit=4&fields=... # Related blogs
+GET    /blog/{id}                                 # Blog details
+GET    /categories                                # Blog categories
+```
+
+#### ADMIN Only Endpoints
+```
+# Blog Management
+GET    /blog/blogs?fields=...                     # All blogs
+GET    /blog/blogs/deleted                        # Deleted blogs
+POST   /blog/blogs                                # Create blog
+PATCH  /blog/{id}                                 # Update blog
+DELETE /blog/{id}                                 # Soft delete blog
+DELETE /blog/{id}/hard                            # Hard delete blog
+PATCH  /blog/{id}/restore                         # Restore blog
+
+# Category Management
+POST   /categories                                # Create category
+DELETE /categories/{id}                           # Delete category
+```
+
+### Media Service (Port 8095)
+
+#### ADMIN Only Endpoints
+```
+POST   /media/upload                              # Upload image to Cloudinary
+DELETE /media/delete?publicId=...                # Delete image from Cloudinary
+```
+
+### Notification Service (Port 8087)
+
+#### ADMIN Only Endpoints
+```
+GET    /notification/notifies                     # All notifications
+PATCH  /notification/{id}/read                    # Mark as read
+```
+
+### Report Service (Port 8089)
+*Analytics endpoints to be implemented*
+
 ## 🔧 Service Details
 
 ### 1. **API Gateway** (Port 8080)
@@ -71,17 +276,6 @@ microservice-parent/
 - **Security Measures**: Token blacklisting with Redis, account lockout protection
 - **Inter-Service Auth**: Internal account management for service communication
 
-#### Key Endpoints:
-```
-POST   /auth/login                    # User authentication
-POST   /auth/logout                   # Secure logout with token blacklisting
-POST   /auth/refresh                  # Token refresh mechanism
-GET    /auth/validate                 # Token validation for services
-GET    /auth/.well-known/jwks.json    # Public key distribution (JWKS)
-POST   /auth/accounts                 # Internal account creation
-DELETE /auth/accounts/{id}            # Internal account deletion
-```
-
 ### 3. **Product Service** (Port 8083)
 **Purpose**: Comprehensive product catalog and inventory management
 #### Advanced Features:
@@ -92,31 +286,6 @@ DELETE /auth/accounts/{id}            # Internal account deletion
 - **Product Categorization**: Homepage features, related products, and catalog management
 - **Lookup Architecture**: Dedicated ProductSerialLookupController for inter-service calls
 
-#### API Endpoints:
-```
-# Public Product APIs
-GET    /product/products/showhomepageandlimit4     # Homepage products
-GET    /product/products/featuredandlimit1        # Featured product
-GET    /product/products/related/{id}             # Related products
-GET    /product/{id}                              # Product details
-
-# Admin Product Management
-GET    /product/products                          # All products (ADMIN)
-GET    /product/products/deleted                  # Soft-deleted products (ADMIN)
-POST   /product/products                          # Create product (ADMIN)
-PATCH  /product/{id}                              # Update product (ADMIN)
-DELETE /product/{id}                              # Soft delete (ADMIN)
-
-# Serial Number Management
-POST   /product/serials                           # Bulk create serials (ADMIN)
-GET    /product/{productId}/serials/status/{status} # Get serials by status
-GET    /product/{productId}/available-count       # Available inventory (DEALER)
-
-# Inter-Service Lookup APIs
-GET    /product-serial/serial/{serial}            # Serial lookup (API Key)
-POST   /product-serial/bulk-status               # Bulk status update (API Key)
-```
-
 ### 4. **Cart Service** (Port 8084)
 **Purpose**: Advanced shopping cart management for B2B operations
 #### Business Features:
@@ -125,15 +294,6 @@ POST   /product-serial/bulk-status               # Bulk status update (API Key)
 - **Unit Price Tracking**: Dynamic pricing with real-time updates
 - **Quantity Management**: Advanced quantity controls and validation
 - **Cart Persistence**: Durable cart storage across sessions
-
-#### API Endpoints:
-```
-POST   /cart/add                                  # Add to cart (DEALER)
-GET    /cart/dealer/{dealerId}                    # Get dealer cart (DEALER)
-DELETE /cart/dealer/{dealerId}                    # Clear cart (DEALER)
-DELETE /cart/item/{itemId}                       # Remove item (DEALER)
-PATCH  /cart/item/{itemId}/quantity              # Update quantity (DEALER)
-```
 
 ### 5. **User Service** (Port 8082)
 **Purpose**: Comprehensive user and dealer relationship management
@@ -144,29 +304,6 @@ PATCH  /cart/item/{itemId}/quantity              # Update quantity (DEALER)
 - **Account Synchronization**: Seamless integration with auth-service
 - **Lookup Architecture**: UserServiceLookupController for inter-service communication
 
-#### API Endpoints:
-```
-# Public Dealer APIs
-GET    /user/dealers                              # Public dealer directory
-POST   /user/dealers                              # Dealer registration
-
-# Admin User Management
-GET    /user/dealers/{id}                         # Dealer details (ADMIN)
-PUT    /user/dealers/{id}                         # Update dealer (ADMIN)
-DELETE /user/dealers/{id}                         # Delete dealer (ADMIN)
-
-# Customer Management
-POST   /customer                                  # Create customer (DEALER)
-GET    /customer/{id}                            # Get customer (DEALER)
-GET    /user/customers/{identifier}/check-exists # Customer verification (DEALER)
-
-# Inter-Service Lookup APIs
-GET    /user-service/customers/{id}/check-exists # Customer lookup (API Key)
-POST   /user-service/customers                   # Customer creation (API Key)
-GET    /user-service/customers/{id}              # Customer info (API Key)
-GET    /user-service/dealers/{id}                # Dealer info (API Key)
-```
-
 ### 6. **Warranty Service** (Port 8086)
 **Purpose**: Comprehensive warranty lifecycle management
 #### Revolutionary Features:
@@ -176,18 +313,6 @@ GET    /user-service/dealers/{id}                # Dealer info (API Key)
 - **Customer Lifecycle**: Complete warranty tracking from purchase to expiration
 - **Inter-Service Architecture**: Seamless integration with product and user services
 
-#### API Endpoints:
-```
-# Public Warranty APIs
-GET    /warranty/check/{serialNumber}            # Public warranty check (No Auth)
-
-# Dealer Warranty Management
-POST   /warranty                                 # Create warranties (DEALER)
-
-# Customer Warranty Access
-GET    /warranty/customer/{customerId}           # Customer warranties (CUSTOMER)
-```
-
 ### 7. **Media Service** (Port 8095)
 **Purpose**: Cloud-native media management platform
 #### Cloud Features:
@@ -196,13 +321,6 @@ GET    /warranty/customer/{customerId}           # Customer warranties (CUSTOMER
 - **Upload Optimization**: Automatic compression and format optimization
 - **Secure File Management**: Admin-only upload with public access URLs
 - **Media Analytics**: Usage tracking and performance metrics
-
-#### API Endpoints:
-```
-POST   /media/upload/image                       # Upload image (ADMIN)
-POST   /media/upload/video                       # Upload video (ADMIN)
-DELETE /media/delete                             # Delete media (ADMIN)
-```
 
 ### 8. **Notification Service** (Port 8087)
 **Purpose**: Multi-channel communication platform
@@ -221,21 +339,6 @@ DELETE /media/delete                             # Delete media (ADMIN)
 - **Public Content API**: SEO-optimized content delivery
 - **Content Scheduling**: Draft and publish workflows
 - **Related Content**: Intelligent content recommendations
-
-#### API Endpoints:
-```
-# Public Blog APIs
-GET    /blog/blogs/showhomepageandlimit6         # Homepage blogs
-GET    /blog/blogs/related/{id}                 # Related blogs
-GET    /blog/{id}                               # Blog details
-GET    /blog/categories                         # Blog categories
-
-# Admin Blog Management
-GET    /blog/blogs                              # All blogs (ADMIN)
-POST   /blog/blogs                              # Create blog (ADMIN)
-PATCH  /blog/{id}                               # Update blog (ADMIN)
-DELETE /blog/{id}                               # Delete blog (ADMIN)
-```
 
 ### 10. **Order Service** (Port 8085)
 **Purpose**: Enterprise order processing and management
@@ -260,60 +363,309 @@ DELETE /blog/{id}                               # Delete blog (ADMIN)
 - **API Gateway Routing**: Dynamic route management
 - **Security Configuration**: Centralized security policies
 
+## 🗄️ Inter-Service Communication
+
+### Lookup Controller Architecture
+Dedicated controllers for secure service-to-service communication:
+
+#### Authentication Pattern
+- **API Gateway Routes**: Use JWT Bearer tokens with role-based access
+- **Inter-Service Routes**: Use `X-API-Key` header for service authentication
+- **Public Routes**: No authentication required
+
+#### Inter-Service Communication Flows
+
+**Warranty Service → Product Service**
+```
+1. Serial Lookup: GET /product/product-serial/serial/{serial}
+2. Product Details: GET /product/product-serial/{id}/details
+3. Status Update: POST /product/product-serial/bulk-status
+```
+
+**Warranty Service → User Service**
+```
+1. Customer Check: GET /user-service/customers/{identifier}/check-exists
+2. Customer Create: POST /user-service/customers
+3. Customer Info: GET /user-service/customers/{id}
+```
+
+**User Service → Auth Service**
+```
+1. Account Create: POST /auth-service/accounts
+2. Username Check: GET /auth-service/accounts/check-username/{username}
+3. Account Delete: DELETE /auth-service/accounts/{id}
+```
+
+### Feign Client Configuration
+All inter-service calls use OpenFeign clients with:
+- Service discovery via service names
+- Automatic load balancing
+- Circuit breaker patterns
+- API key authentication
+
+## 📨 Event-Driven Architecture
+
+### Kafka Topics & Events
+
+#### Topic: `customer-created-notifications`
+**Producer**: User Service (CustomerEventService)
+**Consumer**: Notification Service (CustomerEmailListener)
+**Event**: CustomerCreatedEvent
+```json
+{
+  "accountId": 123,
+  "username": "customer123",
+  "tempPassword": "temp123",
+  "customerName": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "address": "123 Main St",
+  "creationTime": "2025-09-24T10:30:00"
+}
+```
+
+**Flow**: Customer Creation → Event Publishing → Email Notification
+
+#### Topic: `email-notifications`
+**Producer**: User Service
+**Consumer**: Notification Service
+**Event**: DealerEmailEvent
+**Flow**: Dealer Registration → Welcome Email
+
+#### Topic: `dealer-registration-notifications`
+**Producer**: User Service
+**Consumer**: Notification Service
+**Event**: DealerRegistrationEvent
+**Flow**: Dealer Registration → WebSocket Notification
+
+### Kafka Consumer Factory Fix
+The notification service has specialized consumer factories for each event type:
+
+```java
+@Bean
+public ConsumerFactory<String, Object> customerCreatedConsumerFactory() {
+    return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig(
+        "notification-service-group-customer",
+        "com.devwonder.common.event.CustomerCreatedEvent"
+    ));
+}
+
+@Bean
+public ConcurrentKafkaListenerContainerFactory<String, Object>
+    customerCreatedKafkaListenerContainerFactory() {
+    return createListenerFactory(customerCreatedConsumerFactory(), 1);
+}
+```
+
+**Key Features**:
+- Dedicated consumer groups for each event type
+- Error handling with DefaultErrorHandler
+- Type-safe deserialization
+- Configurable concurrency levels
+
 ## 💾 Database Design
 
-### Advanced Database Architecture
-Each service maintains complete data sovereignty with isolated PostgreSQL databases:
+### Database Schemas by Service
 
+#### auth_service_db
 ```sql
--- Authentication & Security
-auth_service_db:
-  - accounts (id, username, password_hash, created_at, updated_at, is_active)
-  - roles (id, name, description)
-  - account_roles (account_id, role_id)
-  - blacklisted_tokens (token_id, expiry_date)
+-- Account Management
+accounts (
+  id BIGSERIAL PRIMARY KEY,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- User & Relationship Management
-user_service_db:
-  - customers (id, account_id, name, email, phone, address, city, district, created_at)
-  - dealers (id, account_id, company_name, email, phone, address, city, district,
-            business_license, created_at, updated_at)
-  - admins (id, account_id, name, email, permissions)
+roles (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  description TEXT
+);
 
--- Product Catalog & Inventory
-product_service_db:
-  - products (id, sku, name, image_url, description, video_url, specifications,
-             price, wholesale_price, show_on_homepage, is_featured, created_at,
-             updated_at, deleted_at)
-  - product_serials (id, product_id, serial_number, status, created_at, updated_at)
+account_roles (
+  account_id BIGINT REFERENCES accounts(id),
+  role_id BIGINT REFERENCES roles(id),
+  PRIMARY KEY (account_id, role_id)
+);
 
--- Commerce & Transactions
-cart_service_db:
-  - dealer_carts (id, dealer_id, product_id, quantity, unit_price, created_at, updated_at)
+blacklisted_tokens (
+  token_id VARCHAR(255) PRIMARY KEY,
+  expiry_date TIMESTAMP NOT NULL
+);
+```
 
-order_service_db:
-  - orders (id, dealer_id, subtotal, shipping_fee, vat, total, status, payment_status,
-           shipping_address, created_at, updated_at, deleted_at)
-  - order_items (id, order_id, product_id, serial_number, quantity, unit_price)
+#### user_service_db
+```sql
+-- Customer Management (account_id is PRIMARY KEY)
+customers (
+  account_id BIGINT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20) UNIQUE,
+  address TEXT
+);
 
--- Support & Services
-warranty_service_db:
-  - warranties (id, warranty_code, id_product_serial, id_customer, status,
-               purchase_date, created_at, updated_at)
+-- Dealer Management
+dealers (
+  id BIGSERIAL PRIMARY KEY,
+  account_id BIGINT UNIQUE NOT NULL,
+  company_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20) UNIQUE NOT NULL,
+  address TEXT NOT NULL,
+  city VARCHAR(100),
+  district VARCHAR(100),
+  business_license VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-notification_service_db:
-  - notifications (id, user_id, title, message, type, channel, sent_at, read_at, created_at)
+#### product_service_db
+```sql
+-- Product Catalog
+products (
+  id BIGSERIAL PRIMARY KEY,
+  sku VARCHAR(100) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  short_description VARCHAR(500),
+  image JSONB,                        -- Cloudinary image URLs
+  descriptions JSONB,                 -- Rich content descriptions
+  videos JSONB,                       -- Video URLs
+  specifications JSONB,               -- Product specifications
+  retail_price DECIMAL(10,2),
+  wholesale_price JSONB,              -- Tier-based pricing
+  show_on_homepage BOOLEAN DEFAULT FALSE,
+  is_featured BOOLEAN DEFAULT FALSE,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+-- Serial Number Tracking
+product_serials (
+  id BIGSERIAL PRIMARY KEY,
+  product_id BIGINT REFERENCES products(id),
+  serial_number VARCHAR(255) UNIQUE NOT NULL,
+  status VARCHAR(50) DEFAULT 'AVAILABLE',  -- AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### cart_service_db
+```sql
+-- Shopping Cart Management
+product_of_carts (
+  id BIGSERIAL PRIMARY KEY,
+  dealer_id BIGINT NOT NULL,
+  product_id BIGINT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(dealer_id, product_id)
+);
+```
+
+#### order_service_db
+```sql
+-- Order Management
+orders (
+  id BIGSERIAL PRIMARY KEY,
+  id_dealer BIGINT NOT NULL,
+  order_code VARCHAR(255) UNIQUE NOT NULL,
+  payment_status VARCHAR(50) DEFAULT 'UNPAID',  -- UNPAID/PAID/CANCELLED
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+order_items (
+  id BIGSERIAL PRIMARY KEY,
+  order_id BIGINT REFERENCES orders(id),
+  product_id BIGINT NOT NULL,
+  serial_number VARCHAR(255),
+  quantity INTEGER NOT NULL,
+  unit_price DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### warranty_service_db
+```sql
+-- Warranty Management
+warranties (
+  id BIGSERIAL PRIMARY KEY,
+  id_product_serial BIGINT NOT NULL,
+  id_customer BIGINT NOT NULL,
+  warranty_code VARCHAR(50) UNIQUE NOT NULL,
+  status VARCHAR(50) DEFAULT 'ACTIVE',  -- ACTIVE/EXPIRED/VOID
+  purchase_date TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### notification_service_db
+```sql
+-- Notification System
+notifications (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(50),                    -- EMAIL/WEBSOCKET/PUSH
+  channel VARCHAR(50),                 -- notification channel
+  sent_at TIMESTAMP,
+  read_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### blog_service_db
+```sql
 -- Content Management
-blog_service_db:
-  - blogs (id, title, content, image_url, category_id, slug, status, created_at,
-          updated_at, deleted_at)
-  - category_blogs (id, name, description, slug)
+blogs (
+  id BIGSERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  image JSONB,                         -- Featured images
+  category_id BIGINT REFERENCES category_blogs(id),
+  slug VARCHAR(255) UNIQUE,
+  show_on_homepage BOOLEAN DEFAULT FALSE,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+category_blogs (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  slug VARCHAR(255) UNIQUE
+);
+```
+
+#### report_service_db
+```sql
 -- Analytics & Reporting
-report_service_db:
-  - reports (id, report_type, title, parameters, data, generated_at, created_by)
-  - report_schedules (id, report_type, cron_expression, recipients)
+reports (
+  id BIGSERIAL PRIMARY KEY,
+  report_type VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  parameters JSONB,
+  data JSONB,
+  generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT
+);
+
+report_schedules (
+  id BIGSERIAL PRIMARY KEY,
+  report_type VARCHAR(100) NOT NULL,
+  cron_expression VARCHAR(100),
+  recipients JSONB
+);
 ```
 
 ### Database Optimizations
@@ -322,33 +674,6 @@ report_service_db:
 - **Soft Delete Pattern**: Logical deletion with audit trails
 - **Foreign Key Constraints**: Data integrity across service boundaries
 - **Connection Pooling**: Optimized database connection management
-
-## 📚 API Documentation
-
-### Centralized Documentation Hub
-- **Unified Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **Service-Specific Docs**: Individual documentation per service
-- **Interactive Testing**: Built-in API testing capabilities
-- **API Standards**: Consistent BaseResponse format and error handling
-
-### Enhanced Response Format
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": {
-    // Actual response payload
-  },
-  "timestamp": "2025-09-22T16:38:56.405049",
-  "path": "/api/endpoint"
-}
-```
-
-### Authentication Standards
-- **JWT Bearer Token**: `Authorization: Bearer <jwt_token>`
-- **API Key Authentication**: `X-API-Key: <service_key>` for inter-service calls
-- **Role-Based Access**: Granular permissions per endpoint
-- **Token Refresh**: Automatic token renewal mechanisms
 
 ## 🔒 Security Implementation
 
@@ -437,7 +762,18 @@ curl http://localhost:8083/actuator/health  # Product Service
 
 ## 🚀 Recent Enhancements
 
-### Latest Major Updates (September 23, 2025)
+### Latest Major Updates (September 24, 2025)
+
+#### 🎯 **COMPREHENSIVE SYSTEM ANALYSIS & DOCUMENTATION UPDATE**
+- **Complete API Documentation**: Documented all 80+ endpoints with exact paths, methods, and role requirements
+- **Database Schema Mapping**: Comprehensive database design documentation with all relationships
+- **Inter-Service Communication**: Complete analysis of Feign clients and lookup controller patterns
+- **Event Architecture**: Full Kafka event flow documentation including CustomerCreatedEvent fix
+- **Security Analysis**: Complete security configuration analysis across all services
+- **Recent Changes Review**: Analysis of all recent code improvements and bug fixes
+- **PROJECT_OVERVIEW.md v2.4.0**: Updated to be the definitive single-source-of-truth documentation
+
+### Major Updates (September 23, 2025)
 
 #### 🚀 **PHASE 1: CRITICAL CODE QUALITY IMPROVEMENTS - EXCELLENCE ACHIEVED**
 - **MapStruct Consistency**: Eliminated manual mapping across Cart, Order, and Warranty services - 100% MapStruct adoption
@@ -483,6 +819,21 @@ curl http://localhost:8083/actuator/health  # Product Service
 - **Data Consistency**: Ensured proper data flow across service boundaries
 - **Transaction Management**: Improved transaction handling for multi-service operations
 
+### 🔧 **CustomerCreatedEvent Kafka Fix**
+Implemented comprehensive customer email notification system:
+
+**Flow**: Customer Creation → Kafka Event → Email Notification
+1. **User Service**: CustomerEventService publishes CustomerCreatedEvent
+2. **Notification Service**: CustomerEmailListener consumes event
+3. **Email Service**: Sends welcome email with account credentials
+4. **Consumer Factory**: Dedicated customerCreatedKafkaListenerContainerFactory
+
+**Key Features**:
+- Event includes customer details, temporary password, and metadata
+- HTML email template with company branding
+- Error handling prevents customer creation failure on notification issues
+- Type-safe Kafka deserialization with trusted packages
+
 #### 🧹 **Code Quality & Build Optimization - PHASE 1 EXCELLENCE:**
 - **MapStruct Standardization**: Complete migration to MapStruct 1.5.5.Final across all microservices
 - **Manual Mapping Elimination**: Replaced all manual object mapping with MapStruct in Cart, Order, and Warranty services
@@ -527,9 +878,11 @@ curl http://localhost:8083/actuator/health  # Product Service
 
 ### 📈 **Enterprise Metrics:**
 - **Total Services**: 13 microservices + 6 infrastructure components
-- **Database Architecture**: 12 isolated PostgreSQL databases with optimized schemas
-- **API Coverage**: 90+ documented endpoints with comprehensive testing
+- **API Endpoints**: 80+ documented endpoints across all services
+- **Database Architecture**: 9 isolated PostgreSQL databases with optimized schemas
 - **Security Coverage**: 100% JWT-protected admin operations with role-based access
+- **Inter-Service APIs**: 12 dedicated lookup controllers with API key authentication
+- **Event Architecture**: 3 Kafka topics with comprehensive event handling
 - **Documentation**: Complete Swagger documentation with interactive testing
 - **Container Health**: All services running with health monitoring
 - **Performance**: Sub-second response times with Redis caching and MapStruct optimization
@@ -543,9 +896,11 @@ curl http://localhost:8083/actuator/health  # Product Service
 - **Inventory Management**: Real-time stock tracking with serial number management and lookup APIs
 - **Warranty System**: Revolutionary public warranty verification and complete lifecycle management
 - **Content Management**: Blog and media management for marketing with cloud storage
+- **Customer Communications**: Automated email notifications for customer onboarding and account management
 - **Analytics Ready**: Data collection infrastructure for business intelligence with reporting foundation
 - **Multi-Channel Communication**: Email, WebSocket, and event-driven notifications with real-time capabilities
 - **Inter-Service Architecture**: Secure service-to-service communication with dedicated lookup controllers
+- **Event-Driven Processing**: Asynchronous event handling for scalable business process automation
 
 ## 🚀 Getting Started
 
@@ -585,7 +940,7 @@ open http://localhost:8080/swagger-ui/index.html
 ### System Verification
 ```bash
 # Test public product API
-curl "http://localhost:8080/api/product/products/showhomepageandlimit4"
+curl "http://localhost:8080/api/product/products/homepage"
 
 # Test public warranty check
 curl "http://localhost:8080/api/warranty/check/SN003"
@@ -596,7 +951,7 @@ curl -X POST "http://localhost:8080/api/auth/login" \
   -d '{"username":"admin","password":"password123"}'
 
 # Test blog content
-curl "http://localhost:8080/api/blog/blogs/showhomepageandlimit6"
+curl "http://localhost:8080/api/blog/blogs/homepage"
 ```
 
 ### Default Test Accounts
@@ -636,8 +991,7 @@ http://localhost:8091 (Kafka UI)
 - 🔒 **Enterprise Security**: RS256 JWT with JWKS and role-based access control
 - ☁️ **Cloud-Native**: Cloudinary integration with Docker optimization
 - 📊 **Production-Ready**: Comprehensive monitoring, health checks, and documentation
+- 📨 **Event-Driven**: Comprehensive Kafka integration with customer email notifications
 
-*Last Updated: September 23, 2025*
-*Version: 2.3.0 - EXCELLENCE RELEASE*
-*Architecture: Spring Cloud Microservices*
-*Repository: https://github.com/vominhduc11/microservice-parent*
+*Last Updated: September 24, 2025 - Version 2.4.0*
+*🎯 This document serves as the definitive single-source-of-truth for the entire microservice architecture*

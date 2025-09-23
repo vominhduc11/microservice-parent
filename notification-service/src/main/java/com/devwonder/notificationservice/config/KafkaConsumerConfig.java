@@ -74,4 +74,14 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> orderNotificationKafkaListenerContainerFactory() {
         return createListenerFactory(orderNotificationConsumerFactory(), 1);
     }
+
+    @Bean
+    public ConsumerFactory<String, Object> customerCreatedConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-customer", "com.devwonder.common.event.CustomerCreatedEvent"));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> customerCreatedKafkaListenerContainerFactory() {
+        return createListenerFactory(customerCreatedConsumerFactory(), 1);
+    }
 }

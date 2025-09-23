@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/product-serial")
+@RequestMapping("/product/product-serial")
 @Tag(name = "Product Inventory", description = "📋 Serial number tracking & Inventory management")
 @RequiredArgsConstructor
 @Slf4j

@@ -94,16 +94,16 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.DELETE, "/api/product/{id}/hard").hasRole(ROLE_ADMIN)
 
             // Product Serial endpoints - ADMIN only
-            .pathMatchers(HttpMethod.POST, "/api/product-serials/serial").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.POST, "/api/product-serials/serials").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.DELETE, "/api/product-serials/serial/*").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.PATCH, "/api/product-serials/serial/*/status").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.GET, "/api/product-serials/{productId}/serials").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.GET, "/api/product-serials/{productId}/serials/status/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
-            .pathMatchers(HttpMethod.GET, "/api/product-serials/{productId}/inventory").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serial").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/product/product-serials/serial/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/product/product-serials/serial/*/status").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/serials/status/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/inventory").hasRole(ROLE_ADMIN)
 
             // Product Serial available count - DEALER only access
-            .pathMatchers(HttpMethod.GET, "/api/product-serials/{productId}/available-count").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/available-count").hasRole(ROLE_DEALER)
 
             // Public product endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/product/products/homepage").permitAll()
