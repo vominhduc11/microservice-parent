@@ -30,5 +30,5 @@ public class WarrantyCreateRequest {
 
     @NotNull(message = "Customer information is required")
     @Valid
-    private CustomerWrapper customer;
+    private CustomerInfo customer;
 }

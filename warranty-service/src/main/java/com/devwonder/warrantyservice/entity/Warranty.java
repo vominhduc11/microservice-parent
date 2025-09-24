@@ -28,9 +28,20 @@ public class Warranty {
     @Column(name = "id_product_serial", nullable = false)
     private Long idProductSerial;
 
-    @NotNull
-    @Column(name = "id_customer", nullable = false)
-    private Long idCustomer;
+    @NotBlank
+    @Column(name = "customer_name", nullable = false)
+    private String customerName;
+
+    @NotBlank
+    @Column(name = "customer_email", nullable = false)
+    private String customerEmail;
+
+    @NotBlank
+    @Column(name = "customer_phone", nullable = false)
+    private String customerPhone;
+
+    @Column(name = "customer_address")
+    private String customerAddress;
 
     @NotBlank
     @Column(name = "warranty_code", unique = true, nullable = false, length = 50)

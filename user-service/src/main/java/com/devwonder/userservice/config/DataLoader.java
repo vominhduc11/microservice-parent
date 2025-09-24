@@ -1,10 +1,8 @@
 package com.devwonder.userservice.config;
 
 import com.devwonder.userservice.entity.Admin;
-import com.devwonder.userservice.entity.Customer;
 import com.devwonder.userservice.entity.Dealer;
 import com.devwonder.userservice.repository.AdminRepository;
-import com.devwonder.userservice.repository.CustomerRepository;
 import com.devwonder.userservice.repository.DealerRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Component;
 public class DataLoader {
 
     private final AdminRepository adminRepository;
-    private final CustomerRepository customerRepository;
     private final DealerRepository dealerRepository;
 
     @PostConstruct
@@ -26,12 +23,9 @@ public class DataLoader {
         
         // Create admin profile for accountId = 1 (admin account from auth-service)
         createAdminIfNotExists(1L, "System Administrator", "admin@devwonder.com", "+1234567890", "DevWonder Technology");
-        
-        // Create customer profile for accountId = 2 (customer account from auth-service)
-        createCustomerIfNotExists(2L, "John Customer", "customer@example.com", "+1234567891", "123 Customer Street, District 1, Ho Chi Minh City");
-        
+
         // Create dealer profile for accountId = 3 (dealer account from auth-service)
-        createDealerIfNotExists(3L, "ABC Trading Company", "123 Business St", "+1987654321", 
+        createDealerIfNotExists(3L, "ABC Trading Company", "123 Business St", "+1987654321",
                                 "dealer@abc-trading.com", "Business District", "Ho Chi Minh City");
 
         log.info("User data initialization completed successfully!");
@@ -51,19 +45,6 @@ public class DataLoader {
         }
     }
 
-    private void createCustomerIfNotExists(Long accountId, String name, String email, String phone, String address) {
-        if (!customerRepository.existsById(accountId)) {
-            Customer customer = Customer.builder()
-                    .accountId(accountId)
-                    .name(name)
-                    .email(email)
-                    .phone(phone)
-                    .address(address)
-                    .build();
-            customerRepository.save(customer);
-            log.info("Created customer profile for accountId: {}", accountId);
-        }
-    }
 
     private void createDealerIfNotExists(Long accountId, String companyName, String address, 
                                        String phone, String email, String district, String city) {

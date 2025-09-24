@@ -2,11 +2,9 @@ package com.devwonder.warrantyservice.service;
 
 import com.devwonder.common.exception.ResourceNotFoundException;
 import com.devwonder.warrantyservice.client.ProductServiceClient;
-import com.devwonder.warrantyservice.client.UserServiceClient;
 import com.devwonder.warrantyservice.dto.*;
 import com.devwonder.warrantyservice.entity.Warranty;
 import com.devwonder.warrantyservice.enums.WarrantyStatus;
-import com.devwonder.warrantyservice.exception.CustomerOperationException;
 import com.devwonder.warrantyservice.exception.WarrantyAlreadyExistsException;
 import com.devwonder.warrantyservice.exception.WarrantyNotFoundException;
 import com.devwonder.warrantyservice.mapper.WarrantyMapper;
@@ -31,7 +29,6 @@ import java.util.stream.Collectors;
 public class WarrantyService {
 
     private final WarrantyRepository warrantyRepository;
-    private final UserServiceClient userServiceClient;
     private final ProductServiceClient productServiceClient;
     private final WarrantyMapper warrantyMapper;
 
@@ -42,8 +39,8 @@ public class WarrantyService {
         log.info("Creating warranties for product: {} with {} serials",
                 request.getProductId(), request.getSerialNumbers().size());
 
-        // 1. Handle customer (create new or find existing)
-        Long customerId = handleCustomer(request.getCustomer());
+        // 1. Get customer information from request
+        CustomerInfo customerInfo = request.getCustomer();
 
         // 2. Create warranties for each serial
         List<WarrantyResponse> successfulWarranties = new ArrayList<>();
@@ -54,7 +51,7 @@ public class WarrantyService {
             try {
                 WarrantyResponse warranty = createSingleWarranty(
                     serial,
-                    customerId,
+                    customerInfo,
                     request.getPurchaseDate()
                 );
                 successfulWarranties.add(warranty);
@@ -78,81 +75,18 @@ public class WarrantyService {
             updateProductSerialsStatus(successfulSerials);
         }
 
-        // 5. Get customer name for response
-        String customerName = getCustomerName(customerId);
-
         return WarrantyBulkCreateResponse.builder()
-                .customerId(customerId)
-                .customerName(customerName)
+                .customerName(customerInfo.getName())
                 .warranties(successfulWarranties)
                 .totalWarranties(successfulWarranties.size())
                 .failedSerials(failedSerials)
                 .build();
     }
 
-    private Long handleCustomer(CustomerWrapper customerWrapper) {
-        if (customerWrapper.getCustomerExists()) {
-            // Find existing customer
-            log.info("Looking up existing customer: {}", customerWrapper.getCustomerIdentifier());
-
-            var response = userServiceClient.checkCustomerExists(customerWrapper.getCustomerIdentifier(), authApiKey);
-            if (!response.isSuccess() || response.getData() == null || !response.getData().isExists()) {
-                throw new CustomerOperationException("Customer not found: " + customerWrapper.getCustomerIdentifier());
-            }
-
-            // Get accountId from the customer info returned by user service
-            Long accountId = response.getData().getCustomerInfo().getAccountId();
-            if (accountId == null) {
-                throw new CustomerOperationException("Customer found but accountId is missing");
-            }
-            log.info("Found existing customer with accountId: {}", accountId);
-            return accountId;
-        } else {
-            // Create new customer with fallback to existing lookup
-            log.info("Creating new customer: {}", customerWrapper.getCustomerInfo().getName());
-
-            try {
-                var response = userServiceClient.createCustomer(customerWrapper.getCustomerInfo(), authApiKey);
-                if (!response.isSuccess() || response.getData() == null) {
-                    throw new CustomerOperationException("Failed to create customer: " + response.getMessage());
-                }
-                log.info("Successfully created new customer with accountId: {}", response.getData());
-                return response.getData();
-            } catch (Exception e) {
-                // Check if error is due to customer already existing
-                if (e.getMessage() != null && e.getMessage().contains("already exists")) {
-                    log.info("Customer already exists, attempting fallback lookup by phone: {}",
-                             customerWrapper.getCustomerInfo().getPhone());
-
-                    // Fallback: Try to find existing customer by phone
-                    try {
-                        var existingResponse = userServiceClient.checkCustomerExists(
-                            customerWrapper.getCustomerInfo().getPhone(), authApiKey);
-
-                        if (existingResponse.isSuccess() && existingResponse.getData() != null &&
-                            existingResponse.getData().isExists()) {
-
-                            Long accountId = existingResponse.getData().getCustomerInfo().getAccountId();
-                            if (accountId != null) {
-                                log.info("Fallback successful: Found existing customer with accountId: {}", accountId);
-                                return accountId;
-                            }
-                        }
-                    } catch (Exception fallbackException) {
-                        log.error("Fallback lookup also failed: {}", fallbackException.getMessage());
-                    }
-                }
-
-                // If fallback failed or error is not about existing customer, re-throw original error
-                log.error("Customer creation failed and no fallback available: {}", e.getMessage());
-                throw new CustomerOperationException("Failed to create or find customer: " + e.getMessage());
-            }
-        }
-    }
 
 
-    private WarrantyResponse createSingleWarranty(String serial, Long customerId, java.time.LocalDate purchaseDate) {
-        log.debug("Creating warranty for serial: {}, customer: {}, purchaseDate: {}", serial, customerId, purchaseDate);
+    private WarrantyResponse createSingleWarranty(String serial, CustomerInfo customerInfo, java.time.LocalDate purchaseDate) {
+        log.debug("Creating warranty for serial: {}, customer: {}, purchaseDate: {}", serial, customerInfo.getName(), purchaseDate);
 
         // Get product serial ID
         log.debug("Calling product service with API key: {}", authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
@@ -179,7 +113,10 @@ public class WarrantyService {
         // Create warranty entity
         Warranty warranty = Warranty.builder()
                 .idProductSerial(productSerialId)
-                .idCustomer(customerId)
+                .customerName(customerInfo.getName())
+                .customerEmail(customerInfo.getEmail())
+                .customerPhone(customerInfo.getPhone())
+                .customerAddress(customerInfo.getAddress())
                 .warrantyCode(warrantyCode)
                 .status(WarrantyStatus.ACTIVE)
                 .purchaseDate(purchaseDate.atStartOfDay())
@@ -203,15 +140,6 @@ public class WarrantyService {
         return String.format("WR-%s-%s-%s", timestamp, serial, randomSuffix);
     }
 
-    private String getCustomerName(Long customerId) {
-        try {
-            var response = userServiceClient.getCustomerName(customerId, authApiKey);
-            return response.isSuccess() ? response.getData() : "Unknown Customer";
-        } catch (Exception e) {
-            log.warn("Could not get customer name for ID {}: {}", customerId, e.getMessage());
-            return "Unknown Customer";
-        }
-    }
 
 
     @Transactional(readOnly = true)
@@ -284,8 +212,13 @@ public class WarrantyService {
         // Start with basic mapping
         WarrantyResponse response = warrantyMapper.toWarrantyResponse(warranty);
 
-        // Add customer information
-        CustomerInfo customerInfo = getCustomerInfo(warranty.getIdCustomer());
+        // Add customer information from warranty entity
+        CustomerInfo customerInfo = CustomerInfo.builder()
+                .name(warranty.getCustomerName())
+                .email(warranty.getCustomerEmail())
+                .phone(warranty.getCustomerPhone())
+                .address(warranty.getCustomerAddress())
+                .build();
         response.setCustomer(customerInfo);
 
         // Add product serial information
@@ -295,23 +228,6 @@ public class WarrantyService {
         return response;
     }
 
-    private CustomerInfo getCustomerInfo(Long customerId) {
-        try {
-            var response = userServiceClient.getCustomerById(customerId, authApiKey);
-            if (response.isSuccess() && response.getData() != null) {
-                return response.getData(); // Direct return since response already contains CustomerInfo
-            }
-        } catch (Exception e) {
-            log.warn("Could not get customer details for ID {}: {}", customerId, e.getMessage());
-        }
-
-        return CustomerInfo.builder()
-                .name("Unknown Customer")
-                .email("")
-                .phone("")
-                .address("")
-                .build();
-    }
 
     private ProductSerialInfo getProductSerialInfo(Long productSerialId) {
         try {

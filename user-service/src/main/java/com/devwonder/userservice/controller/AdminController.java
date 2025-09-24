@@ -1,7 +1,6 @@
 package com.devwonder.userservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
-import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.DealerResponse;
 import com.devwonder.userservice.dto.DealerUpdateRequest;
 import com.devwonder.userservice.service.UserService;
@@ -115,25 +114,4 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/customers/{identifier}/check-exists")
-    @Operation(
-        summary = "Check if customer exists (ADMIN Only)",
-        description = "Check if customer exists by phone or email. Returns detailed customer information if found. " +
-                    "This endpoint is for administrative use to verify customer data across services.",
-        security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Check completed successfully"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<BaseResponse<CheckCustomerExistsResponse>> checkCustomerExists(
-            @PathVariable String identifier) {
-
-        log.info("Admin checking customer existence: {}", identifier);
-
-        CheckCustomerExistsResponse response = userService.checkCustomerExistsByIdentifier(identifier);
-        return ResponseEntity.ok(BaseResponse.success("Customer check completed", response));
-    }
 }

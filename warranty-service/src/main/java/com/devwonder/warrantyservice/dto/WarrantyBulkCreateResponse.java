@@ -13,7 +13,6 @@ import java.util.List;
 @Builder
 public class WarrantyBulkCreateResponse {
 
-    private Long customerId;
     private String customerName;
     private List<WarrantyResponse> warranties;
     private Integer totalWarranties;
