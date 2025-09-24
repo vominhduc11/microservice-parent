@@ -10,5 +10,4 @@ public final class KafkaTopics {
     // Topic names
     public static final String DEALER_EMAIL = "email-notifications";
     public static final String DEALER_SOCKET = "dealer-registration-notifications";
-    public static final String CUSTOMER_CREATED = "customer-created-notifications";
 }

@@ -26,7 +26,7 @@ public class AccountGeneratorUtil {
     /**
      * Generate secure random password with prefix and special character
      * 
-     * @param prefix Prefix for the password (e.g., "Dealer", "Customer")
+     * @param prefix Prefix for the password (e.g., "Dealer")
      * @return Generated secure password
      */
     public static String generatePassword(String prefix) {
@@ -42,12 +42,4 @@ public class AccountGeneratorUtil {
         return generatePassword("Dealer");
     }
     
-    /**
-     * Generate customer-specific password
-     * 
-     * @return Generated customer password
-     */
-    public static String generateCustomerPassword() {
-        return generatePassword("Customer");
-    }
 }

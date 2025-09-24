@@ -141,9 +141,6 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.GET, "/api/user/dealer/*").permitAll()
                 .pathMatchers(HttpMethod.POST, "/api/user/dealer").permitAll()
 
-                // DEALER Customer endpoints
-                .pathMatchers(HttpMethod.POST, "/api/user/customer").hasRole(ROLE_DEALER)
-                .pathMatchers(HttpMethod.GET, "/api/user/customer/*").hasRole(ROLE_DEALER)
 
 
                 // ADMIN endpoints
@@ -155,7 +152,6 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.GET, "/api/admin/dealers/*").hasRole(ROLE_DEALER)
                 .pathMatchers(HttpMethod.PUT, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
                 .pathMatchers(HttpMethod.DELETE, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
-                .pathMatchers(HttpMethod.GET, "/api/admin/customers/*/check-exists").hasRole(ROLE_DEALER);
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

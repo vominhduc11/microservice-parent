@@ -1,5 +1,5 @@
 # E-Commerce Microservice Architecture - Complete Project Overview
-*🎯 Definitive Single-Source-of-Truth Documentation - Version 2.4.0*
+*🎯 Definitive Single-Source-of-Truth Documentation - Version 2.5.0*
 
 ## 📋 Table of Contents
 - [Project Structure](#project-structure)
@@ -141,23 +141,8 @@ PUT    /user/dealers/{id}                         # Update dealer
 DELETE /user/dealers/{id}                         # Delete dealer
 ```
 
-#### DEALER Only Endpoints
-```
-POST   /customer                                  # Create customer
-GET    /customer/{customerId}                     # Get customer name
-GET    /user/customers/{identifier}/check-exists # Customer verification
-```
-
-#### DEALER & CUSTOMER Endpoints
-```
-GET    /customer/{customerId}/details             # Customer details
-```
-
 #### Inter-Service Endpoints (API Key Required)
 ```
-GET    /user-service/customers/{identifier}/check-exists  # Customer existence check
-POST   /user-service/customers                    # Customer creation
-GET    /user-service/customers/{customerId}       # Customer info
 GET    /user-service/dealers/{dealerId}?fields=...        # Dealer info
 ```
 
@@ -207,10 +192,6 @@ GET    /warranty/check/{serialNumber}             # Public warranty verification
 POST   /warranty                                  # Create warranties
 ```
 
-#### CUSTOMER Only Endpoints
-```
-GET    /warranty/customer/{customerId}            # Customer warranties
-```
 
 ### Blog Service (Port 8088)
 
@@ -296,10 +277,9 @@ PATCH  /notification/{id}/read                    # Mark as read
 - **Cart Persistence**: Durable cart storage across sessions
 
 ### 5. **User Service** (Port 8082)
-**Purpose**: Comprehensive user and dealer relationship management
+**Purpose**: Dealer relationship management and onboarding
 #### Enhanced Features:
 - **Dealer Onboarding**: Complete registration and verification process
-- **Customer Management**: B2C customer lifecycle management
 - **Event-Driven Integration**: Kafka events for dealer registration and updates
 - **Account Synchronization**: Seamless integration with auth-service
 - **Lookup Architecture**: UserServiceLookupController for inter-service communication
@@ -308,10 +288,10 @@ PATCH  /notification/{id}/read                    # Mark as read
 **Purpose**: Comprehensive warranty lifecycle management
 #### Revolutionary Features:
 - **Public Warranty Check**: No-authentication warranty verification by serial number
-- **Warranty Creation**: Automated warranty generation linked to orders
+- **Warranty Creation**: Automated warranty generation for dealers
 - **Product Serial Integration**: Real-time status updates during warranty creation
-- **Customer Lifecycle**: Complete warranty tracking from purchase to expiration
-- **Inter-Service Architecture**: Seamless integration with product and user services
+- **Customer Data Storage**: Direct customer information storage in warranty records
+- **Inter-Service Architecture**: Seamless integration with product service
 
 ### 7. **Media Service** (Port 8095)
 **Purpose**: Cloud-native media management platform
@@ -382,12 +362,6 @@ Dedicated controllers for secure service-to-service communication:
 3. Status Update: POST /product/product-serial/bulk-status
 ```
 
-**Warranty Service → User Service**
-```
-1. Customer Check: GET /user-service/customers/{identifier}/check-exists
-2. Customer Create: POST /user-service/customers
-3. Customer Info: GET /user-service/customers/{id}
-```
 
 **User Service → Auth Service**
 ```
@@ -407,24 +381,6 @@ All inter-service calls use OpenFeign clients with:
 
 ### Kafka Topics & Events
 
-#### Topic: `customer-created-notifications`
-**Producer**: User Service (CustomerEventService)
-**Consumer**: Notification Service (CustomerEmailListener)
-**Event**: CustomerCreatedEvent
-```json
-{
-  "accountId": 123,
-  "username": "customer123",
-  "tempPassword": "temp123",
-  "customerName": "John Doe",
-  "email": "john@example.com",
-  "phone": "+1234567890",
-  "address": "123 Main St",
-  "creationTime": "2025-09-24T10:30:00"
-}
-```
-
-**Flow**: Customer Creation → Event Publishing → Email Notification
 
 #### Topic: `email-notifications`
 **Producer**: User Service
@@ -438,26 +394,8 @@ All inter-service calls use OpenFeign clients with:
 **Event**: DealerRegistrationEvent
 **Flow**: Dealer Registration → WebSocket Notification
 
-### Kafka Consumer Factory Fix
-The notification service has specialized consumer factories for each event type:
-
-```java
-@Bean
-public ConsumerFactory<String, Object> customerCreatedConsumerFactory() {
-    return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig(
-        "notification-service-group-customer",
-        "com.devwonder.common.event.CustomerCreatedEvent"
-    ));
-}
-
-@Bean
-public ConcurrentKafkaListenerContainerFactory<String, Object>
-    customerCreatedKafkaListenerContainerFactory() {
-    return createListenerFactory(customerCreatedConsumerFactory(), 1);
-}
-```
-
-**Key Features**:
+### Kafka Consumer Configuration
+The notification service has specialized consumer factories for each event type with features like:
 - Dedicated consumer groups for each event type
 - Error handling with DefaultErrorHandler
 - Type-safe deserialization
@@ -498,15 +436,6 @@ blacklisted_tokens (
 
 #### user_service_db
 ```sql
--- Customer Management (account_id is PRIMARY KEY)
-customers (
-  account_id BIGINT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  phone VARCHAR(20) UNIQUE,
-  address TEXT
-);
-
 -- Dealer Management
 dealers (
   id BIGSERIAL PRIMARY KEY,
@@ -599,7 +528,10 @@ order_items (
 warranties (
   id BIGSERIAL PRIMARY KEY,
   id_product_serial BIGINT NOT NULL,
-  id_customer BIGINT NOT NULL,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_email VARCHAR(255) NOT NULL,
+  customer_phone VARCHAR(255) NOT NULL,
+  customer_address TEXT,
   warranty_code VARCHAR(50) UNIQUE NOT NULL,
   status VARCHAR(50) DEFAULT 'ACTIVE',  -- ACTIVE/EXPIRED/VOID
   purchase_date TIMESTAMP,
@@ -697,17 +629,9 @@ ADMIN Role:
 DEALER Role:
   ✅ Product catalog access with wholesale pricing
   ✅ Cart and order management
-  ✅ Customer management capabilities
   ✅ Dealer network visibility
   ✅ Warranty creation for sales
   ✅ Order and inventory tracking
-
-CUSTOMER Role:
-  ✅ Product browsing and retail pricing
-  ✅ Personal order history access
-  ✅ Warranty lookup and management
-  ✅ Blog and content consumption
-  ✅ Support and notification access
 
 PUBLIC Access:
   ✅ Product catalog browsing
@@ -819,20 +743,21 @@ curl http://localhost:8083/actuator/health  # Product Service
 - **Data Consistency**: Ensured proper data flow across service boundaries
 - **Transaction Management**: Improved transaction handling for multi-service operations
 
-### 🔧 **CustomerCreatedEvent Kafka Fix**
-Implemented comprehensive customer email notification system:
+### 🔧 **Architecture Simplification - Customer System Removal**
+Eliminated customer functionality to simplify the architecture:
 
-**Flow**: Customer Creation → Kafka Event → Email Notification
-1. **User Service**: CustomerEventService publishes CustomerCreatedEvent
-2. **Notification Service**: CustomerEmailListener consumes event
-3. **Email Service**: Sends welcome email with account credentials
-4. **Consumer Factory**: Dedicated customerCreatedKafkaListenerContainerFactory
+**Major Changes**:
+1. **Database Updates**: Removed customer table from user_service_db, updated warranty table schema
+2. **Warranty Service**: Now stores customer data directly in warranty records
+3. **Event System**: Removed customer-created-notifications topic and related event handling
+4. **Authentication**: Simplified to ADMIN and DEALER roles only
+5. **API Cleanup**: Removed all customer-related endpoints and inter-service calls
 
-**Key Features**:
-- Event includes customer details, temporary password, and metadata
-- HTML email template with company branding
-- Error handling prevents customer creation failure on notification issues
-- Type-safe Kafka deserialization with trusted packages
+**Benefits**:
+- Reduced system complexity and inter-service dependencies
+- Simplified warranty creation process with direct customer data storage
+- Eliminated unnecessary customer management overhead
+- Focused B2B platform with clear dealer-centric workflows
 
 #### 🧹 **Code Quality & Build Optimization - PHASE 1 EXCELLENCE:**
 - **MapStruct Standardization**: Complete migration to MapStruct 1.5.5.Final across all microservices
@@ -891,16 +816,16 @@ Implemented comprehensive customer email notification system:
 - **Overall Platform Rating**: **8.8/10 (EXCELLENT)** - Production-ready enterprise-grade codebase
 
 ### 🎯 **Business Capabilities:**
-- **B2B E-Commerce**: Complete dealer management with wholesale pricing and inter-service integration
-- **B2C E-Commerce**: Consumer-facing product catalog and purchasing with warranty access
+- **B2B E-Commerce**: Complete dealer management with wholesale pricing and streamlined workflows
+- **Public Product Catalog**: Consumer-facing product browsing and information access
 - **Inventory Management**: Real-time stock tracking with serial number management and lookup APIs
-- **Warranty System**: Revolutionary public warranty verification and complete lifecycle management
+- **Warranty System**: Revolutionary public warranty verification with direct customer data storage
 - **Content Management**: Blog and media management for marketing with cloud storage
-- **Customer Communications**: Automated email notifications for customer onboarding and account management
+- **Dealer Communications**: Automated email notifications for dealer onboarding and management
 - **Analytics Ready**: Data collection infrastructure for business intelligence with reporting foundation
 - **Multi-Channel Communication**: Email, WebSocket, and event-driven notifications with real-time capabilities
 - **Inter-Service Architecture**: Secure service-to-service communication with dedicated lookup controllers
-- **Event-Driven Processing**: Asynchronous event handling for scalable business process automation
+- **Simplified Architecture**: Streamlined platform focused on B2B operations with reduced complexity
 
 ## 🚀 Getting Started
 
@@ -958,7 +883,6 @@ curl "http://localhost:8080/api/blog/blogs/homepage"
 ```
 Username: admin     | Password: password123 | Role: ADMIN
 Username: dealer    | Password: password123 | Role: DEALER
-Username: customer  | Password: password123 | Role: CUSTOMER
 ```
 
 ### Development Workflow
@@ -991,7 +915,7 @@ http://localhost:8091 (Kafka UI)
 - 🔒 **Enterprise Security**: RS256 JWT with JWKS and role-based access control
 - ☁️ **Cloud-Native**: Cloudinary integration with Docker optimization
 - 📊 **Production-Ready**: Comprehensive monitoring, health checks, and documentation
-- 📨 **Event-Driven**: Comprehensive Kafka integration with customer email notifications
+- 📨 **Event-Driven**: Comprehensive Kafka integration with dealer email notifications
 
-*Last Updated: September 24, 2025 - Version 2.4.0*
+*Last Updated: September 24, 2025 - Version 2.5.0*
 *🎯 This document serves as the definitive single-source-of-truth for the entire microservice architecture*
