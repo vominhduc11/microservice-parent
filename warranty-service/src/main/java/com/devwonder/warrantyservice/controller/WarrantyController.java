@@ -64,21 +64,6 @@ public class WarrantyController {
         }
     }
 
-    @GetMapping("/customer/{customerId}")
-    @Operation(summary = "Get warranties by customer", description = "Retrieves all warranties for a specific customer",
-               security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Warranties retrieved successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Customer not found")
-    })
-    public ResponseEntity<BaseResponse<List<WarrantyResponse>>> getWarrantiesByCustomer(
-            @PathVariable Long customerId) {
-
-        log.info("Retrieving warranties for customer: {}", customerId);
-
-        List<WarrantyResponse> warranties = warrantyService.getWarrantiesByCustomer(customerId);
-        return ResponseEntity.ok(BaseResponse.success("Warranties retrieved successfully", warranties));
-    }
 
 
     @GetMapping("/check/{serialNumber}")

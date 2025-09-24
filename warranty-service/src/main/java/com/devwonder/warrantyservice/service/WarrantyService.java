@@ -213,14 +213,6 @@ public class WarrantyService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public List<WarrantyResponse> getWarrantiesByCustomer(Long customerId) {
-        return warrantyRepository.findByIdCustomer(customerId)
-                .stream()
-                .map(this::mapToResponseWithDetails)
-                .collect(Collectors.toList());
-    }
-
 
     @Transactional(readOnly = true)
     public WarrantyResponse getWarrantyByProductSerial(Long productSerialId) {

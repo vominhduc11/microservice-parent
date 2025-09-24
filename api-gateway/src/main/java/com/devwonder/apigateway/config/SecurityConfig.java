@@ -18,7 +18,6 @@ public class SecurityConfig {
 
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_DEALER = "DEALER";
-    private static final String ROLE_CUSTOMER = "CUSTOMER";
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -146,8 +145,6 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.POST, "/api/user/customer").hasRole(ROLE_DEALER)
                 .pathMatchers(HttpMethod.GET, "/api/user/customer/*").hasRole(ROLE_DEALER)
 
-                // CUSTOMER access for details
-                .pathMatchers(HttpMethod.GET, "/api/customer/*/details").hasRole(ROLE_CUSTOMER)
 
                 // ADMIN endpoints
                 .pathMatchers(HttpMethod.GET, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
@@ -197,10 +194,7 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.GET, "/api/warranty/check/**").permitAll()
 
             // DEALER-only warranty endpoints (authentication + DEALER role required)
-            .pathMatchers(HttpMethod.POST, "/api/warranty").hasRole(ROLE_DEALER)
-
-            // Customer warranty lookup endpoints (CUSTOMER role required)
-            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").hasRole(ROLE_CUSTOMER);
+            .pathMatchers(HttpMethod.POST, "/api/warranty").hasRole(ROLE_DEALER);
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -247,7 +241,7 @@ public class SecurityConfig {
         extractRoles(jwt, authorities);
 
         return authorities.isEmpty()
-                ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
+                ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
                 : new ArrayList<>(authorities);
     }
 
