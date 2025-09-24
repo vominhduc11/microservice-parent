@@ -10,11 +10,13 @@ public class SecurityConfig extends BaseSecurityConfig {
     @Override
     protected void configureServiceEndpoints(AuthorizeHttpRequestsConfigurer<org.springframework.security.config.annotation.web.builders.HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
-            // Lookup endpoints for inter-service calls - API key required
-            .requestMatchers("/user-service/**").access(authApiKeyRequired())
+            // Inter-service lookup endpoints - API key required
+            .requestMatchers("/customer-service/**").access(authApiKeyRequired())
+            .requestMatchers("/dealer-service/**").access(authApiKeyRequired())
 
-            // All user and customer endpoints - ONLY accessible via API Gateway
-            .requestMatchers("/user/**").access(gatewayHeaderRequired())
-            .requestMatchers("/customer/**").access(gatewayHeaderRequired());
+            // Gateway endpoints - ONLY accessible via API Gateway
+            .requestMatchers("/customer/**").access(gatewayHeaderRequired())
+            .requestMatchers("/dealer/**").access(gatewayHeaderRequired())
+            .requestMatchers("/admin/**").access(gatewayHeaderRequired());
     }
 }

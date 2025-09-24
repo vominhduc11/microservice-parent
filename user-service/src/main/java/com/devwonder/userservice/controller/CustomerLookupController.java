@@ -3,7 +3,6 @@ package com.devwonder.userservice.controller;
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
 import com.devwonder.userservice.dto.CustomerInfo;
-import com.devwonder.userservice.dto.DealerResponse;
 import com.devwonder.userservice.service.CustomerService;
 import com.devwonder.userservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,11 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/user-service")
-@Tag(name = "Inter-Service APIs", description = "🔗 Direct service-to-service communication (API Key required)")
+@RequestMapping("/customer-service")
+@Tag(name = "Customer Inter-Service APIs", description = "👥 Customer service-to-service communication (API Key required)")
 @RequiredArgsConstructor
 @Slf4j
-public class UserServiceLookupController {
+public class CustomerLookupController {
 
     private final UserService userService;
     private final CustomerService customerService;
@@ -106,25 +105,29 @@ public class UserServiceLookupController {
         }
     }
 
-    @GetMapping("/dealers/{dealerId}")
+    @GetMapping("/customers/{customerId}/details")
     @Operation(
-        summary = "Get Dealer Information",
-        description = "Retrieve dealer information by ID with optional field filtering. Used by order service. Requires API key authentication.",
+        summary = "Get customer details",
+        description = "Get detailed customer information by customer ID. Used by warranty service. Requires API key authentication.",
         security = @SecurityRequirement(name = "apiKey")
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Dealer retrieved successfully"),
-        @ApiResponse(responseCode = "404", description = "Dealer not found"),
+        @ApiResponse(responseCode = "200", description = "Customer details retrieved"),
+        @ApiResponse(responseCode = "404", description = "Customer not found"),
         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<BaseResponse<DealerResponse>> getDealerInfo(
-            @PathVariable Long dealerId,
-            @RequestParam(required = false) String fields) {
+    public ResponseEntity<BaseResponse<CustomerInfo>> getCustomerDetails(
+            @PathVariable Long customerId) {
 
-        log.info("Inter-service call: Getting dealer info for ID: {} with fields: {}", dealerId, fields);
+        log.info("Inter-service call: Getting customer details for ID: {}", customerId);
 
-        DealerResponse dealer = userService.getDealerById(dealerId, fields);
-        return ResponseEntity.ok(BaseResponse.success("Dealer retrieved successfully", dealer));
+        CustomerInfo customerDetails = customerService.getCustomerDetails(customerId);
+        if (customerDetails != null) {
+            return ResponseEntity.ok(BaseResponse.success("Customer details retrieved", customerDetails));
+        } else {
+            return ResponseEntity.status(404)
+                    .body(BaseResponse.error("Customer not found"));
+        }
     }
 }

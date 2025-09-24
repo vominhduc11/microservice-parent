@@ -20,7 +20,7 @@ public class WarrantyResponse {
     private String warrantyCode;
     private WarrantyStatus status;
     private LocalDateTime purchaseDate;
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
     // Enhanced fields with detailed information
     private CustomerInfo customer;

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(name = "user-service", url = "${services.user-service.url:http://user-service:8082}")
 public interface UserServiceClient {
 
-    @GetMapping("/user-service/dealers/{dealerId}?fields=companyName,email,phone,city")
+    @GetMapping("/dealer-service/dealers/{dealerId}?fields=companyName,email,phone,city")
     BaseResponse<DealerInfo> getDealerInfo(
             @PathVariable("dealerId") Long dealerId,
             @RequestHeader("X-API-Key") String apiKey

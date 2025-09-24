@@ -10,25 +10,25 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name = "user-service", url = "${services.user-service.url:http://user-service:8082}")
 public interface UserServiceClient {
 
-    @GetMapping("/user-service/customers/{identifier}/check-exists")
+    @GetMapping("/customer-service/customers/{identifier}/check-exists")
     BaseResponse<CheckCustomerExistsResponse> checkCustomerExists(
             @PathVariable String identifier,
             @RequestHeader("X-API-Key") String apiKey
     );
 
-    @PostMapping("/user-service/customers")
+    @PostMapping("/customer-service/customers")
     BaseResponse<Long> createCustomer(
             @RequestBody CustomerInfo customerInfo,
             @RequestHeader("X-API-Key") String apiKey
     );
 
-    @GetMapping("/user-service/customers/{customerId}")
+    @GetMapping("/customer-service/customers/{customerId}")
     BaseResponse<String> getCustomerName(
             @PathVariable Long customerId,
             @RequestHeader("X-API-Key") String apiKey
     );
 
-    @GetMapping("/customer/{customerId}/details")
+    @GetMapping("/customer-service/customers/{customerId}/details")
     BaseResponse<CustomerInfo> getCustomerById(
             @PathVariable Long customerId,
             @RequestHeader("X-API-Key") String apiKey

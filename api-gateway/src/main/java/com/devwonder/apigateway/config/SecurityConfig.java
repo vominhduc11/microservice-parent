@@ -18,6 +18,7 @@ public class SecurityConfig {
 
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_DEALER = "DEALER";
+    private static final String ROLE_CUSTOMER = "CUSTOMER";
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -136,33 +137,28 @@ public class SecurityConfig {
 
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
-                // Dealers endpoint - public access (for displaying dealer network)
-                .pathMatchers(HttpMethod.GET, "/api/user/dealers").permitAll()
+                // PUBLIC Dealer endpoints
+                .pathMatchers(HttpMethod.GET, "/api/user/dealer").permitAll()
+                .pathMatchers(HttpMethod.GET, "/api/user/dealer/*").permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/user/dealer").permitAll()
 
-                // Dealer registration - public access (for dealer self-registration)
-                .pathMatchers(HttpMethod.POST, "/api/user/dealers").permitAll()
+                // DEALER Customer endpoints
+                .pathMatchers(HttpMethod.POST, "/api/user/customer").hasRole(ROLE_DEALER)
+                .pathMatchers(HttpMethod.GET, "/api/user/customer/*").hasRole(ROLE_DEALER)
 
-                // Customer management endpoints - DEALER only
-                .pathMatchers(HttpMethod.POST, "/api/customer").hasRole(ROLE_DEALER)
+                // CUSTOMER access for details
+                .pathMatchers(HttpMethod.GET, "/api/customer/*/details").hasRole(ROLE_CUSTOMER)
 
-                // Customer details endpoint - DEALER and CUSTOMER access
-                .pathMatchers(HttpMethod.GET, "/api/customer/*/details").hasAnyRole(ROLE_DEALER, "CUSTOMER")
+                // ADMIN endpoints
+                .pathMatchers(HttpMethod.GET, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.PUT, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.DELETE, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
 
-                // Other customer endpoints - DEALER only
-                .pathMatchers(HttpMethod.GET, "/api/customer/**").hasRole(ROLE_DEALER)
-
-                // Customer existence check - DEALER only
-                .pathMatchers(HttpMethod.GET, "/api/user/customers/*/check-exists").hasRole(ROLE_DEALER)
-
-
-                // Dealer detail endpoint - ADMIN only
-                .pathMatchers(HttpMethod.GET, "/api/user/dealers/*").hasRole(ROLE_ADMIN)
-
-                // Update dealer - ADMIN only
-                .pathMatchers(HttpMethod.PUT, "/api/user/dealers/*").hasRole(ROLE_ADMIN)
-
-                // Delete dealer - ADMIN only
-                .pathMatchers(HttpMethod.DELETE, "/api/user/dealers/*").hasRole(ROLE_ADMIN);
+                // Direct ADMIN endpoints
+                .pathMatchers(HttpMethod.GET, "/api/admin/dealers/*").hasRole(ROLE_DEALER)
+                .pathMatchers(HttpMethod.PUT, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.DELETE, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.GET, "/api/admin/customers/*/check-exists").hasRole(ROLE_DEALER);
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
@@ -204,7 +200,7 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.POST, "/api/warranty").hasRole(ROLE_DEALER)
 
             // Customer warranty lookup endpoints (CUSTOMER role required)
-            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").hasRole("CUSTOMER");
+            .pathMatchers(HttpMethod.GET, "/api/warranty/customer/**").hasRole(ROLE_CUSTOMER);
     }
 
     private void configureNotificationServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

@@ -2,7 +2,6 @@ package com.devwonder.userservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.userservice.dto.CheckCustomerExistsResponse;
-import com.devwonder.userservice.dto.DealerRequest;
 import com.devwonder.userservice.dto.DealerResponse;
 import com.devwonder.userservice.dto.DealerUpdateRequest;
 import com.devwonder.userservice.service.UserService;
@@ -14,41 +13,17 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/user")
-@Tag(name = "Users & Dealers", description = "👥 User & dealer management - Public registration & Admin operations")
+@RequestMapping("/admin")
+@Tag(name = "Admin", description = "🔧 Admin operations - Dealer management & customer lookup")
 @RequiredArgsConstructor
 @Slf4j
-public class UserController {
+public class AdminController {
 
     private final UserService userService;
-
-    @GetMapping("/dealers")
-    @Operation(
-        summary = "Get All Dealers",
-        description = "Retrieve a list of all dealers (business partners) in the system. " +
-                    "This endpoint provides dealer company information including contact details and location.",
-        security = {}
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Dealers retrieved successfully"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<BaseResponse<List<DealerResponse>>> getAllDealers() {
-        List<DealerResponse> dealers = userService.getAllDealers();
-        BaseResponse<List<DealerResponse>> response = new BaseResponse<>(
-            true,
-            "Dealers retrieved successfully",
-            dealers
-        );
-        return ResponseEntity.ok(response);
-    }
 
     @GetMapping("/dealers/{id}")
     @Operation(
@@ -70,6 +45,9 @@ public class UserController {
     public ResponseEntity<BaseResponse<DealerResponse>> getDealerById(
             @PathVariable Long id,
             @RequestParam(required = false) String fields) {
+
+        log.info("Admin retrieving dealer details for ID: {}", id);
+
         DealerResponse dealer = userService.getDealerById(id, fields);
         BaseResponse<DealerResponse> response = new BaseResponse<>(
             true,
@@ -77,30 +55,6 @@ public class UserController {
             dealer
         );
         return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/dealers")
-    @Operation(
-        summary = "Register New Dealer",
-        description = "Register a new dealer (business partner) in the system. " +
-                    "This endpoint creates dealer profile with company information, contact details and location. " +
-                    "The accountId must correspond to an existing account in the auth service with DEALER role.",
-        security = {}
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Dealer registered successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "409", description = "Dealer already exists for this account"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<BaseResponse<DealerResponse>> registerDealer(@Valid @RequestBody DealerRequest dealerRequest) {
-        DealerResponse dealerResponse = userService.createDealer(dealerRequest);
-        BaseResponse<DealerResponse> response = new BaseResponse<>(
-            true,
-            "Dealer registered successfully",
-            dealerResponse
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/dealers/{id}")
@@ -122,6 +76,9 @@ public class UserController {
     public ResponseEntity<BaseResponse<DealerResponse>> updateDealer(
             @PathVariable Long id,
             @Valid @RequestBody DealerUpdateRequest updateRequest) {
+
+        log.info("Admin updating dealer ID: {}", id);
+
         DealerResponse dealerResponse = userService.updateDealer(id, updateRequest);
         BaseResponse<DealerResponse> response = new BaseResponse<>(
             true,
@@ -147,6 +104,8 @@ public class UserController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<String>> deleteDealer(@PathVariable Long id) {
+        log.info("Admin deleting dealer ID: {}", id);
+
         userService.deleteDealer(id);
         BaseResponse<String> response = new BaseResponse<>(
             true,
@@ -158,17 +117,21 @@ public class UserController {
 
     @GetMapping("/customers/{identifier}/check-exists")
     @Operation(
-        summary = "Check if customer exists",
-        description = "Check if customer exists by phone or email. Returns detailed customer information if found.",
+        summary = "Check if customer exists (ADMIN Only)",
+        description = "Check if customer exists by phone or email. Returns detailed customer information if found. " +
+                    "This endpoint is for administrative use to verify customer data across services.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Check completed successfully")
+        @ApiResponse(responseCode = "200", description = "Check completed successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<CheckCustomerExistsResponse>> checkCustomerExists(
             @PathVariable String identifier) {
 
-        log.info("Checking customer existence: {}", identifier);
+        log.info("Admin checking customer existence: {}", identifier);
 
         CheckCustomerExistsResponse response = userService.checkCustomerExistsByIdentifier(identifier);
         return ResponseEntity.ok(BaseResponse.success("Customer check completed", response));

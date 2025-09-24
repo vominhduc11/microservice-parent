@@ -16,4 +16,5 @@ public class ProductSerialInfo {
     private String productName;
     private String productSku;
     private String status;
+    private String image;
 }

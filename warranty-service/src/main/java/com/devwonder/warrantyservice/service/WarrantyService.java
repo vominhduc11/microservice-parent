@@ -217,7 +217,7 @@ public class WarrantyService {
     public List<WarrantyResponse> getWarrantiesByCustomer(Long customerId) {
         return warrantyRepository.findByIdCustomer(customerId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::mapToResponseWithDetails)
                 .collect(Collectors.toList());
     }
 
@@ -338,6 +338,7 @@ public class WarrantyService {
                 .productName("Unknown Product")
                 .productSku("")
                 .status("UNKNOWN")
+                .image(null)
                 .build();
     }
 }

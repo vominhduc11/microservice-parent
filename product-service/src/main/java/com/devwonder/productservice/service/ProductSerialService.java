@@ -262,6 +262,7 @@ public class ProductSerialService {
                 .productName(product.getName())
                 .productSku(product.getSku())
                 .status(productSerial.getStatus().toString())
+                .image(product.getImage())
                 .build();
 
         log.info("Retrieved product serial details for ID: {} - serial: {}, product: {}",
