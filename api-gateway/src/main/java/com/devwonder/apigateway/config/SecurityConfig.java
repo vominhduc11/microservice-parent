@@ -151,7 +151,7 @@ public class SecurityConfig {
                 // Direct ADMIN endpoints
                 .pathMatchers(HttpMethod.GET, "/api/admin/dealers/*").hasRole(ROLE_DEALER)
                 .pathMatchers(HttpMethod.PUT, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
-                .pathMatchers(HttpMethod.DELETE, "/api/admin/dealers/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.DELETE, "/api/admin/dealers/*").hasRole(ROLE_ADMIN);
     }
 
     private void configureCartServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {

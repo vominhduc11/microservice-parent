@@ -13,16 +13,9 @@ import java.util.Optional;
 @Repository
 public interface WarrantyRepository extends JpaRepository<Warranty, Long> {
 
-    List<Warranty> findByIdCustomer(Long idCustomer);
-
-    List<Warranty> findByIdProductSerial(Long idProductSerial);
+    @Query("SELECT w FROM Warranty w WHERE w.idProductSerial = :idProductSerial")
+    List<Warranty> findByIdProductSerial(@Param("idProductSerial") Long idProductSerial);
 
     @Query("SELECT w FROM Warranty w WHERE w.idProductSerial = :idProductSerial AND w.status = 'ACTIVE'")
     Optional<Warranty> findActiveWarrantyByProductSerial(@Param("idProductSerial") Long idProductSerial);
-
-    @Query("SELECT w FROM Warranty w WHERE w.idProductSerial = :idProductSerial AND w.idCustomer = :idCustomer AND w.status = :status")
-    Optional<Warranty> findByIdProductSerialAndIdCustomerAndStatus(
-            @Param("idProductSerial") Long idProductSerial,
-            @Param("idCustomer") Long idCustomer,
-            @Param("status") WarrantyStatus status);
 }

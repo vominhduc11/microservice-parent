@@ -187,16 +187,6 @@ spring:
             - StripPrefix=1                   # /api/user/** → /user/**
             - AddRequestHeader=X-Gateway-Request, true
 
-        # Customer Service API Routes (part of user-service)
-        - id: customer-service
-          uri: ${USER_SERVICE_URI}
-          order: 200
-          predicates:
-            - Path=/api/customer/**           # Customer operations
-          filters:
-            - StripPrefix=1                   # /api/customer/** → /customer/**
-            - AddRequestHeader=X-Gateway-Request, true
-
         # Admin Service API Routes (part of user-service)
         - id: admin-service
           uri: ${USER_SERVICE_URI}

@@ -38,7 +38,6 @@ CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_item_details(id_orde
 CREATE INDEX IF NOT EXISTS idx_accounts_username ON accounts(username);
 CREATE INDEX IF NOT EXISTS idx_accounts_email ON accounts(email);
 CREATE INDEX IF NOT EXISTS idx_dealers_company ON dealers(company_name);
-CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
 
 -- Blog indexes
 CREATE INDEX IF NOT EXISTS idx_blogs_category ON category_blogs(category);
