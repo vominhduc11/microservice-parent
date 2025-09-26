@@ -1,16 +1,23 @@
 package com.devwonder.orderservice.service;
 
 import com.devwonder.orderservice.dto.CreateOrderRequest;
+import com.devwonder.orderservice.dto.DealerOrderStats;
+import com.devwonder.orderservice.dto.DealerResponse;
 import com.devwonder.orderservice.dto.OrderResponse;
+import com.devwonder.orderservice.dto.OrderItemResponse;
 import com.devwonder.orderservice.entity.Order;
 import com.devwonder.orderservice.entity.OrderItem;
+import com.devwonder.common.enums.OrderItemStatus;
 import com.devwonder.orderservice.enums.PaymentStatus;
 import com.devwonder.orderservice.mapper.OrderMapper;
 import com.devwonder.orderservice.repository.OrderRepository;
 import com.devwonder.orderservice.repository.OrderItemRepository;
+import com.devwonder.orderservice.client.UserServiceClient;
+import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +38,10 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderEventService orderEventService;
     private final OrderMapper orderMapper;
+    private final UserServiceClient userServiceClient;
+
+    @Value("${auth.api.key:INTER_SERVICE_KEY}")
+    private String authApiKey;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -75,7 +86,7 @@ public class OrderService {
     public List<OrderResponse> getAllOrders() {
         log.info("Retrieving all non-deleted orders");
 
-        List<Order> orders = orderRepository.findByIsDeletedFalseOrderByCreateAtDesc();
+        List<Order> orders = orderRepository.findByIsDeletedFalseOrderByCreatedAtDesc();
 
         return orders.stream()
                 .map(order -> {
@@ -89,7 +100,7 @@ public class OrderService {
     public List<OrderResponse> getDealerOrders(Long dealerId) {
         log.info("Retrieving non-deleted orders for dealer {}", dealerId);
 
-        List<Order> orders = orderRepository.findByIdDealerAndIsDeletedFalseOrderByCreateAtDesc(dealerId);
+        List<Order> orders = orderRepository.findByIdDealerAndIsDeletedFalseOrderByCreatedAtDesc(dealerId);
 
         return orders.stream()
                 .map(order -> {
@@ -188,7 +199,7 @@ public class OrderService {
     public List<OrderResponse> getDeletedOrders() {
         log.info("Retrieving all deleted orders");
 
-        List<Order> orders = orderRepository.findByIsDeletedTrueOrderByCreateAtDesc();
+        List<Order> orders = orderRepository.findByIsDeletedTrueOrderByCreatedAtDesc();
 
         return orders.stream()
                 .map(order -> {
@@ -198,10 +209,113 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<DealerOrderStats> getDealerOrderStats() {
+        log.info("Retrieving dealer order statistics");
+
+        // Get all unique dealer IDs from orders
+        List<Long> dealerIds = orderRepository.findDistinctDealerIds();
+
+        return dealerIds.stream()
+                .map(this::buildDealerOrderStats)
+                .collect(Collectors.toList());
+    }
+
+
+    private DealerOrderStats buildDealerOrderStats(Long dealerId) {
+        // Get all orders for this dealer
+        List<Order> dealerOrders = orderRepository.findByIdDealerAndIsDeletedFalseOrderByCreatedAtDesc(dealerId);
+
+        if (dealerOrders.isEmpty()) {
+            return null;
+        }
+
+        // Calculate statistics
+        long totalOrders = dealerOrders.size();
+        long paidOrders = dealerOrders.stream().mapToLong(order ->
+            order.getPaymentStatus() == PaymentStatus.PAID ? 1 : 0).sum();
+        long unpaidOrders = totalOrders - paidOrders;
+
+        // Calculate total revenue from paid orders
+        BigDecimal totalRevenue = dealerOrders.stream()
+                .filter(order -> order.getPaymentStatus() == PaymentStatus.PAID)
+                .map(order -> {
+                    List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
+                    return orderItems.stream()
+                            .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        LocalDateTime firstOrderDate = dealerOrders.get(dealerOrders.size() - 1).getCreatedAt();
+        LocalDateTime lastOrderDate = dealerOrders.get(0).getCreatedAt();
+
+        // Get dealer information from user service
+        DealerResponse dealerInfo = getDealerInfo(dealerId);
+
+        return DealerOrderStats.builder()
+                .dealerId(dealerId)
+                .companyName(dealerInfo != null ? dealerInfo.getCompanyName() : "Unknown")
+                .email(dealerInfo != null ? dealerInfo.getEmail() : "")
+                .phone(dealerInfo != null ? dealerInfo.getPhone() : "")
+                .city(dealerInfo != null ? dealerInfo.getCity() : "")
+                .totalOrders(totalOrders)
+                .paidOrders(paidOrders)
+                .unpaidOrders(unpaidOrders)
+                .totalRevenue(totalRevenue)
+                .firstOrderDate(firstOrderDate)
+                .lastOrderDate(lastOrderDate)
+                .build();
+    }
+
+    private DealerResponse getDealerInfo(Long dealerId) {
+        try {
+            BaseResponse<DealerResponse> response = userServiceClient.getDealerInfo(dealerId, authApiKey);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                return response.getData();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch dealer info for dealerId: {}, using fallback values", dealerId, e);
+        }
+        return null;
+    }
+
     private OrderResponse buildOrderResponse(Order order, List<OrderItem> orderItems) {
         // Set order items for mapping
         order.setOrderItems(orderItems);
         return orderMapper.toOrderResponse(order);
+    }
+
+    @Transactional
+    public void updateOrderItemStatus(Long orderItemId, OrderItemStatus status) {
+        log.info("Updating order item {} status to {}", orderItemId, status);
+
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found with ID: " + orderItemId));
+
+        orderItem.setStatus(status);
+        orderItemRepository.save(orderItem);
+
+        log.info("Successfully updated order item {} status to {}", orderItemId, status);
+    }
+
+    public OrderItemResponse getOrderItem(Long orderItemId) {
+        log.info("Getting order item details for ID: {}", orderItemId);
+
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found with ID: " + orderItemId));
+
+        OrderItemResponse response = OrderItemResponse.builder()
+                .id(orderItem.getId())
+                .unitPrice(orderItem.getUnitPrice())
+                .quantity(orderItem.getQuantity())
+                .idProduct(orderItem.getIdProduct())
+                .idOrder(orderItem.getIdOrder())
+                .status(orderItem.getStatus())
+                .build();
+
+        log.info("Successfully retrieved order item details for ID: {}", orderItemId);
+        return response;
     }
 
     private String generateOrderCode() {

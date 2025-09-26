@@ -28,4 +28,19 @@ public interface ProductSerialRepository extends JpaRepository<ProductSerial, Lo
 
     @Query("SELECT ps FROM ProductSerial ps WHERE ps.product = :product AND ps.status = :status")
     List<ProductSerial> findByProductAndStatus(@Param("product") Product product, @Param("status") ProductSerialStatus status);
+
+    @Query("SELECT ps FROM ProductSerial ps WHERE ps.dealerId = :dealerId")
+    List<ProductSerial> findByDealerId(@Param("dealerId") Long dealerId);
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.dealerId = :dealerId AND ps.status = :status")
+    Long countByDealerIdAndStatus(@Param("dealerId") Long dealerId, @Param("status") ProductSerialStatus status);
+
+    @Query("SELECT ps FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId")
+    List<ProductSerial> findByOrderItemId(@Param("orderItemId") Long orderItemId);
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.dealerId = :dealerId AND ps.status = 'ALLOCATED_TO_DEALER'")
+    Long countAllocatedSerialsByDealer(@Param("dealerId") Long dealerId);
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId AND ps.status = 'ALLOCATED_TO_DEALER'")
+    Long countAllocatedSerialsByOrderItem(@Param("orderItemId") Long orderItemId);
 }
