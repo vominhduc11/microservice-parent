@@ -85,7 +85,7 @@ public class SecurityConfig {
     private void configureProductServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
             // ADMIN/DEALER product endpoints (authentication + ADMIN or DEALER role required) - MUST BE FIRST
-            .pathMatchers(HttpMethod.GET, "/api/product/products").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/product/products").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/products/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/products").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/{id}").hasRole(ROLE_ADMIN)
@@ -102,20 +102,31 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/serials/status/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/inventory").hasRole(ROLE_ADMIN)
 
+            // Product Serial assignment endpoints - ADMIN only
+            .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serials/assign-to-order-item/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.PATCH, "/api/product/product-serials/serials/unassign-from-order-item/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serials/allocate-to-dealer/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/order-items/*/serials").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/order-items/*/allocated-serials").hasRole(ROLE_ADMIN)
+
             // Product Serial available count - DEALER only access
             .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/available-count").hasRole(ROLE_DEALER)
+
+            // Product Serial endpoints by product and dealer - DEALER only access
+            .pathMatchers(HttpMethod.GET, "/api/product/product-serials/product/*/dealer/*/serials").hasRole(ROLE_DEALER)
 
             // Public product endpoints (no authentication required) - AFTER specific rules
             .pathMatchers(HttpMethod.GET, "/api/product/products/homepage").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/products/featured").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/products/related/{id}").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/product/products/search").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/product/{id}").permitAll();
     }
 
     private void configureBlogServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
             // ADMIN-only blog endpoints (authentication + ADMIN role required) - MUST BE FIRST
-            .pathMatchers(HttpMethod.GET, "/api/blog/blogs").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/blog/blogs").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/blog/{id}").hasRole(ROLE_ADMIN)
@@ -124,13 +135,15 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.DELETE, "/api/blog/{id}/hard").hasRole(ROLE_ADMIN)
 
             // ADMIN-only category blog endpoints
-            .pathMatchers(HttpMethod.POST, "/api/categories").hasRole(ROLE_ADMIN)
-            .pathMatchers(HttpMethod.DELETE, "/api/categories/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.POST, "/api/blog/categories").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/blog/categories/*").hasRole(ROLE_ADMIN)
 
             // Public blog endpoints (no authentication required) - AFTER specific rules
-            .pathMatchers(HttpMethod.GET, "/api/categories").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/blog/categories").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/blog/categories/*/blogs").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/homepage").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/blogs/related/{id}").permitAll()
+            .pathMatchers(HttpMethod.GET, "/api/blog/blogs/search").permitAll()
             .pathMatchers(HttpMethod.GET, "/api/blog/{id}").permitAll();
     }
 
@@ -176,7 +189,8 @@ public class SecurityConfig {
             // ADMIN and DEALER endpoints
             .pathMatchers(HttpMethod.GET, "/api/order/orders").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
 
-            // DEALER endpoints
+            // DEALER endpoints - specific patterns FIRST
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*/purchased-products").hasRole(ROLE_DEALER)
             .pathMatchers(HttpMethod.POST, "/api/order/orders").hasRole(ROLE_DEALER)
             .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*").hasRole(ROLE_DEALER)
 

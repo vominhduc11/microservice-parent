@@ -31,23 +31,21 @@ public class BlogController {
     @GetMapping("/blogs")
     @Operation(
         summary = "Get All Blogs",
-        description = "Retrieve all blogs for administrative purposes. Requires ADMIN role authentication via API Gateway.",
-        security = @SecurityRequirement(name = "bearerAuth")
+        description = "Retrieve all blogs. Public access - no authentication required.",
+        security = {}
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "All blogs retrieved successfully"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<BaseResponse<List<BlogResponse>>> getAllBlogs(
             @RequestParam(required = false) String fields) {
 
-        log.info("Requesting all blogs by ADMIN user - fields: {}", fields);
+        log.info("Requesting all blogs - fields: {}", fields);
 
         List<BlogResponse> blogs = blogService.getAllBlogs(fields);
 
-        log.info("Retrieved {} blogs for ADMIN user", blogs.size());
+        log.info("Retrieved {} blogs", blogs.size());
 
         return ResponseEntity.ok(BaseResponse.success("All blogs retrieved successfully", blogs));
     }
@@ -121,6 +119,31 @@ public class BlogController {
         log.info("Retrieved {} related blogs for blog ID: {}", blogs.size(), blogId);
 
         return ResponseEntity.ok(BaseResponse.success("Related blogs retrieved successfully", blogs));
+    }
+
+    @GetMapping("/blogs/search")
+    @Operation(
+        summary = "Search Blogs",
+        description = "Search blogs by keyword in title, content, or description. Public access - no authentication required.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Blogs search completed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<BlogResponse>>> searchBlogs(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Searching blogs with query: '{}', limit: {}, fields: {}", q, limit, fields);
+
+        List<BlogResponse> blogs = blogService.searchBlogs(q, limit, fields);
+
+        log.info("Found {} blogs matching query: '{}'", blogs.size(), q);
+
+        return ResponseEntity.ok(BaseResponse.success("Blogs search completed successfully", blogs));
     }
 
     @GetMapping("/{id}")

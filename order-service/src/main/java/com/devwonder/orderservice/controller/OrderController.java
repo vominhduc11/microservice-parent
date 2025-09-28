@@ -2,6 +2,8 @@ package com.devwonder.orderservice.controller;
 
 import com.devwonder.orderservice.dto.CreateOrderRequest;
 import com.devwonder.orderservice.dto.OrderResponse;
+import com.devwonder.orderservice.dto.ProductInfo;
+import com.devwonder.common.enums.OrderItemStatus;
 import com.devwonder.orderservice.enums.PaymentStatus;
 import com.devwonder.orderservice.service.OrderService;
 import com.devwonder.common.dto.BaseResponse;
@@ -89,7 +91,7 @@ public class OrderController {
 
     @GetMapping("/dealer/{dealerId}")
     @Operation(summary = "Get Dealer Orders",
-               description = "Retrieve all orders for a specific dealer. Requires DEALER role authentication via API Gateway.",
+               description = "Retrieve all orders for a specific dealer. Optionally filter by payment status and include soft-deleted orders. Requires DEALER role authentication via API Gateway.",
                security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
@@ -99,12 +101,16 @@ public class OrderController {
     })
     public ResponseEntity<BaseResponse<List<OrderResponse>>> getDealerOrders(
             @Parameter(description = "Dealer ID", required = true)
-            @PathVariable @ValidId Long dealerId) {
+            @PathVariable @ValidId Long dealerId,
+            @Parameter(description = "Payment status filter (optional)", required = false)
+            @RequestParam(required = false) PaymentStatus status,
+            @Parameter(description = "Include soft-deleted orders (default: false)", required = false)
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
 
-        log.info("Received get orders request for dealer: {}", dealerId);
+        log.info("Received get orders request for dealer: {} with status: {} includeDeleted: {}", dealerId, status, includeDeleted);
 
         try {
-            List<OrderResponse> orders = orderService.getDealerOrders(dealerId);
+            List<OrderResponse> orders = orderService.getDealerOrders(dealerId, status, includeDeleted);
             return ResponseEntity.ok(BaseResponse.success("Orders retrieved successfully", orders));
 
         } catch (Exception e) {
@@ -306,4 +312,32 @@ public class OrderController {
                     .body(BaseResponse.error("Failed to retrieve deleted orders: " + e.getMessage()));
         }
     }
+
+    @GetMapping("/dealer/{dealerId}/purchased-products")
+    @Operation(summary = "Get Dealer Purchased Products",
+               description = "Retrieve all products purchased by a specific dealer. Products are considered purchased if they appear in orders or have product serials allocated to the dealer. Requires DEALER role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Purchased products retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductInfo>>> getDealerPurchasedProducts(
+            @Parameter(description = "Dealer ID", required = true)
+            @PathVariable @ValidId Long dealerId) {
+
+        log.info("Received get purchased products request for dealer: {}", dealerId);
+
+        try {
+            List<ProductInfo> productInfos = orderService.getDealerPurchasedProducts(dealerId);
+            return ResponseEntity.ok(BaseResponse.success("Purchased products retrieved successfully", productInfos));
+
+        } catch (Exception e) {
+            log.error("Failed to retrieve dealer purchased products: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve purchased products: " + e.getMessage()));
+        }
+    }
+
 }

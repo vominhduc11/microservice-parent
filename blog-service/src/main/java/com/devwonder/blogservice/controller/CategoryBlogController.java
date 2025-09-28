@@ -4,6 +4,7 @@ import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.blogservice.dto.CategoryBlogCreateRequest;
 import com.devwonder.blogservice.dto.CategoryBlogResponse;
 import com.devwonder.blogservice.service.CategoryBlogService;
+import com.devwonder.blogservice.service.BlogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,13 +20,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/blog/categories")
 @Tag(name = "Blog Categories", description = "📁 Blog category organization & management")
 @RequiredArgsConstructor
 @Slf4j
 public class CategoryBlogController {
 
     private final CategoryBlogService categoryBlogService;
+    private final BlogService blogService;
 
     @GetMapping
     @Operation(
@@ -95,5 +97,29 @@ public class CategoryBlogController {
         log.info("Successfully deleted category blog with ID: {}", id);
 
         return ResponseEntity.ok(BaseResponse.success("Category blog deleted successfully", null));
+    }
+
+    @GetMapping("/{categoryId}/blogs")
+    @Operation(
+        summary = "Get Blogs by Category ID",
+        description = "Retrieve all blogs for a specific category. Public access - no authentication required.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Blogs retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Category not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<com.devwonder.blogservice.dto.BlogResponse>>> getBlogsByCategory(
+            @PathVariable Long categoryId,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Requesting blogs for category ID: {} with fields: {}", categoryId, fields);
+
+        List<com.devwonder.blogservice.dto.BlogResponse> blogs = blogService.getBlogsByCategory(categoryId, fields);
+
+        log.info("Retrieved {} blogs for category ID: {}", blogs.size(), categoryId);
+
+        return ResponseEntity.ok(BaseResponse.success("Blogs retrieved successfully", blogs));
     }
 }

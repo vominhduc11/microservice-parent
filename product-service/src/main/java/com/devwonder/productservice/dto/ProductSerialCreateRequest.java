@@ -20,5 +20,5 @@ public class ProductSerialCreateRequest {
     @NotNull(message = "Product ID is required")
     private Long productId;
 
-    private ProductSerialStatus status = ProductSerialStatus.AVAILABLE;
+    private ProductSerialStatus status = ProductSerialStatus.IN_STOCK;
 }

@@ -14,7 +14,7 @@ public class SecurityConfig extends BaseSecurityConfig {
             .requestMatchers("/dealer-service/**").access(authApiKeyRequired())
 
             // Gateway endpoints - ONLY accessible via API Gateway
-            .requestMatchers("/dealer/**").access(gatewayHeaderRequired())
-            .requestMatchers("/admin/**").access(gatewayHeaderRequired());
+            .requestMatchers("/user/dealer/**").access(gatewayHeaderRequired())
+            .requestMatchers("/user/admin/**").access(gatewayHeaderRequired());
     }
 }

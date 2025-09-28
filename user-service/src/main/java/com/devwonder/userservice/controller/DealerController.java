@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/dealer")
+@RequestMapping("/user/dealer")
 @Tag(name = "Dealers", description = "🏪 Dealer management - Registration & public information")
 @RequiredArgsConstructor
 @Slf4j

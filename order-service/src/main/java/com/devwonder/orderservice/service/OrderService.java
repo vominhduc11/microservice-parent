@@ -5,6 +5,7 @@ import com.devwonder.orderservice.dto.DealerOrderStats;
 import com.devwonder.orderservice.dto.DealerResponse;
 import com.devwonder.orderservice.dto.OrderResponse;
 import com.devwonder.orderservice.dto.OrderItemResponse;
+import com.devwonder.orderservice.dto.ProductInfo;
 import com.devwonder.orderservice.entity.Order;
 import com.devwonder.orderservice.entity.OrderItem;
 import com.devwonder.common.enums.OrderItemStatus;
@@ -13,6 +14,7 @@ import com.devwonder.orderservice.mapper.OrderMapper;
 import com.devwonder.orderservice.repository.OrderRepository;
 import com.devwonder.orderservice.repository.OrderItemRepository;
 import com.devwonder.orderservice.client.UserServiceClient;
+import com.devwonder.orderservice.client.ProductServiceClient;
 import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +43,7 @@ public class OrderService {
     private final OrderEventService orderEventService;
     private final OrderMapper orderMapper;
     private final UserServiceClient userServiceClient;
+    private final ProductServiceClient productServiceClient;
 
     @Value("${auth.api.key:INTER_SERVICE_KEY}")
     private String authApiKey;
@@ -98,9 +103,34 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getDealerOrders(Long dealerId) {
-        log.info("Retrieving non-deleted orders for dealer {}", dealerId);
+        return getDealerOrders(dealerId, null, false);
+    }
 
-        List<Order> orders = orderRepository.findByIdDealerAndIsDeletedFalseOrderByCreatedAtDesc(dealerId);
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getDealerOrders(Long dealerId, PaymentStatus status) {
+        return getDealerOrders(dealerId, status, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getDealerOrders(Long dealerId, PaymentStatus status, boolean includeDeleted) {
+        log.info("Retrieving orders for dealer {} with status: {} includeDeleted: {}", dealerId, status, includeDeleted);
+
+        List<Order> orders;
+        if (includeDeleted) {
+            // Include both deleted and non-deleted orders
+            if (status != null) {
+                orders = orderRepository.findByIdDealerAndPaymentStatusOrderByCreatedAtDesc(dealerId, status);
+            } else {
+                orders = orderRepository.findByIdDealerOrderByCreatedAtDesc(dealerId);
+            }
+        } else {
+            // Only non-deleted orders (existing behavior)
+            if (status != null) {
+                orders = orderRepository.findByIdDealerAndPaymentStatusAndIsDeletedFalseOrderByCreatedAtDesc(dealerId, status);
+            } else {
+                orders = orderRepository.findByIdDealerAndIsDeletedFalseOrderByCreatedAtDesc(dealerId);
+            }
+        }
 
         return orders.stream()
                 .map(order -> {
@@ -326,5 +356,72 @@ public class OrderService {
         String randomPart = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
 
         return String.format("ORD-%s-%s-%s", datePart, timePart, randomPart);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductInfo> getDealerPurchasedProducts(Long dealerId) {
+        log.info("Retrieving purchased products for dealer: {}", dealerId);
+
+        Set<Long> purchasedProductIds = new HashSet<>();
+
+        // 1. Get products from dealer's orders (OrderItems)
+        List<Order> dealerOrders = orderRepository.findByIdDealerOrderByCreatedAtDesc(dealerId);
+        for (Order order : dealerOrders) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
+            purchasedProductIds.addAll(
+                orderItems.stream()
+                    .map(OrderItem::getIdProduct)
+                    .collect(Collectors.toSet())
+            );
+        }
+
+        // 2. Get products that have serials allocated to this dealer
+        try {
+            BaseResponse<List<Long>> response = productServiceClient.getProductIdsWithSerialsByDealer(dealerId, authApiKey);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                purchasedProductIds.addAll(response.getData());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch product IDs with serials for dealer: {}", dealerId, e);
+        }
+
+        // 3. Get product info (ID + name) for all purchased product IDs
+        List<ProductInfo> productInfos = purchasedProductIds.stream()
+                .map(this::getProductInfo)
+                .filter(info -> info != null && info.getName() != null && !info.getName().trim().isEmpty())
+                .distinct()
+                .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
+                .collect(Collectors.toList());
+
+        log.info("Found {} purchased products for dealer: {}", productInfos.size(), dealerId);
+        return productInfos;
+    }
+
+    private String getProductName(Long productId) {
+        try {
+            BaseResponse<String> response = productServiceClient.getProductName(productId, authApiKey);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                return response.getData();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch product name for productId: {}", productId, e);
+        }
+        return "Product ID: " + productId; // Fallback
+    }
+
+    private ProductInfo getProductInfo(Long productId) {
+        try {
+            BaseResponse<ProductInfo> response = productServiceClient.getProductInfo(productId, authApiKey);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                return response.getData();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch product info for productId: {}", productId, e);
+        }
+        // Fallback
+        return ProductInfo.builder()
+                .id(productId)
+                .name("Product ID: " + productId)
+                .build();
     }
 }

@@ -4,7 +4,7 @@ import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.common.event.OrderNotificationEvent;
 import com.devwonder.orderservice.client.UserServiceClient;
 import com.devwonder.orderservice.constant.KafkaTopics;
-import com.devwonder.orderservice.dto.DealerInfo;
+import com.devwonder.orderservice.dto.DealerResponse;
 import com.devwonder.orderservice.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class OrderEventService {
     public void publishOrderNotificationEvent(Order order, BigDecimal totalAmount) {
         try {
             // Get dealer information from user-service
-            DealerInfo dealerInfo = getDealerInfo(order.getIdDealer());
+            DealerResponse dealerInfo = getDealerInfo(order.getIdDealer());
 
             OrderNotificationEvent event = OrderNotificationEvent.builder()
                     .orderId(order.getId())
@@ -51,9 +51,9 @@ public class OrderEventService {
         }
     }
 
-    private DealerInfo getDealerInfo(Long dealerId) {
+    private DealerResponse getDealerInfo(Long dealerId) {
         try {
-            BaseResponse<DealerInfo> response = userServiceClient.getDealerInfo(dealerId, authApiKey);
+            BaseResponse<DealerResponse> response = userServiceClient.getDealerInfo(dealerId, authApiKey);
             if (response != null && response.isSuccess() && response.getData() != null) {
                 return response.getData();
             }

@@ -38,9 +38,21 @@ public interface ProductSerialRepository extends JpaRepository<ProductSerial, Lo
     @Query("SELECT ps FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId")
     List<ProductSerial> findByOrderItemId(@Param("orderItemId") Long orderItemId);
 
+    @Query("SELECT ps FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId")
+    List<ProductSerial> findAllByOrderItemId(@Param("orderItemId") Long orderItemId);
+
     @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.dealerId = :dealerId AND ps.status = 'ALLOCATED_TO_DEALER'")
     Long countAllocatedSerialsByDealer(@Param("dealerId") Long dealerId);
 
     @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId AND ps.status = 'ALLOCATED_TO_DEALER'")
     Long countAllocatedSerialsByOrderItem(@Param("orderItemId") Long orderItemId);
+
+    @Query("SELECT ps FROM ProductSerial ps WHERE ps.orderItemId = :orderItemId AND ps.status = :status")
+    List<ProductSerial> findByOrderItemIdAndStatus(@Param("orderItemId") Long orderItemId, @Param("status") ProductSerialStatus status);
+
+    @Query("SELECT DISTINCT ps.product.id FROM ProductSerial ps WHERE ps.dealerId = :dealerId")
+    List<Long> findDistinctProductIdsByDealerId(@Param("dealerId") Long dealerId);
+
+    @Query("SELECT ps FROM ProductSerial ps WHERE ps.product.id = :productId AND ps.dealerId = :dealerId")
+    List<ProductSerial> findByProductIdAndDealerId(@Param("productId") Long productId, @Param("dealerId") Long dealerId);
 }

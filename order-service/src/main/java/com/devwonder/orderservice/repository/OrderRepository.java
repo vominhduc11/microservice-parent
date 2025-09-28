@@ -12,23 +12,31 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    List<Order> findAllByOrderByCreateAtDesc();
+    List<Order> findAllByOrderByCreatedAtDesc();
 
-    List<Order> findByIdDealerOrderByCreateAtDesc(Long idDealer);
+    List<Order> findByIdDealerOrderByCreatedAtDesc(Long idDealer);
 
     // Find non-deleted orders
-    List<Order> findByIsDeletedFalseOrderByCreateAtDesc();
+    List<Order> findByIsDeletedFalseOrderByCreatedAtDesc();
 
-    List<Order> findByIdDealerAndIsDeletedFalseOrderByCreateAtDesc(Long idDealer);
+    List<Order> findByIdDealerAndIsDeletedFalseOrderByCreatedAtDesc(Long idDealer);
+
+    List<Order> findByIdDealerAndPaymentStatusAndIsDeletedFalseOrderByCreatedAtDesc(Long idDealer, com.devwonder.orderservice.enums.PaymentStatus paymentStatus);
+
+    List<Order> findByIdDealerAndPaymentStatusOrderByCreatedAtDesc(Long idDealer, com.devwonder.orderservice.enums.PaymentStatus paymentStatus);
 
     Optional<Order> findByIdAndIsDeletedFalse(Long id);
 
     // Find deleted orders (for admin)
-    List<Order> findByIsDeletedTrueOrderByCreateAtDesc();
+    List<Order> findByIsDeletedTrueOrderByCreatedAtDesc();
 
     // Check if order exists and is not deleted
     boolean existsByIdAndIsDeletedFalse(Long id);
 
     // Count deleted orders
     long countByIsDeletedTrue();
+
+    // Get unique dealer IDs from orders
+    @Query("SELECT DISTINCT o.idDealer FROM Order o WHERE o.isDeleted = false")
+    List<Long> findDistinctDealerIds();
 }

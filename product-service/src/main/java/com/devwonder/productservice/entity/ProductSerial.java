@@ -1,7 +1,19 @@
 package com.devwonder.productservice.entity;
 
 import com.devwonder.productservice.enums.ProductSerialStatus;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +43,11 @@ public class ProductSerial {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ProductSerialStatus status = ProductSerialStatus.AVAILABLE;
+    private ProductSerialStatus status = ProductSerialStatus.IN_STOCK;
 
+    @Column(name = "order_item_id")
+    private Long orderItemId;
+
+    @Column(name = "dealer_id")
+    private Long dealerId;
 }

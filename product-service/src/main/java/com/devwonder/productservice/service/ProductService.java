@@ -9,6 +9,7 @@ import com.devwonder.common.constants.ErrorMessages;
 import com.devwonder.productservice.dto.ProductCreateRequest;
 import com.devwonder.productservice.dto.ProductResponse;
 import com.devwonder.productservice.dto.ProductUpdateRequest;
+import com.devwonder.productservice.dto.ProductInfo;
 import com.devwonder.productservice.entity.Product;
 import com.devwonder.productservice.mapper.ProductMapper;
 import com.devwonder.productservice.repository.ProductRepository;
@@ -239,6 +240,44 @@ public class ProductService {
 
         return products.stream()
                 .map(productMapper::toProductResponse)
+                .toList();
+    }
+
+    public String getProductName(Long productId) {
+        log.info("Getting product name for ID: {}", productId);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+
+        return product.getName();
+    }
+
+    public ProductInfo getProductInfo(Long productId) {
+        log.info("Getting product info for ID: {}", productId);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+
+        return ProductInfo.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .build();
+    }
+
+    public List<ProductResponse> searchProducts(String query, int limit, String fields) {
+        log.info("Searching products with query: '{}', limit: {}, fields: {}", query, limit, fields);
+
+        if (query == null || query.trim().isEmpty()) {
+            log.warn("Search query is empty, returning empty list");
+            return List.of();
+        }
+
+        List<Product> products = productRepository.searchProducts(query.trim());
+        log.info("Found {} products matching query: '{}'", products.size(), query);
+
+        return products.stream()
+                .limit(limit)
+                .map(product -> fieldFilterUtil.applyFieldFiltering(productMapper.toProductResponse(product), fields))
                 .toList();
     }
 

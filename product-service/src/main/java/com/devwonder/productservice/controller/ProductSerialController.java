@@ -139,7 +139,7 @@ public class ProductSerialController {
     @PatchMapping("/serial/{serialId}/status")
     @Operation(
         summary = "Update Product Serial Status",
-        description = "Update status of a specific product serial (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN role authentication via API Gateway.",
+        description = "Update status of a specific product serial (IN_STOCK/ALLOCATED_TO_DEALER/ASSIGN_TO_ORDER_ITEM/SOLD_TO_CUSTOMER). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -166,7 +166,7 @@ public class ProductSerialController {
     @GetMapping("/{productId}/inventory")
     @Operation(
         summary = "Get Product Inventory Count",
-        description = "Get detailed inventory count for a product by status (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN role authentication via API Gateway.",
+        description = "Get detailed inventory count for a product by status (IN_STOCK/ALLOCATED_TO_DEALER/ASSIGN_TO_ORDER_ITEM/SOLD_TO_CUSTOMER). Requires ADMIN role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -215,7 +215,7 @@ public class ProductSerialController {
     @GetMapping("/{productId}/serials/status/{status}")
     @Operation(
         summary = "Get Product Serials by Status",
-        description = "Retrieve all product serials for a specific product filtered by status (AVAILABLE/SOLD_TO_DEALER/SOLD_TO_CUSTOMER/DAMAGED). Requires ADMIN or DEALER role authentication via API Gateway.",
+        description = "Retrieve all product serials for a specific product filtered by status (IN_STOCK/ALLOCATED_TO_DEALER/ASSIGN_TO_ORDER_ITEM/SOLD_TO_CUSTOMER). Requires ADMIN or DEALER role authentication via API Gateway.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
@@ -239,5 +239,192 @@ public class ProductSerialController {
         return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
     }
 
+    @PostMapping("/serials/assign-to-order-item/{orderItemId}")
+    @Operation(
+        summary = "Assign Multiple Product Serials to Order Item",
+        description = "Assign multiple product serials to an order item. Updates all serial statuses to ASSIGN_TO_ORDER_ITEM. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials assigned successfully"),
+        @ApiResponse(responseCode = "400", description = "One or more serials not available for assignment"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "One or more product serials not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> assignSerialsToOrderItem(
+            @PathVariable Long orderItemId,
+            @RequestBody List<Long> serialIds) {
+
+        log.info("Assigning {} product serials to order item {} by ADMIN user", serialIds.size(), orderItemId);
+
+        productSerialService.assignSerialsToOrderItem(serialIds, orderItemId);
+
+        log.info("Successfully assigned {} product serials to order item {}", serialIds.size(), orderItemId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials assigned to order item successfully", null));
+    }
+
+    @PostMapping("/serials/allocate-to-dealer/{dealerId}")
+    @Operation(
+        summary = "Allocate Multiple Product Serials to Dealer",
+        description = "Allocate multiple product serials to a dealer. Updates all serial statuses from ASSIGN_TO_ORDER_ITEM to ALLOCATED_TO_DEALER. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials allocated successfully"),
+        @ApiResponse(responseCode = "400", description = "One or more serials not available for allocation"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "One or more product serials not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> allocateSerialsToDealer(
+            @PathVariable Long dealerId,
+            @RequestBody List<Long> serialIds) {
+
+        log.info("Allocating {} product serials to dealer {} by ADMIN user", serialIds.size(), dealerId);
+
+        productSerialService.allocateSerialsToDealer(serialIds, dealerId);
+
+        log.info("Successfully allocated {} product serials to dealer {}", serialIds.size(), dealerId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials allocated to dealer successfully", null));
+    }
+
+    @PatchMapping("/serials/unassign-from-order-item/{orderItemId}")
+    @Operation(
+        summary = "Unassign Multiple Product Serials from Order Item",
+        description = "Unassign multiple product serials from an order item. Updates all serial statuses from ASSIGN_TO_ORDER_ITEM back to IN_STOCK. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials unassigned successfully"),
+        @ApiResponse(responseCode = "400", description = "One or more serials not assigned to the order item"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "404", description = "One or more product serials not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> unassignSerialsFromOrderItem(
+            @PathVariable Long orderItemId,
+            @RequestBody List<Long> serialIds) {
+
+        log.info("Unassigning {} product serials from order item {} by ADMIN user", serialIds.size(), orderItemId);
+
+        productSerialService.unassignSerialsFromOrderItem(serialIds, orderItemId);
+
+        log.info("Successfully unassigned {} product serials from order item {}", serialIds.size(), orderItemId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials unassigned from order item successfully", null));
+    }
+
+    @GetMapping("/order-items/{orderItemId}/serials")
+    @Operation(
+        summary = "Get Assigned Product Serials by Order Item ID",
+        description = "Retrieve all product serials assigned to a specific order item with ASSIGN_TO_ORDER_ITEM status. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Assigned product serials retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getAssignedSerialsByOrderItemId(
+            @PathVariable Long orderItemId) {
+
+        log.info("Requesting assigned product serials for order item ID: {} by ADMIN user", orderItemId);
+
+        List<ProductSerialResponse> productSerials = productSerialService.getAssignedSerialsByOrderItemId(orderItemId);
+
+        log.info("Retrieved {} assigned product serials for order item ID: {}", productSerials.size(), orderItemId);
+
+        return ResponseEntity.ok(BaseResponse.success("Assigned product serials retrieved successfully", productSerials));
+    }
+
+    @GetMapping("/order-items/{orderItemId}/allocated-serials")
+    @Operation(
+        summary = "Get Allocated Product Serials by Order Item ID",
+        description = "Retrieve all product serials allocated to dealers for a specific order item with ALLOCATED_TO_DEALER status. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Allocated product serials retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getAllocatedSerialsByOrderItemId(
+            @PathVariable Long orderItemId) {
+
+        log.info("Requesting allocated product serials for order item ID: {} by ADMIN user", orderItemId);
+
+        List<ProductSerialResponse> productSerials = productSerialService.getAllocatedSerialsByOrderItemId(orderItemId);
+
+        log.info("Retrieved {} allocated product serials for order item ID: {}", productSerials.size(), orderItemId);
+
+        return ResponseEntity.ok(BaseResponse.success("Allocated product serials retrieved successfully", productSerials));
+    }
+
+    @GetMapping("/dealer/{dealerId}/product-ids")
+    @Operation(
+        summary = "Get Product IDs with Serials by Dealer",
+        description = "Get distinct product IDs that have serials allocated to a specific dealer. For inter-service communication. Requires API key authentication.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product IDs retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Invalid API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<Long>>> getProductIdsWithSerialsByDealer(
+            @PathVariable Long dealerId,
+            @RequestHeader("X-API-Key") String apiKey) {
+
+        // Simple API key validation for inter-service communication
+        if (!"INTER_SERVICE_KEY".equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(BaseResponse.error("Invalid API key"));
+        }
+
+        log.info("Getting product IDs with serials for dealer: {} via inter-service call", dealerId);
+
+        try {
+            List<Long> productIds = productSerialService.getProductIdsWithSerialsByDealer(dealerId);
+            return ResponseEntity.ok(BaseResponse.success("Product IDs retrieved successfully", productIds));
+        } catch (Exception e) {
+            log.error("Failed to get product IDs with serials for dealer: {}", dealerId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve product IDs"));
+        }
+    }
+
+    @GetMapping("/product/{productId}/dealer/{dealerId}/serials")
+    @Operation(
+        summary = "Get Product Serials by Product ID and Dealer ID",
+        description = "Retrieve all product serials allocated to a specific dealer for a specific product. Requires DEALER role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - DEALER role required"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductSerialResponse>>> getProductSerialsByProductIdAndDealerId(
+            @PathVariable Long productId,
+            @PathVariable Long dealerId) {
+
+        log.info("Getting product serials for product ID: {} and dealer ID: {} by authorized user", productId, dealerId);
+
+        List<ProductSerialResponse> productSerials = productSerialService.getProductSerialsByProductIdAndDealerId(productId, dealerId);
+
+        log.info("Retrieved {} product serials for product ID: {} and dealer ID: {}", productSerials.size(), productId, dealerId);
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
+    }
 
 }

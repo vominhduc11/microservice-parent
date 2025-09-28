@@ -1,6 +1,7 @@
 package com.devwonder.warrantyservice.service;
 
 import com.devwonder.common.exception.ResourceNotFoundException;
+import com.devwonder.common.exception.ResourceAlreadyExistsException;
 import com.devwonder.warrantyservice.client.ProductServiceClient;
 import com.devwonder.warrantyservice.dto.*;
 import com.devwonder.warrantyservice.entity.Warranty;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -50,16 +52,18 @@ public class WarrantyService {
         for (String serial : request.getSerialNumbers()) {
             try {
                 WarrantyResponse warranty = createSingleWarranty(
-                    serial,
-                    customerInfo,
-                    request.getPurchaseDate()
-                );
+                        serial,
+                        customerInfo,
+                        request.getPurchaseDate());
                 successfulWarranties.add(warranty);
                 successfulSerials.add(serial);
                 log.info("Successfully created warranty for serial: {} with code: {}",
-                         serial, warranty.getWarrantyCode());
+                        serial, warranty.getWarrantyCode());
             } catch (WarrantyAlreadyExistsException e) {
                 log.warn("Warranty already exists for serial {}: {}", serial, e.getMessage());
+                failedSerials.add(serial);
+            } catch (ResourceAlreadyExistsException e) {
+                log.warn("Customer already exists for serial {}: {}", serial, e.getMessage());
                 failedSerials.add(serial);
             } catch (ResourceNotFoundException e) {
                 log.warn("Product serial not found {}: {}", serial, e.getMessage());
@@ -83,17 +87,32 @@ public class WarrantyService {
                 .build();
     }
 
+    private WarrantyResponse createSingleWarranty(String serial, CustomerInfo customerInfo,
+            java.time.LocalDate purchaseDate) {
+        log.debug("Creating warranty for serial: {}, customer: {}, purchaseDate: {}", serial, customerInfo.getName(),
+                purchaseDate);
 
+        // Check if customer already exists by email or phone
+        Optional<Warranty> existingByEmail = warrantyRepository.findByCustomerEmail(customerInfo.getEmail());
+        if (existingByEmail.isPresent()) {
+            log.warn("Customer already exists with email: {}", customerInfo.getEmail());
+            throw new ResourceAlreadyExistsException("Customer with email " + customerInfo.getEmail() + " already exists");
+        }
 
-    private WarrantyResponse createSingleWarranty(String serial, CustomerInfo customerInfo, java.time.LocalDate purchaseDate) {
-        log.debug("Creating warranty for serial: {}, customer: {}, purchaseDate: {}", serial, customerInfo.getName(), purchaseDate);
+        Optional<Warranty> existingByPhone = warrantyRepository.findByCustomerPhone(customerInfo.getPhone());
+        if (existingByPhone.isPresent()) {
+            log.warn("Customer already exists with phone: {}", customerInfo.getPhone());
+            throw new ResourceAlreadyExistsException("Customer with phone " + customerInfo.getPhone() + " already exists");
+        }
 
         // Get product serial ID
-        log.debug("Calling product service with API key: {}", authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
+        log.debug("Calling product service with API key: {}",
+                authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
         var serialResponse = productServiceClient.getProductSerialIdBySerial(serial, authApiKey);
         if (!serialResponse.isSuccess() || serialResponse.getData() == null) {
             log.error("Failed to get product serial ID for serial: {}, response: {}, API key used: {}",
-                     serial, serialResponse.getMessage(), authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
+                    serial, serialResponse.getMessage(),
+                    authApiKey != null ? "***" + authApiKey.substring(Math.max(0, authApiKey.length() - 4)) : "null");
             throw new ResourceNotFoundException("Product serial not found: " + serial);
         }
 
@@ -125,7 +144,7 @@ public class WarrantyService {
         try {
             Warranty savedWarranty = warrantyRepository.save(warranty);
             log.info("Successfully saved warranty to database - ID: {}, Code: {}, Serial: {}",
-                     savedWarranty.getId(), warrantyCode, serial);
+                    savedWarranty.getId(), warrantyCode, serial);
 
             return mapToResponse(savedWarranty);
         } catch (Exception e) {
@@ -140,14 +159,13 @@ public class WarrantyService {
         return String.format("WR-%s-%s-%s", timestamp, serial, randomSuffix);
     }
 
-
-
     @Transactional(readOnly = true)
     public WarrantyResponse getWarrantyByProductSerial(Long productSerialId) {
         log.info("Checking warranty for product serial: {}", productSerialId);
 
         Warranty warranty = warrantyRepository.findActiveWarrantyByProductSerial(productSerialId)
-                .orElseThrow(() -> new WarrantyNotFoundException("No active warranty found for product serial: " + productSerialId));
+                .orElseThrow(() -> new WarrantyNotFoundException(
+                        "No active warranty found for product serial: " + productSerialId));
 
         return mapToResponse(warranty);
     }
@@ -168,7 +186,8 @@ public class WarrantyService {
 
         // 2. Check warranty for this product serial ID
         Warranty warranty = warrantyRepository.findActiveWarrantyByProductSerial(productSerialId)
-                .orElseThrow(() -> new WarrantyNotFoundException("No active warranty found for serial number: " + serialNumber));
+                .orElseThrow(() -> new WarrantyNotFoundException(
+                        "No active warranty found for serial number: " + serialNumber));
 
         return mapToResponseWithDetails(warranty);
     }
@@ -176,13 +195,13 @@ public class WarrantyService {
     public boolean isWarrantyActive(Warranty warranty) {
         LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
         return warranty.getStatus() == WarrantyStatus.ACTIVE &&
-               endDate.isAfter(LocalDateTime.now());
+                endDate.isAfter(LocalDateTime.now());
     }
 
     public boolean isWarrantyExpired(Warranty warranty) {
         LocalDateTime endDate = warranty.getPurchaseDate().plusMonths(24); // Calculate end date: purchase + 24 months
         return endDate.isBefore(LocalDateTime.now()) ||
-               warranty.getStatus() == WarrantyStatus.EXPIRED;
+                warranty.getStatus() == WarrantyStatus.EXPIRED;
     }
 
     private void updateProductSerialsStatus(List<String> serialNumbers) {
@@ -227,7 +246,6 @@ public class WarrantyService {
 
         return response;
     }
-
 
     private ProductSerialInfo getProductSerialInfo(Long productSerialId) {
         try {

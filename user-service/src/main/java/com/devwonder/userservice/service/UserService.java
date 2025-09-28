@@ -90,7 +90,7 @@ public class UserService {
                 .build();
         
         try {
-            var authResponse = authServiceClient.createAccount(authRequest, "user-service-key");
+            var authResponse = authServiceClient.createAccount(authRequest, "INTER_SERVICE_KEY");
             log.info("Successfully created account with ID: {} for dealer", authResponse.getData().getId());
             
             // Map request to entity
@@ -168,7 +168,7 @@ public class UserService {
             log.info("Successfully deleted dealer with ID: {}", dealerId);
             
             // Delete corresponding account in auth-service
-            authServiceClient.deleteAccount(accountId, "user-service-key");
+            authServiceClient.deleteAccount(accountId, "INTER_SERVICE_KEY");
             log.info("Successfully deleted account with ID: {} in auth-service", accountId);
             
         } catch (Exception e) {

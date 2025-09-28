@@ -16,4 +16,6 @@ public class ProductSerialResponse {
     private Long productId;
     private String productName;
     private ProductSerialStatus status;
+    private Long orderItemId;
+    private Long dealerId;
 }

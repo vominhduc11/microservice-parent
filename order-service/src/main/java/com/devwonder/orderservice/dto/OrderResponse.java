@@ -1,6 +1,7 @@
 package com.devwonder.orderservice.dto;
 
 import com.devwonder.orderservice.enums.PaymentStatus;
+import com.devwonder.common.enums.OrderItemStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,7 @@ public class OrderResponse {
     private Long id;
     private Long idDealer;
     private String orderCode;
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
     private PaymentStatus paymentStatus;
     private List<OrderItemResponse> orderItems;
     private BigDecimal totalPrice; // Calculated from orderItems
@@ -33,6 +34,7 @@ public class OrderResponse {
         private Long idProduct;
         private BigDecimal unitPrice;
         private Integer quantity;
+        private OrderItemStatus status;
         private BigDecimal subtotal; // quantity * unitPrice
     }
 }

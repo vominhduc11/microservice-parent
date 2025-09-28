@@ -4,6 +4,7 @@ import com.devwonder.common.dto.BaseResponse;
 import com.devwonder.productservice.dto.ProductCreateRequest;
 import com.devwonder.productservice.dto.ProductResponse;
 import com.devwonder.productservice.dto.ProductUpdateRequest;
+import com.devwonder.productservice.dto.ProductInfo;
 import com.devwonder.productservice.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -121,6 +122,31 @@ public class ProductController {
         log.info("Retrieved {} related products for product ID: {}", products.size(), productId);
 
         return ResponseEntity.ok(BaseResponse.success("Related products retrieved successfully", products));
+    }
+
+    @GetMapping("/products/search")
+    @Operation(
+        summary = "Search Products",
+        description = "Search products by keyword in name, description, or SKU. Public access - no authentication required.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Products search completed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<ProductResponse>>> searchProducts(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Searching products with query: '{}', limit: {}, fields: {}", q, limit, fields);
+
+        List<ProductResponse> products = productService.searchProducts(q, limit, fields);
+
+        log.info("Found {} products matching query: '{}'", products.size(), q);
+
+        return ResponseEntity.ok(BaseResponse.success("Products search completed successfully", products));
     }
 
     @GetMapping("/products")
@@ -296,4 +322,73 @@ public class ProductController {
 
         return ResponseEntity.ok(BaseResponse.success("Product restored successfully", product));
     }
+
+    @GetMapping("/products/{productId}/name")
+    @Operation(
+        summary = "Get Product Name",
+        description = "Get product name by ID for inter-service communication. Requires API key authentication.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product name retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Invalid API key"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<String>> getProductName(
+            @PathVariable Long productId,
+            @RequestHeader("X-API-Key") String apiKey) {
+
+        // Simple API key validation for inter-service communication
+        if (!"INTER_SERVICE_KEY".equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(BaseResponse.error("Invalid API key"));
+        }
+
+        log.info("Getting product name for ID: {} via inter-service call", productId);
+
+        try {
+            String productName = productService.getProductName(productId);
+            return ResponseEntity.ok(BaseResponse.success("Product name retrieved successfully", productName));
+        } catch (Exception e) {
+            log.error("Failed to get product name for ID: {}", productId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve product name"));
+        }
+    }
+
+    @GetMapping("/products/{productId}/info")
+    @Operation(
+        summary = "Get Product Info",
+        description = "Get product ID and name by ID for inter-service communication. Requires API key authentication.",
+        security = {}
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product info retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Invalid API key"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<ProductInfo>> getProductInfo(
+            @PathVariable Long productId,
+            @RequestHeader("X-API-Key") String apiKey) {
+
+        // Simple API key validation for inter-service communication
+        if (!"INTER_SERVICE_KEY".equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(BaseResponse.error("Invalid API key"));
+        }
+
+        log.info("Getting product info for ID: {} via inter-service call", productId);
+
+        try {
+            ProductInfo productInfo = productService.getProductInfo(productId);
+            return ResponseEntity.ok(BaseResponse.success("Product info retrieved successfully", productInfo));
+        } catch (Exception e) {
+            log.error("Failed to get product info for ID: {}", productId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve product info"));
+        }
+    }
+
 }

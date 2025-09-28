@@ -18,4 +18,10 @@ public interface WarrantyRepository extends JpaRepository<Warranty, Long> {
 
     @Query("SELECT w FROM Warranty w WHERE w.idProductSerial = :idProductSerial AND w.status = 'ACTIVE'")
     Optional<Warranty> findActiveWarrantyByProductSerial(@Param("idProductSerial") Long idProductSerial);
+
+    @Query("SELECT w FROM Warranty w WHERE w.customerEmail = :email")
+    Optional<Warranty> findByCustomerEmail(@Param("email") String email);
+
+    @Query("SELECT w FROM Warranty w WHERE w.customerPhone = :phone")
+    Optional<Warranty> findByCustomerPhone(@Param("phone") String phone);
 }

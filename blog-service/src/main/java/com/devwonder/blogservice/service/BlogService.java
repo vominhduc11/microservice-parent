@@ -183,4 +183,37 @@ public class BlogService {
                 .map(blogMapper::toBlogResponse)
                 .toList();
     }
+
+    public List<BlogResponse> getBlogsByCategory(Long categoryId, String fields) {
+        log.info("Fetching blogs by category ID: {} with fields: {}", categoryId, fields);
+
+        // Validate category exists
+        categoryBlogRepository.findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found with ID: " + categoryId));
+
+        List<Blog> blogs = blogRepository.findByCategoryBlogIdAndIsDeletedFalse(categoryId);
+
+        log.info("Found {} blogs for category ID: {}", blogs.size(), categoryId);
+
+        return blogs.stream()
+                .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
+                .toList();
+    }
+
+    public List<BlogResponse> searchBlogs(String query, int limit, String fields) {
+        log.info("Searching blogs with query: '{}', limit: {}, fields: {}", query, limit, fields);
+
+        if (query == null || query.trim().isEmpty()) {
+            log.warn("Search query is empty, returning empty list");
+            return List.of();
+        }
+
+        List<Blog> blogs = blogRepository.searchBlogs(query.trim());
+        log.info("Found {} blogs matching query: '{}'", blogs.size(), query);
+
+        return blogs.stream()
+                .limit(limit)
+                .map(blog -> fieldFilterUtil.applyFieldFiltering(blogMapper.toBlogResponse(blog), fields))
+                .toList();
+    }
 }

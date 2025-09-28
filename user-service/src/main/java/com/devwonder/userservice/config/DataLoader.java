@@ -24,8 +24,8 @@ public class DataLoader {
         // Create admin profile for accountId = 1 (admin account from auth-service)
         createAdminIfNotExists(1L, "System Administrator", "admin@devwonder.com", "+1234567890", "DevWonder Technology");
 
-        // Create dealer profile for accountId = 3 (dealer account from auth-service)
-        createDealerIfNotExists(3L, "ABC Trading Company", "123 Business St", "+1987654321",
+        // Create dealer profile for accountId = 2 (dealer account from auth-service)
+        createDealerIfNotExists(2L, "ABC Trading Company", "123 Business St", "+1987654321",
                                 "dealer@abc-trading.com", "Business District", "Ho Chi Minh City");
 
         log.info("User data initialization completed successfully!");

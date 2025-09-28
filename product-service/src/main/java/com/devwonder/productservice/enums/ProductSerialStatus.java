@@ -1,10 +1,10 @@
 package com.devwonder.productservice.enums;
 
 public enum ProductSerialStatus {
-    AVAILABLE("Available"),
-    SOLD_TO_DEALER("Sold to Dealer"),
-    SOLD_TO_CUSTOMER("Sold to Customer"),
-    DAMAGED("Damaged");
+    IN_STOCK("In Stock"),
+    ALLOCATED_TO_DEALER("Allocated to Dealer"),
+    ASSIGN_TO_ORDER_ITEM("Assigned to Order Item"),
+    SOLD_TO_CUSTOMER("Sold to Customer");
 
     private final String displayName;
 

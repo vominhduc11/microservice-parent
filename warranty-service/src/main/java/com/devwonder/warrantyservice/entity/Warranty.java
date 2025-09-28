@@ -33,11 +33,11 @@ public class Warranty {
     private String customerName;
 
     @NotBlank
-    @Column(name = "customer_email", nullable = false)
+    @Column(name = "customer_email", nullable = false, unique = true)
     private String customerEmail;
 
     @NotBlank
-    @Column(name = "customer_phone", nullable = false)
+    @Column(name = "customer_phone", nullable = false, unique = true)
     private String customerPhone;
 
     @Column(name = "customer_address")

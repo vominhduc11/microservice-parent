@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -284,31 +286,35 @@ public class ProductSerialService {
     public void assignSerialsToOrderItem(List<Long> serialIds, Long orderItemId) {
         log.info("Assigning {} product serials to order item {}", serialIds.size(), orderItemId);
 
-        // Validate serial count matches order item quantity
+        // Validate assignment won't exceed order item quantity
         try {
-            BaseResponse<OrderItemResponse> response = orderServiceClient.getOrderItem(orderItemId, "PRODUCT-SERVICE-API-KEY");
+            BaseResponse<OrderItemResponse> response = orderServiceClient.getOrderItem(orderItemId, "INTER_SERVICE_KEY");
             OrderItemResponse orderItem = response.getData();
 
             if (orderItem == null) {
                 throw new ResourceNotFoundException("Order item not found with ID: " + orderItemId);
             }
 
-            if (serialIds.size() != orderItem.getQuantity()) {
+            // Count all serials currently linked to this order item (both assigned and allocated)
+            Long currentTotalCount = (long) productSerialRepository.findAllByOrderItemId(orderItemId).size();
+            Long totalAfterAssignment = currentTotalCount + serialIds.size();
+
+            if (totalAfterAssignment > orderItem.getQuantity()) {
                 throw new IllegalArgumentException(
-                    String.format("Serial count (%d) must equal order item quantity (%d) for order item ID: %d",
-                        serialIds.size(), orderItem.getQuantity(), orderItemId)
+                    String.format("Cannot assign %d more serials to order item %d. Current total: %d, Max: %d",
+                        serialIds.size(), orderItemId, currentTotalCount, orderItem.getQuantity())
                 );
             }
 
-            log.info("Validation passed: {} serials match order item quantity for order item {}",
-                serialIds.size(), orderItemId);
+            log.info("Assignment validation passed for order item {}: {} current total + {} new = {} (max: {})",
+                orderItemId, currentTotalCount, serialIds.size(), totalAfterAssignment, orderItem.getQuantity());
 
         } catch (Exception e) {
             if (e instanceof ResourceNotFoundException || e instanceof IllegalArgumentException) {
                 throw e;
             }
-            log.error("Failed to validate order item {}: {}", orderItemId, e.getMessage());
-            throw new RuntimeException("Failed to validate order item quantity: " + e.getMessage(), e);
+            log.error("Failed to validate assignment for order item {}: {}", orderItemId, e.getMessage());
+            throw new RuntimeException("Failed to validate assignment: " + e.getMessage(), e);
         }
 
         // Proceed with assignment after validation
@@ -358,9 +364,10 @@ public class ProductSerialService {
     public void allocateSerialsToDealer(List<Long> serialIds, Long dealerId) {
         log.info("Allocating {} product serials to dealer {}", serialIds.size(), dealerId);
 
-        // Track order items that need status checking
-        Set<Long> affectedOrderItems = new HashSet<>();
+        // Validate allocation won't exceed order item requirements
+        Map<Long, Integer> orderItemAllocationCount = new HashMap<>();
 
+        // Pre-validate all serials and count allocations per order item
         for (Long serialId : serialIds) {
             ProductSerial productSerial = productSerialRepository.findById(serialId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product serial not found with ID: " + serialId));
@@ -370,7 +377,56 @@ public class ProductSerialService {
                 throw new IllegalStateException("Product serial " + serialId + " is not assigned to order item. Current status: " + productSerial.getStatus());
             }
 
-            // Track the order item before clearing
+            Long orderItemId = productSerial.getOrderItemId();
+            if (orderItemId != null) {
+                orderItemAllocationCount.merge(orderItemId, 1, Integer::sum);
+            }
+        }
+
+        // Validate against order item quantities
+        for (Map.Entry<Long, Integer> entry : orderItemAllocationCount.entrySet()) {
+            Long orderItemId = entry.getKey();
+            Integer newAllocations = entry.getValue();
+
+            try {
+                BaseResponse<OrderItemResponse> response = orderServiceClient.getOrderItem(orderItemId, "INTER_SERVICE_KEY");
+                OrderItemResponse orderItem = response.getData();
+
+                if (orderItem == null) {
+                    throw new ResourceNotFoundException("Order item not found with ID: " + orderItemId);
+                }
+
+                // Count currently allocated serials
+                Long currentAllocatedCount = productSerialRepository.countAllocatedSerialsByOrderItem(orderItemId);
+                Long totalAfterAllocation = currentAllocatedCount + newAllocations;
+
+                if (totalAfterAllocation > orderItem.getQuantity()) {
+                    throw new IllegalArgumentException(
+                        String.format("Cannot allocate %d more serials to order item %d. Current: %d, Max: %d",
+                            newAllocations, orderItemId, currentAllocatedCount, orderItem.getQuantity())
+                    );
+                }
+
+                log.info("Allocation validation passed for order item {}: {} current + {} new = {} (max: {})",
+                    orderItemId, currentAllocatedCount, newAllocations, totalAfterAllocation, orderItem.getQuantity());
+
+            } catch (Exception e) {
+                if (e instanceof ResourceNotFoundException || e instanceof IllegalArgumentException) {
+                    throw e;
+                }
+                log.error("Failed to validate allocation for order item {}: {}", orderItemId, e.getMessage());
+                throw new RuntimeException("Failed to validate allocation: " + e.getMessage(), e);
+            }
+        }
+
+        // Proceed with allocation (validation already done)
+        Set<Long> affectedOrderItems = new HashSet<>();
+
+        for (Long serialId : serialIds) {
+            ProductSerial productSerial = productSerialRepository.findById(serialId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product serial not found with ID: " + serialId));
+
+            // Track the order item for completion checking
             if (productSerial.getOrderItemId() != null) {
                 affectedOrderItems.add(productSerial.getOrderItemId());
             }
@@ -395,13 +451,28 @@ public class ProductSerialService {
     public List<ProductSerialResponse> getAssignedSerialsByOrderItemId(Long orderItemId) {
         log.info("Getting assigned product serials for order item ID: {}", orderItemId);
 
-        List<ProductSerial> productSerials = productSerialRepository.findByOrderItemId(orderItemId);
+        List<ProductSerial> productSerials = productSerialRepository.findByOrderItemIdAndStatus(orderItemId, ProductSerialStatus.ASSIGN_TO_ORDER_ITEM);
 
         List<ProductSerialResponse> responses = productSerials.stream()
                 .map(productSerialMapper::toProductSerialResponse)
                 .collect(Collectors.toList());
 
         log.info("Found {} assigned product serials for order item ID {}", responses.size(), orderItemId);
+
+        return responses;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSerialResponse> getAllocatedSerialsByOrderItemId(Long orderItemId) {
+        log.info("Getting allocated product serials for order item ID: {}", orderItemId);
+
+        List<ProductSerial> productSerials = productSerialRepository.findByOrderItemIdAndStatus(orderItemId, ProductSerialStatus.ALLOCATED_TO_DEALER);
+
+        List<ProductSerialResponse> responses = productSerials.stream()
+                .map(productSerialMapper::toProductSerialResponse)
+                .collect(Collectors.toList());
+
+        log.info("Found {} allocated product serials for order item ID {}", responses.size(), orderItemId);
 
         return responses;
     }
@@ -436,7 +507,7 @@ public class ProductSerialService {
 
         try {
             // Get order item details to check required quantity
-            BaseResponse<OrderItemResponse> response = orderServiceClient.getOrderItem(orderItemId, "PRODUCT-SERVICE-API-KEY");
+            BaseResponse<OrderItemResponse> response = orderServiceClient.getOrderItem(orderItemId, "INTER_SERVICE_KEY");
             OrderItemResponse orderItem = response.getData();
 
             if (orderItem == null) {
@@ -456,7 +527,7 @@ public class ProductSerialService {
                     allocatedCount, orderItem.getQuantity(), orderItemId);
 
                 // Call order service to update status
-                orderServiceClient.updateOrderItemStatus(orderItemId, OrderItemStatus.COMPLETED, "PRODUCT-SERVICE-API-KEY");
+                orderServiceClient.updateOrderItemStatus(orderItemId, OrderItemStatus.COMPLETED, "INTER_SERVICE_KEY");
 
                 log.info("Successfully updated order item {} status to COMPLETED", orderItemId);
             } else {
@@ -467,5 +538,35 @@ public class ProductSerialService {
         } catch (Exception e) {
             log.error("Failed to check/update completion status for order item {}: {}", orderItemId, e.getMessage(), e);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getProductIdsWithSerialsByDealer(Long dealerId) {
+        log.info("Getting product IDs with serials for dealer: {}", dealerId);
+
+        List<Long> productIds = productSerialRepository.findDistinctProductIdsByDealerId(dealerId);
+
+        log.info("Found {} distinct product IDs with serials for dealer: {}", productIds.size(), dealerId);
+
+        return productIds;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSerialResponse> getProductSerialsByProductIdAndDealerId(Long productId, Long dealerId) {
+        log.info("Getting product serials for product ID: {} and dealer ID: {}", productId, dealerId);
+
+        // Validate product exists
+        productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
+
+        List<ProductSerial> productSerials = productSerialRepository.findByProductIdAndDealerId(productId, dealerId);
+
+        List<ProductSerialResponse> responses = productSerials.stream()
+                .map(productSerialMapper::toProductSerialResponse)
+                .collect(Collectors.toList());
+
+        log.info("Found {} product serials for product ID: {} and dealer ID: {}", responses.size(), productId, dealerId);
+
+        return responses;
     }
 }

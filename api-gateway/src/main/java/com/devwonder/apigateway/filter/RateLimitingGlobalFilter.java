@@ -55,7 +55,7 @@ public class RateLimitingGlobalFilter implements GlobalFilter, Ordered {
             }
             
             if (counter.count.get() >= MAX_REQUESTS_PER_MINUTE) {
-                log.warn("Rate limit exceeded for client: {}", clientId);
+                System.out.println("Rate limit exceeded for client: " + clientId);
                 return handleRateLimitExceeded(exchange);
             }
             

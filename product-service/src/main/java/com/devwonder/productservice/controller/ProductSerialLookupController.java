@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/product/product-serial")
-@Tag(name = "Product Inventory", description = "📋 Serial number tracking & Inventory management")
+@Tag(name = "Inter-Service APIs", description = "🔗 Direct service-to-service communication (API Key required)")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductSerialLookupController {

@@ -14,6 +14,7 @@ public class ProductInventoryResponse {
     private String productName;
     private Long availableCount;
     private Long soldCount;
-    private Long damagedCount;
+    private Long assignedCount;
+    private Long soldToCustomerCount;
     private Long totalCount;
 }
