@@ -32,6 +32,30 @@ public class OrderDashboardController {
         return dashboardService.getYesterdayRevenue();
     }
 
+    @GetMapping("/revenue-month")
+    public BigDecimal getMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting month revenue");
+        return dashboardService.getMonthRevenue();
+    }
+
+    @GetMapping("/revenue-last-month")
+    public BigDecimal getLastMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting last month revenue");
+        return dashboardService.getLastMonthRevenue();
+    }
+
+    @GetMapping("/completed-orders-today")
+    public Long getCompletedOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting completed orders today");
+        return dashboardService.getCompletedOrdersToday();
+    }
+
+    @GetMapping("/total-orders-today")
+    public Long getTotalOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting total orders today");
+        return dashboardService.getTotalOrdersToday();
+    }
+
     @GetMapping("/revenue-by-period")
     public Map<String, BigDecimal> getRevenueByPeriod(
             @RequestHeader("X-API-Key") String apiKey,
@@ -66,51 +90,34 @@ public class OrderDashboardController {
         return dashboardService.getRevenueGrowth();
     }
 
-    @GetMapping("/revenue-month")
-    public BigDecimal getMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting month revenue");
-        return dashboardService.getMonthRevenue();
-    }
-
-    @GetMapping("/revenue-last-month")
-    public BigDecimal getLastMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting last month revenue");
-        return dashboardService.getLastMonthRevenue();
-    }
-
-    @GetMapping("/completed-orders-today")
-    public Long getCompletedOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting completed orders today");
-        return dashboardService.getCompletedOrdersToday();
-    }
-
-    @GetMapping("/total-orders-today")
-    public Long getTotalOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting total orders today");
-        return dashboardService.getTotalOrdersToday();
-    }
-
     @GetMapping("/top-dealers")
     public List<Map<String, Object>> getTopDealers(@RequestHeader("X-API-Key") String apiKey) {
         log.debug("Getting top dealers");
         return dashboardService.getTopDealers();
     }
 
-    @GetMapping("/dealer-count-this-month")
-    public Long getDealerCountThisMonth(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting dealer count this month");
-        return dashboardService.getDealerCountThisMonth();
-    }
-
-    @GetMapping("/dealer-count-last-month")
-    public Long getDealerCountLastMonth(@RequestHeader("X-API-Key") String apiKey) {
-        log.debug("Getting dealer count last month");
-        return dashboardService.getDealerCountLastMonth();
-    }
 
     @GetMapping("/product-sales")
     public List<Map<String, Object>> getProductSales(@RequestHeader("X-API-Key") String apiKey) {
         log.debug("Getting product sales");
         return dashboardService.getProductSales();
+    }
+
+    @GetMapping("/dealer-count-this-month")
+    public Long getCurrentMonthDealers(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting current month dealers");
+        return dashboardService.getCurrentMonthDealers();
+    }
+
+    @GetMapping("/dealer-count-last-month")
+    public Long getLastMonthDealers(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting last month dealers");
+        return dashboardService.getLastMonthDealers();
+    }
+
+    @GetMapping("/total-orders-month")
+    public Long getTotalOrdersMonth(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting total orders this month");
+        return dashboardService.getTotalOrdersMonth();
     }
 }

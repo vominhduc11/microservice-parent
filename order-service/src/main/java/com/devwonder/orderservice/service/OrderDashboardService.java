@@ -30,6 +30,7 @@ public class OrderDashboardService {
             .orElse(BigDecimal.ZERO);
     }
 
+
     public BigDecimal getYesterdayRevenue() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         LocalDateTime startOfDay = yesterday.atStartOfDay();
@@ -238,5 +239,22 @@ public class OrderDashboardService {
                         "growth", product.growth
                 ))
                 .toList();
+    }
+
+    // Alias methods for Report Service compatibility
+    public Long getCurrentMonthDealers() {
+        return getDealerCountThisMonth();
+    }
+
+    public Long getLastMonthDealers() {
+        return getDealerCountLastMonth();
+    }
+
+    public Long getTotalOrdersMonth() {
+        LocalDate now = LocalDate.now();
+        LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59);
+
+        return orderRepository.countOrdersByDateRange(startOfMonth, endOfMonth);
     }
 }

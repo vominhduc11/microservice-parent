@@ -36,4 +36,10 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
            "AND oi.order.isDeleted = false AND oi.status = 'COMPLETED'")
     Long countCompletedOrdersByDateRange(@Param("startDate") LocalDateTime startDate,
                                        @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(DISTINCT oi.order.id) FROM OrderItem oi " +
+           "WHERE oi.order.createdAt BETWEEN :startDate AND :endDate " +
+           "AND oi.order.isDeleted = false")
+    Long countOrdersByDateRange(@Param("startDate") LocalDateTime startDate,
+                               @Param("endDate") LocalDateTime endDate);
 }

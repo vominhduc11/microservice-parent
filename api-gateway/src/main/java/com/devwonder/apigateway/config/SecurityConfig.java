@@ -222,6 +222,12 @@ public class SecurityConfig {
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
+            // New Reports API endpoints - ADMIN only (for dashboard interface)
+            .pathMatchers(HttpMethod.GET, "/api/reports/overview").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/reports/revenue").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/reports/dealers").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.GET, "/api/reports/products").hasRole(ROLE_ADMIN)
+
             // Dashboard endpoints - ADMIN only
             .pathMatchers(HttpMethod.GET, "/api/report/dashboard/**").hasRole(ROLE_ADMIN);
     }

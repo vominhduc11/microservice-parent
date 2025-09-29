@@ -34,11 +34,14 @@ public interface OrderServiceClient {
     List<Map<String, Object>> getTopDealers(@RequestHeader("X-API-Key") String apiKey);
 
     @GetMapping("/dealer-count-this-month")
-    Long getDealerCountThisMonth(@RequestHeader("X-API-Key") String apiKey);
+    Long getCurrentMonthDealers(@RequestHeader("X-API-Key") String apiKey);
 
     @GetMapping("/dealer-count-last-month")
-    Long getDealerCountLastMonth(@RequestHeader("X-API-Key") String apiKey);
+    Long getLastMonthDealers(@RequestHeader("X-API-Key") String apiKey);
 
     @GetMapping("/product-sales")
     List<Map<String, Object>> getProductSales(@RequestHeader("X-API-Key") String apiKey);
+
+    @GetMapping("/total-orders-month")
+    Long getTotalOrdersMonth(@RequestHeader("X-API-Key") String apiKey);
 }

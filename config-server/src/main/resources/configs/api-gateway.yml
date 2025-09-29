@@ -269,11 +269,20 @@ spring:
             - AddRequestHeader=X-Gateway-Request, true
 
         # Report Service API Routes
+        - id: report-service-new-apis
+          uri: ${REPORT_SERVICE_URI}
+          order: 200
+          predicates:
+            - Path=/api/reports/**            # New dashboard APIs (overview, revenue, dealers, products)
+          filters:
+            - StripPrefix=1                   # /api/reports/** → /reports/**
+            - AddRequestHeader=X-Gateway-Request, true
+
         - id: report-service
           uri: ${REPORT_SERVICE_URI}
           order: 200
           predicates:
-            - Path=/api/report/**             # Analytics & reporting
+            - Path=/api/report/**             # Legacy dashboard & analytics
           filters:
             - StripPrefix=1                   # /api/report/** → /report/**
             - AddRequestHeader=X-Gateway-Request, true
