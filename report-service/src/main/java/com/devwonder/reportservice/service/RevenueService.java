@@ -83,6 +83,7 @@ public class RevenueService {
         RevenueResponse.MetricCard monthRevenue = RevenueResponse.MetricCard.builder()
                 .value(cache.monthRevenue)
                 .growth(monthGrowth.doubleValue())
+                .totalOrders(cache.totalOrdersMonth)
                 .label(String.format("%.1f%% vs tháng trước", monthGrowth))
                 .build();
 
@@ -91,6 +92,7 @@ public class RevenueService {
         RevenueResponse.MetricCard todayRevenue = RevenueResponse.MetricCard.builder()
                 .value(cache.todayRevenue)
                 .growth(todayGrowth.doubleValue())
+                .totalOrders(cache.totalOrdersToday)
                 .label(String.format("%.1f%% vs hôm qua", todayGrowth))
                 .build();
 

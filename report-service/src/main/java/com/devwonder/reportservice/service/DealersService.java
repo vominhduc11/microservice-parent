@@ -148,7 +148,7 @@ public class DealersService {
             return topDealers.stream()
                     .limit(Math.min(limit, topDealers.size()))
                     .map(dealer -> {
-                        int rank = (Integer) dealer.getOrDefault("rank", 0);
+                        int rank = (Integer) dealer.getOrDefault("rank", 1);
                         return DealersResponse.TopDealer.builder()
                                 .name((String) dealer.getOrDefault("name", "Unknown Dealer"))
                                 .rank(rank)
@@ -164,13 +164,14 @@ public class DealersService {
 
     private List<DealersResponse.DetailedDealer> buildDetailedDealers(DealerDataCache cache, Integer limit) {
         try {
-            // Use order service data for detailed information
-            List<Map<String, Object>> topDealers = cache.topDealersFromOrder;
+            // Use order service data first, fallback to user service data
+            List<Map<String, Object>> topDealers = cache.topDealersFromOrder.isEmpty() ?
+                    cache.topDealersFromUser : cache.topDealersFromOrder;
 
             return topDealers.stream()
                     .limit(Math.min(limit, topDealers.size()))
                     .map(dealer -> {
-                        int rank = (Integer) dealer.getOrDefault("rank", 0);
+                        int rank = (Integer) dealer.getOrDefault("rank", 1);
                         return DealersResponse.DetailedDealer.builder()
                                 .name((String) dealer.getOrDefault("name", "Unknown Dealer"))
                                 .rank(rank)

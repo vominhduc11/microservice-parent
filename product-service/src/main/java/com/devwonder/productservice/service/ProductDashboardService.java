@@ -53,7 +53,7 @@ public class ProductDashboardService {
         InventoryAlertsDto alerts = new InventoryAlertsDto();
         alerts.lowStockCount = lowStockCount;
         alerts.overstockCount = overstockCount;
-        alerts.urgentProduct = urgentProduct != null ? urgentProduct : "Tai nghe SCS Pro Max";
+        alerts.urgentProduct = urgentProduct;
 
         return alerts;
     }
@@ -107,7 +107,7 @@ public class ProductDashboardService {
     public String getUrgentProduct() {
         List<Object[]> stockCounts = productSerialRepository.getProductStockCounts();
 
-        String urgentProduct = "Tai nghe SCS Pro Max"; // Default
+        String urgentProduct = null;
         int lowestStock = Integer.MAX_VALUE;
 
         for (Object[] row : stockCounts) {
@@ -145,13 +145,13 @@ public class ProductDashboardService {
             String productName = (String) row[1];
             Long soldQuantity = (Long) row[2];
 
-            // Calculate revenue (assuming we have a price lookup)
+            // Calculate revenue (lookup product price from database)
             Product product = productRepository.findById(productId).orElse(null);
             if (product == null) continue;
 
             long revenue = soldQuantity * product.getPrice().longValue();
 
-            // Calculate growth (simplified - could be enhanced with historical data)
+            // Calculate growth based on sell-through rate
             double growth = calculateProductGrowth(productId);
 
             Map<String, Object> productData = new HashMap<>();

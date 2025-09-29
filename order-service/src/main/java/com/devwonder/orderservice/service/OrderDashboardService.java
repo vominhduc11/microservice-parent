@@ -66,62 +66,38 @@ public class OrderDashboardService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
 
-        Long totalOrders = orderRepository.countOrdersByDateRange(startOfDay, endOfDay);
+        // Use PAID orders to be consistent with revenue calculation
+        Long totalOrders = orderRepository.countPaidOrdersByDateRange(startOfDay, endOfDay);
         Long completedOrders = orderItemRepository.countCompletedOrdersByDateRange(startOfDay, endOfDay);
 
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", totalOrders);
         stats.put("completed", completedOrders);
-        stats.put("pending", totalOrders - completedOrders);
+        stats.put("pending", Math.max(0L, totalOrders - completedOrders));
 
         return stats;
     }
 
     public List<DealerOrderStatsDto> getDealerOrderStats() {
-        // This would require a complex query joining orders with dealer info
-        // For now, return sample data - would need to implement proper repository method
-        List<DealerOrderStatsDto> stats = new ArrayList<>();
-
-        // Sample implementation - would be replaced with actual query
-        DealerOrderStatsDto dealer1 = new DealerOrderStatsDto();
-        dealer1.dealerId = 1L;
-        dealer1.companyName = "Nguyễn Văn An";
-        dealer1.totalOrders = 28L;
-        dealer1.totalRevenue = new BigDecimal("45800000");
-        stats.add(dealer1);
-
-        DealerOrderStatsDto dealer2 = new DealerOrderStatsDto();
-        dealer2.dealerId = 2L;
-        dealer2.companyName = "Trần Thị Bích";
-        dealer2.totalOrders = 22L;
-        dealer2.totalRevenue = new BigDecimal("38200000");
-        stats.add(dealer2);
-
-        return stats;
+        // Get real dealer order statistics from database
+        return orderRepository.getDealerOrderStats();
     }
 
     public List<ProductSalesDto> getTopProducts(int limit) {
-        // This would require a query to get product sales stats
-        // For now, return sample data - would need to implement proper repository method
-        List<ProductSalesDto> products = new ArrayList<>();
+        // Get real product sales statistics from database
+        List<Object[]> rawResults = orderItemRepository.getTopProductsSalesRaw(limit);
 
-        ProductSalesDto product1 = new ProductSalesDto();
-        product1.productId = 1L;
-        product1.productName = "Tai nghe SCS Sport";
-        product1.soldQuantity = 203;
-        product1.revenue = new BigDecimal("365400000");
-        product1.growth = 25.3;
-        products.add(product1);
-
-        ProductSalesDto product2 = new ProductSalesDto();
-        product2.productId = 2L;
-        product2.productName = "Tai nghe SCS Pro Max";
-        product2.soldQuantity = 156;
-        product2.revenue = new BigDecimal("546000000");
-        product2.growth = 18.7;
-        products.add(product2);
-
-        return products.subList(0, Math.min(limit, products.size()));
+        return rawResults.stream()
+            .map(row -> {
+                ProductSalesDto dto = new ProductSalesDto();
+                dto.productId = ((Number) row[0]).longValue();
+                dto.productName = (String) row[1];
+                dto.soldQuantity = (Integer) row[2];
+                dto.revenue = (BigDecimal) row[3];
+                dto.growth = ((Number) row[4]).doubleValue();
+                return dto;
+            })
+            .toList();
     }
 
     public Map<String, Double> getRevenueGrowth() {
@@ -195,8 +171,11 @@ public class OrderDashboardService {
     }
 
     public Long getTotalOrdersToday() {
-        Map<String, Long> stats = getTodayOrderStats();
-        return stats.get("total");
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        // Use PAID orders to be consistent with revenue calculation
+        return orderRepository.countPaidOrdersByDateRange(startOfDay, endOfDay);
     }
 
     public List<Map<String, Object>> getTopDealers() {
@@ -255,6 +234,7 @@ public class OrderDashboardService {
         LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
         LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59);
 
-        return orderRepository.countOrdersByDateRange(startOfMonth, endOfMonth);
+        // Use PAID orders to be consistent with revenue calculation
+        return orderRepository.countPaidOrdersByDateRange(startOfMonth, endOfMonth);
     }
 }
