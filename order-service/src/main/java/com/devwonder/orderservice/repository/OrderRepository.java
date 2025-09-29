@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +40,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Get unique dealer IDs from orders
     @Query("SELECT DISTINCT o.idDealer FROM Order o WHERE o.isDeleted = false")
     List<Long> findDistinctDealerIds();
+
+    // Dashboard queries
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate AND o.isDeleted = false")
+    Long countOrdersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

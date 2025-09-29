@@ -1,0 +1,82 @@
+package com.devwonder.orderservice.controller;
+
+import com.devwonder.orderservice.service.OrderDashboardService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/order-service/dashboard")
+@RequiredArgsConstructor
+@Slf4j
+public class OrderDashboardController {
+
+    private final OrderDashboardService dashboardService;
+
+    @GetMapping("/revenue-today")
+    public BigDecimal getTodayRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting today revenue");
+        return dashboardService.getTodayRevenue();
+    }
+
+    @GetMapping("/revenue-yesterday")
+    public BigDecimal getYesterdayRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting yesterday revenue");
+        return dashboardService.getYesterdayRevenue();
+    }
+
+    @GetMapping("/revenue-by-period")
+    public Map<String, BigDecimal> getRevenueByPeriod(
+            @RequestHeader("X-API-Key") String apiKey,
+            @RequestParam List<String> periods) {
+        log.debug("Getting revenue by periods: {}", periods);
+        return dashboardService.getRevenueByPeriod(periods);
+    }
+
+    @GetMapping("/orders-today")
+    public Map<String, Long> getTodayOrderStats(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting today order stats");
+        return dashboardService.getTodayOrderStats();
+    }
+
+    @GetMapping("/dealer-stats")
+    public List<DealerOrderStatsDto> getDealerOrderStats(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting dealer order stats");
+        return dashboardService.getDealerOrderStats();
+    }
+
+    @GetMapping("/top-products")
+    public List<ProductSalesDto> getTopProducts(
+            @RequestHeader("X-API-Key") String apiKey,
+            @RequestParam(defaultValue = "5") int limit) {
+        log.debug("Getting top products with limit: {}", limit);
+        return dashboardService.getTopProducts(limit);
+    }
+
+    @GetMapping("/revenue-growth")
+    public Map<String, Double> getRevenueGrowth(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting revenue growth");
+        return dashboardService.getRevenueGrowth();
+    }
+}
+
+// DTOs for dashboard responses
+class DealerOrderStatsDto {
+    public Long dealerId;
+    public String companyName;
+    public Long totalOrders;
+    public BigDecimal totalRevenue;
+}
+
+class ProductSalesDto {
+    public Long productId;
+    public String productName;
+    public Integer soldQuantity;
+    public BigDecimal revenue;
+    public Double growth;
+}

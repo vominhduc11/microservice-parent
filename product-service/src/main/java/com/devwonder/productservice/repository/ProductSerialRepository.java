@@ -55,4 +55,15 @@ public interface ProductSerialRepository extends JpaRepository<ProductSerial, Lo
 
     @Query("SELECT ps FROM ProductSerial ps WHERE ps.product.id = :productId AND ps.dealerId = :dealerId")
     List<ProductSerial> findByProductIdAndDealerId(@Param("productId") Long productId, @Param("dealerId") Long dealerId);
+
+    // Dashboard queries
+    @Query("SELECT p.id, p.name, COUNT(ps) FROM ProductSerial ps JOIN ps.product p " +
+           "WHERE ps.status = 'IN_STOCK' GROUP BY p.id, p.name")
+    List<Object[]> getProductStockCounts();
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.status = :status")
+    Integer countByStatus(@Param("status") ProductSerialStatus status);
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.product.id = :productId AND ps.status = :status")
+    Integer countByProductIdAndStatus(@Param("productId") Long productId, @Param("status") ProductSerialStatus status);
 }

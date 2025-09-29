@@ -221,7 +221,9 @@ public class SecurityConfig {
     }
 
     private void configureReportServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
-        // TODO: Add report service authorization rules when endpoints are implemented
+        exchanges
+            // Dashboard endpoints - ADMIN only
+            .pathMatchers(HttpMethod.GET, "/api/report/dashboard/**").hasRole(ROLE_ADMIN);
     }
 
     private String[] getSwaggerPaths() {
