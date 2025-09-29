@@ -12,6 +12,8 @@ public class SecurityConfig extends BaseSecurityConfig {
         auth
             // Inter-service endpoints - allow API key authentication
             .requestMatchers("/order/order-service/**").access(authApiKeyRequired())
+            // Dashboard endpoints for Report Service - API key required
+            .requestMatchers("/order-service/dashboard/**").access(authApiKeyRequired())
             // Other order endpoints - ONLY accessible via API Gateway
             .requestMatchers("/order/**").access(gatewayHeaderRequired());
     }

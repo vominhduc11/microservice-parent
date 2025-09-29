@@ -11,8 +11,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Realistic Dashboard Service with feasible data based on actual entities
+ */
 @Service
-public class DashboardServiceMock {
+public class DashboardServiceRealistic {
 
     @Autowired
     private DashboardMapper dashboardMapper;
@@ -20,100 +23,102 @@ public class DashboardServiceMock {
     public DashboardResponse getDashboardData() {
         Map<String, Object> response = new HashMap<>();
 
-        // KPI Metrics
+        // KPI Metrics - Realistic for small/medium business
         Map<String, Object> kpiMetrics = new HashMap<>();
 
+        // Today Revenue - Reasonable daily revenue
         Map<String, Object> todayRevenue = new HashMap<>();
-        todayRevenue.put("value", 5420000L);
-        todayRevenue.put("growth", 12.5);
+        todayRevenue.put("value", 2500000L);  // 2.5M VND/day
+        todayRevenue.put("growth", 8.5);
         todayRevenue.put("comparison", "so với hôm qua");
         kpiMetrics.put("todayRevenue", todayRevenue);
 
+        // Completed Orders - Realistic daily volume
         Map<String, Object> completedOrders = new HashMap<>();
-        completedOrders.put("value", 28L);
-        completedOrders.put("total", 35L);
+        completedOrders.put("value", 12L);   // 12 completed orders
+        completedOrders.put("total", 15L);   // 15 total orders today
         completedOrders.put("label", "tổng đơn hôm nay");
         kpiMetrics.put("completedOrders", completedOrders);
 
-        Map<String, Object> monthAgents = new HashMap<>();
-        monthAgents.put("value", 523L);
-        monthAgents.put("growth", 8.7);
-        monthAgents.put("comparison", "so với tháng trước");
-        kpiMetrics.put("monthAgents", monthAgents);
+        // Monthly Dealers - Changed from "agents"
+        Map<String, Object> monthDealers = new HashMap<>();
+        monthDealers.put("value", 45L);      // 45 active dealers this month
+        monthDealers.put("growth", 6.3);
+        monthDealers.put("comparison", "so với tháng trước");
+        kpiMetrics.put("monthDealers", monthDealers);
 
+        // Low Stock Products - Based on ProductSerial counts
         Map<String, Object> lowStockProducts = new HashMap<>();
-        lowStockProducts.put("value", 3L);
-        lowStockProducts.put("total", 12L);
+        lowStockProducts.put("value", 5L);   // 5 low stock products
+        lowStockProducts.put("total", 25L);  // 25 total products
         lowStockProducts.put("label", "tổng sản phẩm");
         kpiMetrics.put("lowStockProducts", lowStockProducts);
 
         response.put("kpiMetrics", kpiMetrics);
 
-        // Inventory Alerts
+        // Inventory Alerts - Simplified
         Map<String, Object> inventoryAlerts = new HashMap<>();
-        inventoryAlerts.put("lowStockCount", 3);
+        inventoryAlerts.put("lowStockCount", 5);
         inventoryAlerts.put("overstockCount", 2);
         inventoryAlerts.put("urgentProduct", "Tai nghe SCS Pro Max");
         response.put("inventoryAlerts", inventoryAlerts);
 
-        // Top Performers
+        // Top Performers - Realistic dealer performance
         Map<String, Object> topPerformers = new HashMap<>();
 
-        Map<String, Object> topAgent = new HashMap<>();
-        topAgent.put("name", "Nguyễn Văn An");
-        topAgent.put("totalSpent", 45800000L);
-        topAgent.put("totalOrders", 28);
-        topPerformers.put("topAgent", topAgent);
+        Map<String, Object> topDealer = new HashMap<>();
+        topDealer.put("name", "Công ty TNHH ABC");
+        topDealer.put("totalSpent", 8500000L);    // 8.5M VND this month
+        topDealer.put("totalOrders", 12);
+        topPerformers.put("topDealer", topDealer);
 
         Map<String, Object> topProduct = new HashMap<>();
         topProduct.put("name", "Tai nghe SCS Sport");
-        topProduct.put("soldQuantity", 203);
-        topProduct.put("growth", 25.3);
+        topProduct.put("soldQuantity", 25);       // 25 units sold
+        topProduct.put("growth", 15.3);
         topPerformers.put("topProduct", topProduct);
 
         Map<String, Object> revenueHighlight = new HashMap<>();
-        revenueHighlight.put("value", 5420000L);
-        revenueHighlight.put("growth", 12.5);
+        revenueHighlight.put("value", 2500000L);
+        revenueHighlight.put("growth", 8.5);
         topPerformers.put("todayRevenueHighlight", revenueHighlight);
 
         response.put("topPerformers", topPerformers);
 
-        // Charts Data
+        // Charts Data - Simplified timeframes
         Map<String, Object> chartsData = new HashMap<>();
 
         chartsData.put("revenueComparison", Arrays.asList(
-            createRevenueComparison("Hôm qua", 4830000L, "Hôm qua"),
-            createRevenueComparison("Hôm nay", 5420000L, "Hôm nay"),
-            createRevenueComparison("Tuần trước", 32400000L, "Tuần trước"),
-            createRevenueComparison("Tuần này", 36800000L, "Tuần này"),
-            createRevenueComparison("Tháng trước", 124500000L, "Tháng trước"),
-            createRevenueComparison("Tháng này", 143200000L, "Tháng này")
+            createRevenueComparison("Hôm qua", 2300000L, "Hôm qua"),
+            createRevenueComparison("Hôm nay", 2500000L, "Hôm nay"),
+            createRevenueComparison("Tháng trước", 65000000L, "Tháng trước"),
+            createRevenueComparison("Tháng này", 68500000L, "Tháng này")
         ));
 
         chartsData.put("revenueGrowth", Arrays.asList(
-            createRevenueGrowth("Ngày", 12.5, "Hôm nay vs Hôm qua"),
-            createRevenueGrowth("Tuần", 13.6, "Tuần này vs Tuần trước"),
-            createRevenueGrowth("Tháng", 15.2, "Tháng này vs Tháng trước"),
-            createRevenueGrowth("Năm", 18.7, "Năm nay vs Năm trước")
+            createRevenueGrowth("Ngày", 8.5, "Hôm nay vs Hôm qua"),
+            createRevenueGrowth("Tháng", 5.4, "Tháng này vs Tháng trước")
         ));
 
         response.put("chartsData", chartsData);
 
-        // Top Lists
+        // Top Lists - Realistic business scale
         Map<String, Object> topLists = new HashMap<>();
 
-        topLists.put("agents", Arrays.asList(
-            createTopAgent(1, "Nguyễn Văn An", 45800000L),
-            createTopAgent(2, "Trần Thị Bích", 38200000L),
-            createTopAgent(3, "Lê Hoàng Minh", 32500000L)
+        topLists.put("dealers", Arrays.asList(
+            createTopDealer(1, "Công ty TNHH ABC", 8500000L),
+            createTopDealer(2, "Công ty XYZ", 7200000L),
+            createTopDealer(3, "Đại lý 123", 6800000L),
+            createTopDealer(4, "Shop Điện tử DEF", 5900000L),
+            createTopDealer(5, "Cửa hàng GHI", 5200000L)
         ));
 
         topLists.put("products", Arrays.asList(
-            createTopProduct(1, "Tai nghe SCS Sport", 203, 365400000L, 25.3),
-            createTopProduct(2, "Tai nghe SCS Pro Max", 156, 546000000L, 18.7),
-            createTopProduct(3, "Tai nghe SCS Wireless", 134, 375200000L, 12.4),
-            createTopProduct(4, "Tai nghe SCS Premium", 98, 539000000L, 31.2),
-            createTopProduct(5, "Tai nghe SCS Gaming", 89, 195800000L, -5.1)
+            createTopProduct(1, "Tai nghe SCS Sport", 25, 12500000L, 15.3),
+            createTopProduct(2, "Tai nghe SCS Pro Max", 18, 14400000L, 12.7),
+            createTopProduct(3, "Tai nghe SCS Wireless", 22, 11000000L, 8.4),
+            createTopProduct(4, "Tai nghe SCS Premium", 15, 13500000L, 18.2),
+            createTopProduct(5, "Tai nghe SCS Gaming", 12, 8400000L, 5.1)
         ));
 
         response.put("topLists", topLists);
@@ -144,12 +149,12 @@ public class DashboardServiceMock {
         return rg;
     }
 
-    private Map<String, Object> createTopAgent(Integer rank, String name, Long totalSpent) {
-        Map<String, Object> agent = new HashMap<>();
-        agent.put("rank", rank);
-        agent.put("name", name);
-        agent.put("totalSpent", totalSpent);
-        return agent;
+    private Map<String, Object> createTopDealer(Integer rank, String name, Long totalSpent) {
+        Map<String, Object> dealer = new HashMap<>();
+        dealer.put("rank", rank);
+        dealer.put("name", name);
+        dealer.put("totalSpent", totalSpent);
+        return dealer;
     }
 
     private Map<String, Object> createTopProduct(Integer rank, String name, Integer soldQuantity, Long revenue, Double growth) {

@@ -44,4 +44,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Dashboard queries
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate AND o.isDeleted = false")
     Long countOrdersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // Count distinct dealers who placed orders in date range
+    @Query("SELECT COUNT(DISTINCT o.idDealer) FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate AND o.isDeleted = false")
+    Long countDistinctDealersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

@@ -1,6 +1,8 @@
 package com.devwonder.orderservice.controller;
 
 import com.devwonder.orderservice.service.OrderDashboardService;
+import com.devwonder.orderservice.dto.DealerOrderStatsDto;
+import com.devwonder.orderservice.dto.ProductSalesDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -63,20 +65,52 @@ public class OrderDashboardController {
         log.debug("Getting revenue growth");
         return dashboardService.getRevenueGrowth();
     }
-}
 
-// DTOs for dashboard responses
-class DealerOrderStatsDto {
-    public Long dealerId;
-    public String companyName;
-    public Long totalOrders;
-    public BigDecimal totalRevenue;
-}
+    @GetMapping("/revenue-month")
+    public BigDecimal getMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting month revenue");
+        return dashboardService.getMonthRevenue();
+    }
 
-class ProductSalesDto {
-    public Long productId;
-    public String productName;
-    public Integer soldQuantity;
-    public BigDecimal revenue;
-    public Double growth;
+    @GetMapping("/revenue-last-month")
+    public BigDecimal getLastMonthRevenue(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting last month revenue");
+        return dashboardService.getLastMonthRevenue();
+    }
+
+    @GetMapping("/completed-orders-today")
+    public Long getCompletedOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting completed orders today");
+        return dashboardService.getCompletedOrdersToday();
+    }
+
+    @GetMapping("/total-orders-today")
+    public Long getTotalOrdersToday(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting total orders today");
+        return dashboardService.getTotalOrdersToday();
+    }
+
+    @GetMapping("/top-dealers")
+    public List<Map<String, Object>> getTopDealers(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting top dealers");
+        return dashboardService.getTopDealers();
+    }
+
+    @GetMapping("/dealer-count-this-month")
+    public Long getDealerCountThisMonth(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting dealer count this month");
+        return dashboardService.getDealerCountThisMonth();
+    }
+
+    @GetMapping("/dealer-count-last-month")
+    public Long getDealerCountLastMonth(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting dealer count last month");
+        return dashboardService.getDealerCountLastMonth();
+    }
+
+    @GetMapping("/product-sales")
+    public List<Map<String, Object>> getProductSales(@RequestHeader("X-API-Key") String apiKey) {
+        log.debug("Getting product sales");
+        return dashboardService.getProductSales();
+    }
 }

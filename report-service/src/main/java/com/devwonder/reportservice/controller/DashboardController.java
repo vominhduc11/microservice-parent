@@ -1,7 +1,8 @@
 package com.devwonder.reportservice.controller;
 
 import com.devwonder.common.dto.BaseResponse;
-import com.devwonder.reportservice.service.DashboardServiceMock;
+import com.devwonder.reportservice.dto.DashboardResponse;
+import com.devwonder.reportservice.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController {
 
     @Autowired
-    private DashboardServiceMock dashboardService;
+    private DashboardService dashboardService;
 
     @GetMapping("/admin")
     @Operation(
@@ -38,13 +39,13 @@ public class DashboardController {
         @ApiResponse(responseCode = "500", description = "Internal server error - Check service connectivity"),
         @ApiResponse(responseCode = "503", description = "Service unavailable - Fallback data provided")
     })
-    public ResponseEntity<BaseResponse<Object>> getAdminDashboard() {
+    public ResponseEntity<BaseResponse<DashboardResponse>> getAdminDashboard() {
         // log.info("Admin dashboard data requested");
 
         try {
-            Object dashboardData = dashboardService.getDashboardData();
+            DashboardResponse dashboardData = dashboardService.getDashboardData();
 
-            BaseResponse<Object> response = new BaseResponse<>(
+            BaseResponse<DashboardResponse> response = new BaseResponse<>(
                 true,
                 "Dashboard data retrieved successfully",
                 dashboardData
@@ -54,7 +55,7 @@ public class DashboardController {
         } catch (Exception e) {
             // log.error("Error retrieving dashboard data", e);
 
-            BaseResponse<Object> response = new BaseResponse<>(
+            BaseResponse<DashboardResponse> response = new BaseResponse<>(
                 false,
                 "Error retrieving dashboard data: " + e.getMessage(),
                 null

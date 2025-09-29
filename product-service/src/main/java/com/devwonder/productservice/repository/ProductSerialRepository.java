@@ -66,4 +66,13 @@ public interface ProductSerialRepository extends JpaRepository<ProductSerial, Lo
 
     @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.product.id = :productId AND ps.status = :status")
     Integer countByProductIdAndStatus(@Param("productId") Long productId, @Param("status") ProductSerialStatus status);
+
+    @Query("SELECT COUNT(ps) FROM ProductSerial ps WHERE ps.product.id = :productId")
+    Long countByProductId(@Param("productId") Long productId);
+
+    // Get top products by sales (sold quantity)
+    @Query("SELECT p.id, p.name, COUNT(ps) as soldCount FROM ProductSerial ps " +
+           "JOIN ps.product p WHERE ps.status = 'SOLD_TO_CUSTOMER' " +
+           "GROUP BY p.id, p.name ORDER BY soldCount DESC")
+    List<Object[]> getTopProductsBySales();
 }

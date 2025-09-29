@@ -12,6 +12,8 @@ public class SecurityConfig extends BaseSecurityConfig {
         auth
             // Inter-service lookup endpoints - API key required
             .requestMatchers("/dealer-service/**").access(authApiKeyRequired())
+            // Dashboard endpoints for Report Service - API key required
+            .requestMatchers("/user-service/dashboard/**").access(authApiKeyRequired())
 
             // Gateway endpoints - ONLY accessible via API Gateway
             .requestMatchers("/user/dealer/**").access(gatewayHeaderRequired())

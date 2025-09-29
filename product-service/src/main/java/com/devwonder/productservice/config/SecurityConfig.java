@@ -19,6 +19,8 @@ public class SecurityConfig extends BaseSecurityConfig {
             .requestMatchers("/product/products/*/name").access(authApiKeyRequired())               // Product name lookup for inter-service
             .requestMatchers("/product/products/*/info").access(authApiKeyRequired())               // Product info lookup for inter-service
             .requestMatchers("/product/product-serials/dealer/*/product-ids").access(authApiKeyRequired()) // Product IDs by dealer
+            // Dashboard endpoints for Report Service - API key required
+            .requestMatchers("/product-service/dashboard/**").access(authApiKeyRequired())
 
             // Product serials endpoints - Gateway required (DEALER role for inventory management)
             .requestMatchers("/product/product-serials/**").access(gatewayHeaderRequired())

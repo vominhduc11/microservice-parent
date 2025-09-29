@@ -2,6 +2,8 @@ package com.devwonder.orderservice.service;
 
 import com.devwonder.orderservice.repository.OrderRepository;
 import com.devwonder.orderservice.repository.OrderItemRepository;
+import com.devwonder.orderservice.dto.DealerOrderStatsDto;
+import com.devwonder.orderservice.dto.ProductSalesDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -176,5 +178,65 @@ public class OrderDashboardService {
             .divide(previous, 4, BigDecimal.ROUND_HALF_UP)
             .multiply(BigDecimal.valueOf(100))
             .doubleValue();
+    }
+
+    public BigDecimal getMonthRevenue() {
+        return getMonthRevenue(LocalDate.now());
+    }
+
+    public BigDecimal getLastMonthRevenue() {
+        return getMonthRevenue(LocalDate.now().minusMonths(1));
+    }
+
+    public Long getCompletedOrdersToday() {
+        Map<String, Long> stats = getTodayOrderStats();
+        return stats.get("completed");
+    }
+
+    public Long getTotalOrdersToday() {
+        Map<String, Long> stats = getTodayOrderStats();
+        return stats.get("total");
+    }
+
+    public List<Map<String, Object>> getTopDealers() {
+        List<DealerOrderStatsDto> dealerStats = getDealerOrderStats();
+        return dealerStats.stream()
+                .map(dealer -> Map.<String, Object>of(
+                        "rank", dealerStats.indexOf(dealer) + 1,
+                        "name", dealer.companyName,
+                        "totalSpent", dealer.totalRevenue.longValue(),
+                        "totalOrders", dealer.totalOrders
+                ))
+                .toList();
+    }
+
+    public Long getDealerCountThisMonth() {
+        // Get unique dealers who placed orders this month
+        LocalDateTime startOfMonth = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        LocalDateTime endOfMonth = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59);
+
+        return orderRepository.countDistinctDealersByDateRange(startOfMonth, endOfMonth);
+    }
+
+    public Long getDealerCountLastMonth() {
+        // Get unique dealers who placed orders last month
+        LocalDate lastMonth = LocalDate.now().minusMonths(1);
+        LocalDateTime startOfLastMonth = lastMonth.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        LocalDateTime endOfLastMonth = lastMonth.with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59);
+
+        return orderRepository.countDistinctDealersByDateRange(startOfLastMonth, endOfLastMonth);
+    }
+
+    public List<Map<String, Object>> getProductSales() {
+        List<ProductSalesDto> productSales = getTopProducts(10);
+        return productSales.stream()
+                .map(product -> Map.<String, Object>of(
+                        "productId", product.productId,
+                        "productName", product.productName,
+                        "soldCount", product.soldQuantity,
+                        "revenue", product.revenue.longValue(),
+                        "growth", product.growth
+                ))
+                .toList();
     }
 }
