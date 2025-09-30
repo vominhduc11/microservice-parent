@@ -51,8 +51,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.isDeleted = false AND o.paymentStatus = com.devwonder.orderservice.enums.PaymentStatus.PAID")
     Long countPaidOrdersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    // Count distinct dealers who placed orders in date range
-    @Query("SELECT COUNT(DISTINCT o.idDealer) FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate AND o.isDeleted = false")
+    // Count distinct dealers who placed PAID orders in date range (consistent with revenue calculation)
+    @Query("SELECT COUNT(DISTINCT o.idDealer) FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate " +
+           "AND o.isDeleted = false AND o.paymentStatus = com.devwonder.orderservice.enums.PaymentStatus.PAID")
     Long countDistinctDealersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     // Get dealer order statistics
