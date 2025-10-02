@@ -98,9 +98,8 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
         
         // Check user roles
         boolean isAdmin = userRoles.stream().anyMatch("ADMIN"::equalsIgnoreCase);
-        boolean isCustomer = userRoles.stream().anyMatch("CUSTOMER"::equalsIgnoreCase);
-        
-        log.info("👤 Role check - Is Admin: {}, Is Customer: {}", isAdmin, isCustomer);
+
+        log.info("👤 Role check - Is Admin: {}", isAdmin);
         
         // Public topic subscriptions - All authenticated users can subscribe
         if ("/topic/notifications".equals(destination)) {
@@ -111,6 +110,17 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
         // Private message queue - All authenticated users can subscribe to their own queue
         if (destination != null && (destination.startsWith("/user/queue/private") || destination.contains("/queue/private"))) {
             log.info("✅ SUBSCRIBE ACCESS GRANTED - User authorized to subscribe to their own private queue");
+            return;
+        }
+
+        // Login confirmed queue - ADMIN only (only ADMIN has login email confirmation feature)
+        if (destination != null && (destination.startsWith("/user/queue/login-confirmed") || destination.contains("/queue/login-confirmed"))) {
+            log.info("🔐 Login confirmation queue subscription check - Is Admin: {}", isAdmin);
+            if (!isAdmin) {
+                log.error("❌ SUBSCRIBE ACCESS DENIED - Only ADMIN can subscribe to login confirmation queue (roles: {})", userRoles);
+                throw new AccessDeniedException("Access denied: Only ADMIN can subscribe to login confirmation queue");
+            }
+            log.info("✅ SUBSCRIBE ACCESS GRANTED - ADMIN authorized to subscribe to login confirmation queue");
             return;
         }
         
@@ -135,7 +145,7 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
             log.info("✅ SUBSCRIBE ACCESS GRANTED - ADMIN authorized to subscribe to order notifications");
             return;
         }
-        
+
         // Unknown destinations
         log.warn("⚠️ Unknown subscription destination: {} - Access denied", destination);
         throw new AccessDeniedException("Access denied to unknown subscription destination: " + destination);
@@ -158,25 +168,25 @@ public class WebSocketAuthorizationInterceptor implements ChannelInterceptor {
         try {
             // Extract and validate JWT token for role extraction
             String token = extractTokenFromHeaders(accessor);
-            
+
             if (token == null || token.isEmpty()) {
                 log.warn("⚠️ No JWT token found in headers for role extraction - using empty roles");
                 return List.of();
             }
-            
+
             // Validate JWT token and extract fresh roles
             JWTClaimsSet claimsSet = jwtService.validateToken(token);
             List<String> roles = jwtService.extractRoles(claimsSet);
-            
+
             if (roles != null && !roles.isEmpty()) {
                 log.debug("✅ Extracted roles from JWT token: {}", roles);
                 return roles;
             }
-            
+
             // No roles found
             log.warn("⚠️ No roles found in JWT token");
             return List.of();
-            
+
         } catch (Exception e) {
             log.error("❌ Error during role extraction (non-fatal): {}", e.getMessage());
             // Return empty roles instead of throwing - let specific authorization logic handle it

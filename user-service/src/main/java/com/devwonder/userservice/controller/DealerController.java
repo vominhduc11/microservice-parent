@@ -75,6 +75,33 @@ public class DealerController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/search")
+    @Operation(
+        summary = "Search Dealers",
+        description = "Search dealers by keyword in company name, phone, email or city. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Dealers search completed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<DealerResponse>>> searchDealers(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String fields) {
+
+        log.info("Searching dealers with query: '{}', limit: {}, fields: {}", q, limit, fields);
+
+        List<DealerResponse> dealers = userService.searchDealers(q, limit, fields);
+
+        log.info("Found {} dealers matching query: '{}'", dealers.size(), q);
+
+        return ResponseEntity.ok(BaseResponse.success("Dealers search completed successfully", dealers));
+    }
+
     @PostMapping
     @Operation(
         summary = "Register New Dealer",

@@ -1,5 +1,6 @@
 package com.devwonder.authservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,6 +38,14 @@ public class LoginResponse {
     @Schema(description = "Account ID of the authenticated user", example = "3")
     private Long accountId;
 
+    @Schema(description = "Email of the authenticated user (only for ADMIN)", example = "admin@devwonder.com")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String email;
+
+    @Schema(description = "Whether this account requires email confirmation on login (only for ADMIN)", example = "false")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean requireLoginEmailConfirmation;
+
     // Constructor for backward compatibility
     public LoginResponse(String accessToken, Long expiresIn, String username, Set<String> roles) {
         this.accessToken = accessToken;
@@ -46,7 +55,7 @@ public class LoginResponse {
     }
 
     // Full constructor with refresh token
-    public LoginResponse(String accessToken, String refreshToken, Long expiresIn, Long refreshExpiresIn, String username, Set<String> roles, Long accountId) {
+    public LoginResponse(String accessToken, String refreshToken, Long expiresIn, Long refreshExpiresIn, String username, Set<String> roles, Long accountId, String email, Boolean requireLoginEmailConfirmation) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.tokenType = "Bearer";
@@ -55,5 +64,7 @@ public class LoginResponse {
         this.username = username;
         this.roles = roles;
         this.accountId = accountId;
+        this.email = email;
+        this.requireLoginEmailConfirmation = requireLoginEmailConfirmation;
     }
 }

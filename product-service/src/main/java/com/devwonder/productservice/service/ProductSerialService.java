@@ -41,6 +41,7 @@ public class ProductSerialService {
     private final ProductRepository productRepository;
     private final ProductSerialMapper productSerialMapper;
     private final OrderServiceClient orderServiceClient;
+    private final ProductStockService productStockService;
     
     @Transactional
     public ProductSerialResponse createProductSerial(ProductSerialCreateRequest request) {
@@ -63,7 +64,12 @@ public class ProductSerialService {
         
         ProductSerial savedProductSerial = productSerialRepository.save(productSerial);
         log.info("Successfully created product serial with ID: {}", savedProductSerial.getId());
-        
+
+        // Update product stock automatically if status is IN_STOCK
+        if (request.getStatus() == ProductSerialStatus.IN_STOCK) {
+            productStockService.updateProductStock(request.getProductId());
+        }
+
         return productSerialMapper.toProductSerialResponse(savedProductSerial);
     }
 
@@ -115,6 +121,11 @@ public class ProductSerialService {
         log.info("Successfully created {} product serials, skipped {} duplicates for product ID: {}",
                 savedSerials.size(), skippedSerials.size(), request.getProductId());
 
+        // Update product stock automatically
+        if (!savedSerials.isEmpty()) {
+            productStockService.updateProductStock(request.getProductId());
+        }
+
         // Map to response DTOs
         List<ProductSerialResponse> createdSerials = savedSerials.stream()
                 .map(productSerialMapper::toProductSerialResponse)
@@ -138,8 +149,67 @@ public class ProductSerialService {
         ProductSerial productSerial = productSerialRepository.findById(serialId)
                 .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
 
+        // Only allow deletion if status is IN_STOCK
+        if (productSerial.getStatus() != ProductSerialStatus.IN_STOCK) {
+            throw new IllegalStateException("Cannot delete product serial with ID: " + serialId +
+                ". Only serials with IN_STOCK status can be deleted. Current status: " + productSerial.getStatus());
+        }
+
+        Long productId = productSerial.getProduct().getId();
+
         productSerialRepository.delete(productSerial);
+
+        // Update product stock automatically
+        productStockService.updateProductStock(productId);
+
         log.info("Successfully deleted product serial with ID: {}", serialId);
+    }
+
+    @Transactional
+    public void deleteProductSerialsBulk(List<Long> serialIds) {
+        log.info("Deleting {} product serials in bulk", serialIds.size());
+
+        Set<Long> affectedProductIds = new HashSet<>();
+        List<Long> deletedIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (Long serialId : serialIds) {
+            try {
+                ProductSerial productSerial = productSerialRepository.findById(serialId)
+                        .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
+
+                // Only allow deletion if status is IN_STOCK
+                if (productSerial.getStatus() != ProductSerialStatus.IN_STOCK) {
+                    String error = "Serial ID " + serialId + " cannot be deleted (Status: " + productSerial.getStatus() + ")";
+                    errors.add(error);
+                    log.warn(error);
+                    continue;
+                }
+
+                Long productId = productSerial.getProduct().getId();
+
+                productSerialRepository.delete(productSerial);
+                deletedIds.add(serialId);
+                affectedProductIds.add(productId);
+
+                log.debug("Deleted product serial with ID: {}", serialId);
+            } catch (Exception e) {
+                String error = "Failed to delete serial ID " + serialId + ": " + e.getMessage();
+                errors.add(error);
+                log.error(error);
+            }
+        }
+
+        // Update stock for all affected products
+        for (Long productId : affectedProductIds) {
+            productStockService.updateProductStock(productId);
+        }
+
+        log.info("Successfully deleted {} out of {} product serials", deletedIds.size(), serialIds.size());
+
+        if (!errors.isEmpty()) {
+            log.warn("Bulk deletion completed with {} errors: {}", errors.size(), String.join("; ", errors));
+        }
     }
 
     @Transactional
@@ -152,6 +222,9 @@ public class ProductSerialService {
 
         productSerial.setStatus(request.getStatus());
         ProductSerial savedProductSerial = productSerialRepository.save(productSerial);
+
+        // Update product stock automatically since status changed
+        productStockService.updateProductStock(productSerial.getProduct().getId());
 
         log.info("Successfully updated status for product serial with ID: {} to {}", serialId, request.getStatus());
 
@@ -318,8 +391,17 @@ public class ProductSerialService {
         }
 
         // Proceed with assignment after validation
+        Set<Long> affectedProductIds = new HashSet<>();
         for (Long serialId : serialIds) {
+            ProductSerial serial = productSerialRepository.findById(serialId)
+                    .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
+            affectedProductIds.add(serial.getProduct().getId());
             assignSerialToOrderItem(serialId, orderItemId);
+        }
+
+        // Update stock for all affected products
+        for (Long productId : affectedProductIds) {
+            productStockService.updateProductStock(productId);
         }
 
         log.info("Successfully assigned {} product serials to order item {}", serialIds.size(), orderItemId);
@@ -352,8 +434,17 @@ public class ProductSerialService {
     public void unassignSerialsFromOrderItem(List<Long> serialIds, Long orderItemId) {
         log.info("Unassigning {} product serials from order item {}", serialIds.size(), orderItemId);
 
+        Set<Long> affectedProductIds = new HashSet<>();
         for (Long serialId : serialIds) {
+            ProductSerial serial = productSerialRepository.findById(serialId)
+                    .orElseThrow(() -> new ProductNotFoundException("Product serial not found with ID: " + serialId));
+            affectedProductIds.add(serial.getProduct().getId());
             unassignSerialFromOrderItem(serialId, orderItemId);
+        }
+
+        // Update stock for all affected products (serials become IN_STOCK again)
+        for (Long productId : affectedProductIds) {
+            productStockService.updateProductStock(productId);
         }
 
         log.info("Successfully unassigned {} product serials from order item {}", serialIds.size(), orderItemId);
@@ -421,6 +512,7 @@ public class ProductSerialService {
 
         // Proceed with allocation (validation already done)
         Set<Long> affectedOrderItems = new HashSet<>();
+        Set<Long> affectedProductIds = new HashSet<>();
 
         for (Long serialId : serialIds) {
             ProductSerial productSerial = productSerialRepository.findById(serialId)
@@ -431,12 +523,20 @@ public class ProductSerialService {
                 affectedOrderItems.add(productSerial.getOrderItemId());
             }
 
+            // Track affected products for stock update
+            affectedProductIds.add(productSerial.getProduct().getId());
+
             // Keep order item ID and set dealer ID
             productSerial.setDealerId(dealerId);
             productSerial.setStatus(ProductSerialStatus.ALLOCATED_TO_DEALER);
             productSerialRepository.save(productSerial);
 
             log.debug("Allocated product serial {} to dealer {} with status ALLOCATED_TO_DEALER", serialId, dealerId);
+        }
+
+        // Update stock for all affected products (ensure consistency)
+        for (Long productId : affectedProductIds) {
+            productStockService.updateProductStock(productId);
         }
 
         // Check each affected order item for completion

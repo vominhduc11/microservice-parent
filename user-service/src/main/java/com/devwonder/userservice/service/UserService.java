@@ -6,6 +6,7 @@ import com.devwonder.userservice.client.AuthServiceClient;
 import com.devwonder.userservice.dto.*;
 import com.devwonder.common.exception.ResourceNotFoundException;
 import com.devwonder.userservice.entity.Dealer;
+import com.devwonder.userservice.entity.Admin;
 import com.devwonder.userservice.mapper.DealerMapper;
 import com.devwonder.userservice.repository.DealerRepository;
 import com.devwonder.userservice.util.AccountGeneratorUtil;
@@ -28,6 +29,7 @@ public class UserService {
     private final AuthServiceClient authServiceClient;
     private final DealerEventService dealerEventService;
     private final com.devwonder.userservice.util.FieldFilterUtil fieldFilterUtil;
+    private final com.devwonder.userservice.repository.AdminRepository adminRepository;
 
     @Transactional(readOnly = true)
     public List<DealerResponse> getAllDealers() {
@@ -58,6 +60,24 @@ public class UserService {
     @Transactional(readOnly = true)
     public DealerResponse getDealerById(Long dealerId) {
         return getDealerById(dealerId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DealerResponse> searchDealers(String query, int limit, String fields) {
+        log.info("Searching dealers with query: '{}', limit: {}, fields: {}", query, limit, fields);
+
+        if (query == null || query.trim().isEmpty()) {
+            log.warn("Search query is empty, returning empty list");
+            return List.of();
+        }
+
+        List<Dealer> dealers = dealerRepository.searchDealers(query.trim());
+        log.info("Found {} dealers matching query: '{}'", dealers.size(), query);
+
+        return dealers.stream()
+                .limit(limit)
+                .map(dealer -> fieldFilterUtil.applyFieldFiltering(dealerMapper.toResponse(dealer), fields))
+                .toList();
     }
 
     @Transactional
@@ -177,5 +197,219 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public AdminResponse getAdminInfo(Long accountId) {
+        log.info("Fetching admin information for accountId: {}", accountId);
+
+        Admin admin = adminRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with accountId: " + accountId));
+
+        log.info("Found admin: {} with accountId: {}", admin.getName(), admin.getAccountId());
+
+        return AdminResponse.builder()
+                .accountId(admin.getAccountId())
+                .name(admin.getName())
+                .email(admin.getEmail())
+                .phone(admin.getPhone())
+                .companyName(admin.getCompanyName())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminResponse> getAllAdmins() {
+        log.info("Fetching all admins with role ADMIN (excluding SYSTEM role)");
+
+        try {
+            // Get account IDs that have ADMIN role but NOT SYSTEM role
+            var response = authServiceClient.getAccountIdsByRoleExcluding("ADMIN", "SYSTEM", "INTER_SERVICE_KEY");
+            List<Long> accountIds = response.getData();
+
+            log.info("Found {} admin account IDs from auth-service", accountIds.size());
+
+            // Get admin details for these account IDs
+            List<AdminResponse> admins = accountIds.stream()
+                    .map(accountId -> {
+                        try {
+                            return adminRepository.findById(accountId)
+                                    .map(admin -> AdminResponse.builder()
+                                            .accountId(admin.getAccountId())
+                                            .name(admin.getName())
+                                            .email(admin.getEmail())
+                                            .phone(admin.getPhone())
+                                            .companyName(admin.getCompanyName())
+                                            .build())
+                                    .orElse(null);
+                        } catch (Exception e) {
+                            log.warn("Failed to fetch admin with accountId {}: {}", accountId, e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(admin -> admin != null)
+                    .toList();
+
+            log.info("Successfully retrieved {} admin profiles", admins.size());
+            return admins;
+
+        } catch (Exception e) {
+            log.error("Failed to retrieve admin list: {}", e.getMessage());
+            throw new RuntimeException("Failed to retrieve admin list: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public AdminResponse updateAdmin(Long accountId, com.devwonder.userservice.dto.AdminUpdateRequest updateRequest) {
+        log.info("Updating admin with accountId: {}", accountId);
+
+        // Find existing admin
+        Admin existingAdmin = adminRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with accountId: " + accountId));
+
+        // Check if email already exists for another admin
+        if (!updateRequest.getEmail().equals(existingAdmin.getEmail()) &&
+            adminRepository.existsByEmail(updateRequest.getEmail())) {
+            log.warn("Email {} already exists for another admin", updateRequest.getEmail());
+            throw new ResourceAlreadyExistsException("Email " + updateRequest.getEmail() + " already exists for another admin");
+        }
+
+        // Check if phone already exists for another admin
+        if (!updateRequest.getPhone().equals(existingAdmin.getPhone()) &&
+            adminRepository.existsByPhone(updateRequest.getPhone())) {
+            log.warn("Phone {} already exists for another admin", updateRequest.getPhone());
+            throw new ResourceAlreadyExistsException("Phone " + updateRequest.getPhone() + " already exists for another admin");
+        }
+
+        // Full replacement - update ALL fields (PUT semantics)
+        existingAdmin.setName(updateRequest.getName());
+        existingAdmin.setEmail(updateRequest.getEmail());
+        existingAdmin.setPhone(updateRequest.getPhone());
+        existingAdmin.setCompanyName(updateRequest.getCompanyName());
+        if (updateRequest.getRequireLoginEmailConfirmation() != null) {
+            existingAdmin.setRequireLoginEmailConfirmation(updateRequest.getRequireLoginEmailConfirmation());
+        }
+
+        // Save updated admin
+        Admin updatedAdmin = adminRepository.save(existingAdmin);
+        log.info("Successfully updated admin with accountId: {}", updatedAdmin.getAccountId());
+
+        return AdminResponse.builder()
+                .accountId(updatedAdmin.getAccountId())
+                .name(updatedAdmin.getName())
+                .email(updatedAdmin.getEmail())
+                .phone(updatedAdmin.getPhone())
+                .companyName(updatedAdmin.getCompanyName())
+                .requireLoginEmailConfirmation(updatedAdmin.getRequireLoginEmailConfirmation())
+                .build();
+    }
+
+    @Transactional
+    public AdminResponse updateLoginEmailConfirmation(Long accountId, UpdateLoginEmailConfirmationRequest request) {
+        log.info("Updating login email confirmation setting for admin with accountId: {}", accountId);
+
+        // Find existing admin
+        Admin existingAdmin = adminRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with accountId: " + accountId));
+
+        // Update requireLoginEmailConfirmation
+        existingAdmin.setRequireLoginEmailConfirmation(request.getRequireLoginEmailConfirmation());
+
+        // Save updated admin
+        Admin updatedAdmin = adminRepository.save(existingAdmin);
+        log.info("Successfully updated login email confirmation to {} for accountId: {}",
+                request.getRequireLoginEmailConfirmation(), accountId);
+
+        return AdminResponse.builder()
+                .accountId(updatedAdmin.getAccountId())
+                .name(updatedAdmin.getName())
+                .email(updatedAdmin.getEmail())
+                .phone(updatedAdmin.getPhone())
+                .companyName(updatedAdmin.getCompanyName())
+                .requireLoginEmailConfirmation(updatedAdmin.getRequireLoginEmailConfirmation())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Boolean getAdminRequireLoginEmailConfirmation(Long accountId) {
+        log.info("Fetching requireLoginEmailConfirmation for admin with accountId: {}", accountId);
+
+        return adminRepository.findById(accountId)
+                .map(admin -> Boolean.TRUE.equals(admin.getRequireLoginEmailConfirmation()))
+                .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public String getAdminEmail(Long accountId) {
+        log.info("Fetching email for admin with accountId: {}", accountId);
+
+        return adminRepository.findById(accountId)
+                .map(Admin::getEmail)
+                .orElse(null);
+    }
+
+    @Transactional
+    public AdminResponse registerAdmin(AdminRegisterRequest registerRequest) {
+        log.info("Registering new admin with username: {}", registerRequest.getUsername());
+
+        // Check if phone already exists
+        if (adminRepository.existsByPhone(registerRequest.getPhone())) {
+            log.warn("Admin with phone {} already exists", registerRequest.getPhone());
+            throw new ResourceAlreadyExistsException("Admin with phone " + registerRequest.getPhone() + " already exists");
+        }
+
+        // Check if email already exists
+        if (adminRepository.existsByEmail(registerRequest.getEmail())) {
+            log.warn("Admin with email {} already exists", registerRequest.getEmail());
+            throw new ResourceAlreadyExistsException("Admin with email " + registerRequest.getEmail() + " already exists");
+        }
+
+        // Check if username already exists in auth-service
+        try {
+            var usernameCheckResponse = authServiceClient.checkUsernameExists(registerRequest.getUsername(), "INTER_SERVICE_KEY");
+            if (Boolean.TRUE.equals(usernameCheckResponse.getData())) {
+                log.warn("Username {} already exists", registerRequest.getUsername());
+                throw new ResourceAlreadyExistsException("Username " + registerRequest.getUsername() + " already exists");
+            }
+        } catch (Exception e) {
+            log.error("Failed to check username existence: {}", e.getMessage());
+            throw new RuntimeException("Failed to validate username: " + e.getMessage(), e);
+        }
+
+        // Create account in auth-service with ADMIN role only
+        AuthAccountCreateRequest authRequest = AuthAccountCreateRequest.builder()
+                .username(registerRequest.getUsername())
+                .password(registerRequest.getPassword())
+                .roleNames(Set.of("ADMIN"))
+                .build();
+
+        try {
+            var authResponse = authServiceClient.createAccount(authRequest, "INTER_SERVICE_KEY");
+            log.info("Successfully created account with ID: {} for admin", authResponse.getData().getId());
+
+            // Create admin entity
+            Admin admin = Admin.builder()
+                    .accountId(authResponse.getData().getId())
+                    .name(registerRequest.getName())
+                    .email(registerRequest.getEmail())
+                    .phone(registerRequest.getPhone())
+                    .companyName(registerRequest.getCompanyName())
+                    .build();
+
+            // Save admin
+            Admin savedAdmin = adminRepository.save(admin);
+            log.info("Successfully registered admin with accountId: {}", savedAdmin.getAccountId());
+
+            // Return response
+            return AdminResponse.builder()
+                    .accountId(savedAdmin.getAccountId())
+                    .name(savedAdmin.getName())
+                    .email(savedAdmin.getEmail())
+                    .phone(savedAdmin.getPhone())
+                    .companyName(savedAdmin.getCompanyName())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to create account for admin: {}", e.getMessage());
+            throw new AccountCreationException("Failed to create admin account: " + e.getMessage(), e);
+        }
+    }
 
 }

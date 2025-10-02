@@ -26,4 +26,11 @@ public interface AuthServiceClient {
             @PathVariable Long accountId,
             @RequestHeader("X-API-Key") String apiKey
     );
+
+    @GetMapping("/auth-service/accounts/by-role")
+    BaseResponse<java.util.List<Long>> getAccountIdsByRoleExcluding(
+            @RequestParam String roleName,
+            @RequestParam String excludeRoleName,
+            @RequestHeader("X-API-Key") String apiKey
+    );
 }

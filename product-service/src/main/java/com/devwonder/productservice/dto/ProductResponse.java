@@ -28,6 +28,7 @@ public class ProductResponse {
     private String wholesalePrice;
     private Boolean showOnHomepage;
     private Boolean isFeatured;
+    private Long stock;
     private LocalDateTime createdAt;
     private LocalDateTime updateAt;
 }

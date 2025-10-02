@@ -75,4 +75,24 @@ public class KafkaConsumerConfig {
         return createListenerFactory(orderNotificationConsumerFactory(), 1);
     }
 
+    @Bean
+    public ConsumerFactory<String, Object> loginConfirmationConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-login", "com.devwonder.common.event.LoginConfirmationEvent"));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> loginConfirmationKafkaListenerContainerFactory() {
+        return createListenerFactory(loginConfirmationConsumerFactory(), 2);
+    }
+
+    @Bean
+    public ConsumerFactory<String, Object> loginConfirmedConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(getBaseConsumerConfig("notification-service-group-login-confirmed", "com.devwonder.common.event.LoginConfirmationNotificationEvent"));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> loginConfirmedKafkaListenerContainerFactory() {
+        return createListenerFactory(loginConfirmedConsumerFactory(), 2);
+    }
+
 }

@@ -26,4 +26,8 @@ public class Admin {
     
     @Column(name = "company_name")
     private String companyName;
+
+    @Column(name = "require_login_email_confirmation")
+    @Builder.Default
+    private Boolean requireLoginEmailConfirmation = false;
 }

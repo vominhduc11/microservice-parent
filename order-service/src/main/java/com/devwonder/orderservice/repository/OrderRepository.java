@@ -56,14 +56,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.isDeleted = false AND o.paymentStatus = com.devwonder.orderservice.enums.PaymentStatus.PAID")
     Long countDistinctDealersByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    // Get dealer order statistics
-    @Query("SELECT new com.devwonder.orderservice.dto.DealerOrderStatsDto(o.idDealer, " +
-           "COALESCE(NULLIF(TRIM(o.dealerName), ''), 'Unknown'), " +
-           "COUNT(DISTINCT o.id), " +
-           "SUM(oi.unitPrice * oi.quantity)) " +
-           "FROM Order o JOIN OrderItem oi ON o.id = oi.order.id " +
-           "WHERE o.isDeleted = false AND o.paymentStatus = com.devwonder.orderservice.enums.PaymentStatus.PAID " +
-           "GROUP BY o.idDealer, o.dealerName " +
-           "ORDER BY SUM(oi.unitPrice * oi.quantity) DESC")
-    List<DealerOrderStatsDto> getDealerOrderStats();
+    // Get dealer order statistics - Using native query to avoid JPQL validation issues
+    @Query(value = "SELECT o.id_dealer as dealerId, " +
+           "COALESCE(o.dealer_name, 'Unknown') as dealerName, " +
+           "COUNT(DISTINCT o.id) as totalOrders, " +
+           "SUM(oi.unit_price * oi.quantity) as totalRevenue " +
+           "FROM orders o JOIN order_items oi ON o.id = oi.order_id " +
+           "WHERE o.is_deleted = false AND o.payment_status = 'PAID' " +
+           "GROUP BY o.id_dealer, o.dealer_name " +
+           "ORDER BY totalRevenue DESC",
+           nativeQuery = true)
+    List<Object[]> getDealerOrderStats();
+
+    // Search orders by order code only
+    @Query("SELECT DISTINCT o FROM Order o WHERE o.isDeleted = false AND " +
+           "LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<Order> searchOrders(@Param("query") String query);
 }

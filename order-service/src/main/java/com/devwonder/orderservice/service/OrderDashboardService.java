@@ -79,8 +79,19 @@ public class OrderDashboardService {
     }
 
     public List<DealerOrderStatsDto> getDealerOrderStats() {
-        // Get real dealer order statistics from database
-        return orderRepository.getDealerOrderStats();
+        // Get real dealer order statistics from database using native query
+        List<Object[]> rawResults = orderRepository.getDealerOrderStats();
+
+        List<DealerOrderStatsDto> result = new ArrayList<>();
+        for (Object[] row : rawResults) {
+            result.add(new DealerOrderStatsDto(
+                ((Number) row[0]).longValue(),                          // dealerId
+                (String) row[1],                                         // dealerName
+                ((Number) row[2]).longValue(),                          // totalOrders
+                BigDecimal.valueOf(((Number) row[3]).doubleValue())     // totalRevenue
+            ));
+        }
+        return result;
     }
 
     public List<ProductSalesDto> getTopProducts(int limit) {

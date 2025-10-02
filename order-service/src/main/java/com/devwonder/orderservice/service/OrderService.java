@@ -206,6 +206,71 @@ public class OrderService {
     }
 
     @Transactional
+    public void softDeleteOrdersBulk(List<Long> orderIds) {
+        log.info("Soft deleting {} orders in bulk", orderIds.size());
+
+        int successCount = 0;
+        int failedCount = 0;
+
+        for (Long orderId : orderIds) {
+            try {
+                Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+                // Check if order is paid before allowing soft delete
+                if (order.getPaymentStatus() != PaymentStatus.PAID) {
+                    log.warn("Cannot delete order with ID {}. Only PAID orders can be deleted. Current status: {}",
+                            orderId, order.getPaymentStatus());
+                    failedCount++;
+                    continue;
+                }
+
+                order.setIsDeleted(true);
+                orderRepository.save(order);
+                successCount++;
+                log.debug("Successfully soft deleted order {}", orderId);
+
+            } catch (Exception e) {
+                log.error("Failed to soft delete order {}: {}", orderId, e.getMessage());
+                failedCount++;
+            }
+        }
+
+        log.info("Bulk soft delete completed: {} succeeded, {} failed out of {} total",
+                successCount, failedCount, orderIds.size());
+    }
+
+    @Transactional
+    public void hardDeleteOrdersBulk(List<Long> orderIds) {
+        log.info("Hard deleting {} orders in bulk", orderIds.size());
+
+        int successCount = 0;
+        int failedCount = 0;
+
+        for (Long orderId : orderIds) {
+            try {
+                Order order = orderRepository.findById(orderId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+                // Delete order items first due to foreign key constraint
+                orderItemRepository.deleteByOrderId(orderId);
+
+                // Then delete the order
+                orderRepository.delete(order);
+                successCount++;
+                log.debug("Successfully hard deleted order {}", orderId);
+
+            } catch (Exception e) {
+                log.error("Failed to hard delete order {}: {}", orderId, e.getMessage());
+                failedCount++;
+            }
+        }
+
+        log.info("Bulk hard delete completed: {} succeeded, {} failed out of {} total",
+                successCount, failedCount, orderIds.size());
+    }
+
+    @Transactional
     public OrderResponse restoreOrder(Long orderId) {
         log.info("Restoring order {}", orderId);
 
@@ -232,6 +297,27 @@ public class OrderService {
         List<Order> orders = orderRepository.findByIsDeletedTrueOrderByCreatedAtDesc();
 
         return orders.stream()
+                .map(order -> {
+                    List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
+                    return buildOrderResponse(order, orderItems);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> searchOrders(String query, int limit) {
+        log.info("Searching orders with query: '{}', limit: {}", query, limit);
+
+        if (query == null || query.trim().isEmpty()) {
+            log.warn("Search query is empty, returning empty list");
+            return List.of();
+        }
+
+        List<Order> orders = orderRepository.searchOrders(query.trim());
+        log.info("Found {} orders matching query: '{}'", orders.size(), query);
+
+        return orders.stream()
+                .limit(limit)
                 .map(order -> {
                     List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
                     return buildOrderResponse(order, orderItems);

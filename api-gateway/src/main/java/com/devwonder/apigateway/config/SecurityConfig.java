@@ -2,6 +2,7 @@ package com.devwonder.apigateway.config;
 
 import java.util.*;
 
+import com.devwonder.apigateway.security.AllAuthoritiesAuthorizationManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ public class SecurityConfig {
 
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_DEALER = "DEALER";
+    private static final String ROLE_SYSTEM = "SYSTEM";
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -74,9 +76,18 @@ public class SecurityConfig {
 
                 // Refresh token endpoint - public access (handles expired tokens internally)
                 .pathMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                
+
                 // Token validation endpoint - requires valid JWT token
                 .pathMatchers(HttpMethod.GET, "/api/auth/validate").authenticated()
+
+                // Change password endpoint - requires ADMIN role
+                .pathMatchers(HttpMethod.POST, "/api/auth/change-password").hasRole(ROLE_ADMIN)
+
+                // Send login confirmation email - requires ADMIN role
+                .pathMatchers(HttpMethod.POST, "/api/auth/send-login-confirmation").hasRole(ROLE_ADMIN)
+
+                // Confirm login from email - public access (validates JWT internally)
+                .pathMatchers(HttpMethod.GET, "/api/auth/confirm-login").permitAll()
 
                 // JWKS endpoint - public access (for other services to validate tokens)
                 .pathMatchers(HttpMethod.GET, "/api/auth/.well-known/jwks.json").permitAll();
@@ -97,6 +108,7 @@ public class SecurityConfig {
             .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serial").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.POST, "/api/product/product-serials/serials").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/product/product-serials/serial/*").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/product/product-serials/serials").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/product/product-serials/serial/*/status").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/serials").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/product/product-serials/{productId}/serials/status/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
@@ -149,6 +161,9 @@ public class SecurityConfig {
 
     private void configureUserServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
+                // ADMIN-only dealer search endpoint
+                .pathMatchers(HttpMethod.GET, "/api/user/dealer/search").hasRole(ROLE_ADMIN)
+
                 // PUBLIC Dealer endpoints
                 .pathMatchers(HttpMethod.GET, "/api/user/dealer").permitAll()
                 .pathMatchers(HttpMethod.GET, "/api/user/dealer/*").permitAll()
@@ -156,10 +171,26 @@ public class SecurityConfig {
 
 
 
-                // ADMIN endpoints
+                // ADMIN endpoints - specific rules FIRST
+
+                // Get all admins endpoint - requires both SYSTEM and ADMIN roles
+                .pathMatchers(HttpMethod.GET, "/api/user/admin")
+                    .access(new AllAuthoritiesAuthorizationManager("ROLE_SYSTEM", "ROLE_ADMIN"))
+
+                // Register admin endpoint - requires both SYSTEM and ADMIN roles
+                .pathMatchers(HttpMethod.POST, "/api/user/admin")
+                    .access(new AllAuthoritiesAuthorizationManager("ROLE_SYSTEM", "ROLE_ADMIN"))
+
                 .pathMatchers(HttpMethod.GET, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
                 .pathMatchers(HttpMethod.PUT, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
                 .pathMatchers(HttpMethod.DELETE, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
+
+                // Update login email confirmation setting - ADMIN only
+                .pathMatchers(HttpMethod.PATCH, "/api/user/admin/*/login-email-confirmation").hasRole(ROLE_ADMIN)
+
+                // ADMIN general endpoints - AFTER specific rules
+                .pathMatchers(HttpMethod.GET, "/api/user/admin/*").hasRole(ROLE_ADMIN)
+                .pathMatchers(HttpMethod.PUT, "/api/user/admin/*").hasRole(ROLE_ADMIN)
 
                 // Direct ADMIN endpoints
                 .pathMatchers(HttpMethod.GET, "/api/admin/dealers/*").hasRole(ROLE_DEALER)
@@ -180,8 +211,11 @@ public class SecurityConfig {
     private void configureOrderServiceAuth(ServerHttpSecurity.AuthorizeExchangeSpec exchanges) {
         exchanges
             // ADMIN-only endpoints - MUST BE FIRST (specific patterns first)
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/search").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.GET, "/api/order/orders/deleted").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/order/orders/*/payment-status").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/order/orders/bulk").hasRole(ROLE_ADMIN)
+            .pathMatchers(HttpMethod.DELETE, "/api/order/orders/bulk/hard").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/order/orders/*").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.DELETE, "/api/order/orders/*/hard").hasRole(ROLE_ADMIN)
             .pathMatchers(HttpMethod.PATCH, "/api/order/orders/*/restore").hasRole(ROLE_ADMIN)
@@ -192,7 +226,7 @@ public class SecurityConfig {
             // DEALER endpoints - specific patterns FIRST
             .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*/purchased-products").hasRole(ROLE_DEALER)
             .pathMatchers(HttpMethod.POST, "/api/order/orders").hasRole(ROLE_DEALER)
-            .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*").hasRole(ROLE_DEALER)
+            .pathMatchers(HttpMethod.GET, "/api/order/orders/dealer/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER)
 
             // Order detail endpoint - allow both ADMIN and DEALER
             .pathMatchers(HttpMethod.GET, "/api/order/orders/*").hasAnyRole(ROLE_ADMIN, ROLE_DEALER);

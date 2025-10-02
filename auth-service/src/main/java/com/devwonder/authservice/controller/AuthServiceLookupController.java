@@ -118,4 +118,36 @@ public class AuthServiceLookupController {
         }
     }
 
+    @GetMapping("/accounts/by-role")
+    @Operation(
+        summary = "Get account IDs by role excluding specific role",
+        description = "Get list of account IDs that have a specific role but do not have another role. Used by user service to get admin accounts without SYSTEM role. Requires API key authentication.",
+        security = @SecurityRequirement(name = "apiKey")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Account IDs retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing API key"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<java.util.List<Long>>> getAccountIdsByRoleExcluding(
+            @RequestParam String roleName,
+            @RequestParam String excludeRoleName) {
+
+        log.info("Inter-service call: Getting account IDs with role {} excluding {}", roleName, excludeRoleName);
+
+        try {
+            java.util.List<Long> accountIds = authService.getAccountIdsByRoleExcluding(roleName, excludeRoleName);
+            log.info("Successfully retrieved {} account IDs", accountIds.size());
+
+            return ResponseEntity.ok(BaseResponse.success(
+                "Account IDs retrieved successfully",
+                accountIds
+            ));
+        } catch (Exception e) {
+            log.error("Failed to retrieve account IDs: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to retrieve account IDs: " + e.getMessage()));
+        }
+    }
+
 }

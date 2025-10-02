@@ -251,6 +251,56 @@ public class OrderController {
         }
     }
 
+    @DeleteMapping("/bulk")
+    @Operation(summary = "Soft Delete Multiple Orders (Bulk)",
+               description = "Soft delete multiple orders in a single request. Only PAID orders can be deleted. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders bulk soft delete completed"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> softDeleteOrdersBulk(@RequestBody List<Long> orderIds) {
+
+        log.info("Received bulk soft delete request for {} orders", orderIds.size());
+
+        try {
+            orderService.softDeleteOrdersBulk(orderIds);
+            return ResponseEntity.ok(BaseResponse.success("Orders bulk soft delete completed", null));
+
+        } catch (Exception e) {
+            log.error("Failed to bulk soft delete orders: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to bulk soft delete orders: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/bulk/hard")
+    @Operation(summary = "Hard Delete Multiple Orders (Bulk)",
+               description = "Permanently delete multiple orders from database in a single request. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders bulk hard delete completed"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> hardDeleteOrdersBulk(@RequestBody List<Long> orderIds) {
+
+        log.info("Received bulk hard delete request for {} orders", orderIds.size());
+
+        try {
+            orderService.hardDeleteOrdersBulk(orderIds);
+            return ResponseEntity.ok(BaseResponse.success("Orders bulk hard delete completed", null));
+
+        } catch (Exception e) {
+            log.error("Failed to bulk hard delete orders: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to bulk hard delete orders: " + e.getMessage()));
+        }
+    }
+
     @PatchMapping("/{orderId}/restore")
     @Operation(summary = "Restore Order",
                description = "Restore a soft deleted order. Requires ADMIN role authentication via API Gateway.",
@@ -337,6 +387,36 @@ public class OrderController {
             log.error("Failed to retrieve dealer purchased products: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(BaseResponse.error("Failed to retrieve purchased products: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search Orders",
+               description = "Search orders by keyword in order code. Requires ADMIN role authentication via API Gateway.",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders search completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<List<OrderResponse>>> searchOrders(
+            @Parameter(description = "Search query - order code", required = true)
+            @RequestParam String q,
+            @Parameter(description = "Maximum number of results (default: 10)", required = false)
+            @RequestParam(defaultValue = "10") int limit) {
+
+        log.info("Searching orders with query: '{}', limit: {}", q, limit);
+
+        try {
+            List<OrderResponse> orders = orderService.searchOrders(q, limit);
+            return ResponseEntity.ok(BaseResponse.success("Orders search completed successfully", orders));
+
+        } catch (Exception e) {
+            log.error("Failed to search orders: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BaseResponse.error("Failed to search orders: " + e.getMessage()));
         }
     }
 

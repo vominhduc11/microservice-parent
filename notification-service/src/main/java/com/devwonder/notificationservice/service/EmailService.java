@@ -1,9 +1,11 @@
 package com.devwonder.notificationservice.service;
 
 import com.devwonder.common.event.DealerEmailEvent;
+import com.devwonder.common.event.LoginConfirmationEvent;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,9 +17,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailService {
-    
+
     private final JavaMailSender javaMailSender;
-    
+
     @Value("${spring.mail.username}")
     private String fromEmail;
     
@@ -104,6 +106,88 @@ public class EmailService {
                 event.getAddress(),
                 event.getDistrict(),
                 event.getCity()
+            );
+    }
+
+    public void sendLoginConfirmationEmail(LoginConfirmationEvent event) throws MessagingException, UnsupportedEncodingException {
+        log.info("Sending login confirmation email to: {}", event.getEmail());
+
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(fromEmail, "DevWonder E-commerce Platform");
+        helper.setTo(event.getEmail());
+        helper.setSubject("Login Confirmation - DevWonder E-commerce Platform");
+
+        String emailContent = buildLoginConfirmationEmailContent(event);
+        helper.setText(emailContent, true);
+
+        javaMailSender.send(message);
+        log.info("✅ Login confirmation email sent successfully to {}", event.getEmail());
+    }
+
+    private String buildLoginConfirmationEmailContent(LoginConfirmationEvent event) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        String formattedLoginTime = event.getLoginTime().format(formatter);
+
+        // Build confirmation URL with JWT token
+        String confirmationUrl = "http://localhost:8080/api/auth/confirm-login?token=" + event.getConfirmationToken();
+
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #ffc107; text-align: center;">🔔 Login Confirmation Required</h2>
+
+                    <p>Dear <strong>%s</strong>,</p>
+
+                    <p>We detected a new login to your account on the DevWonder E-commerce Platform.</p>
+
+                    <div style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+                        <h3 style="color: #2e7d32; margin-top: 0;">Login Details:</h3>
+                        <p><strong>Username:</strong> %s</p>
+                        <p><strong>User Type:</strong> %s</p>
+                        <p><strong>Login Time:</strong> %s</p>
+                        <p><strong>IP Address:</strong> %s</p>
+                        <p><strong>Device:</strong> %s</p>
+                    </div>
+
+                    <div style="background-color: #d1ecf1; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8; text-align: center;">
+                        <h3 style="color: #0c5460; margin-top: 0;">✓ Confirm This Login</h3>
+                        <p style="color: #0c5460; margin-bottom: 20px;">
+                            If this was you, please click the button below to confirm:
+                        </p>
+                        <a href="%s"
+                           style="background-color: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-size: 16px; font-weight: bold;">
+                           ✓ Confirm Login
+                        </a>
+                        <p style="color: #0c5460; font-size: 12px; margin-top: 15px;">
+                            This confirmation link will expire in 15 minutes.
+                        </p>
+                    </div>
+
+                    <p style="color: #666; font-size: 14px;">
+                        For support, contact us at <a href="mailto:support@devwonder.com">support@devwonder.com</a>
+                    </p>
+
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+                    <p style="color: #999; font-size: 12px; text-align: center;">
+                        Best regards,<br>
+                        DevWonder E-commerce Security Team<br>
+                        This is an automated security notification.
+                    </p>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+                event.getUsername(),
+                event.getUsername(),
+                event.getUserType(),
+                formattedLoginTime,
+                event.getIpAddress(),
+                event.getUserAgent(),
+                confirmationUrl
             );
     }
 

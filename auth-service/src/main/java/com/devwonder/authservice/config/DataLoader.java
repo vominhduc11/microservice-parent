@@ -30,11 +30,12 @@ public class DataLoader {
         log.info("Starting data initialization...");
         
         // Create roles if they don't exist
+        Role systemRole = createRoleIfNotExists("SYSTEM");
         Role adminRole = createRoleIfNotExists("ADMIN");
         Role dealerRole = createRoleIfNotExists("DEALER");
 
         // Create accounts if they don't exist
-        createAccountIfNotExists("admin", "password123", Set.of(adminRole));
+        createAccountIfNotExists("admin", "password123", Set.of(systemRole, adminRole));
         createAccountIfNotExists("dealer", "password123", Set.of(dealerRole));
 
         log.info("Data initialization completed successfully!");

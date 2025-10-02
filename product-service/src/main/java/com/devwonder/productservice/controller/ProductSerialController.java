@@ -10,6 +10,7 @@ import com.devwonder.productservice.dto.ProductSerialBulkStatusUpdateRequest;
 import com.devwonder.productservice.dto.ProductInventoryResponse;
 import com.devwonder.productservice.enums.ProductSerialStatus;
 import com.devwonder.productservice.service.ProductSerialService;
+import com.devwonder.productservice.service.ProductStockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,6 +33,7 @@ import java.util.List;
 public class ProductSerialController {
     
     private final ProductSerialService productSerialService;
+    private final ProductStockService productStockService;
     
     @PostMapping("/serials")
     @Operation(
@@ -134,6 +136,29 @@ public class ProductSerialController {
         log.info("Successfully deleted product serial with ID: {}", serialId);
 
         return ResponseEntity.ok(BaseResponse.success("Product serial deleted successfully", null));
+    }
+
+    @DeleteMapping("/serials")
+    @Operation(
+        summary = "Delete Multiple Product Serials (Bulk)",
+        description = "Delete multiple product serials in a single request. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product serials deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> deleteProductSerialsBulk(@RequestBody List<Long> serialIds) {
+
+        log.info("Deleting {} product serials in bulk by ADMIN user", serialIds.size());
+
+        productSerialService.deleteProductSerialsBulk(serialIds);
+
+        log.info("Successfully completed bulk deletion for {} product serials", serialIds.size());
+
+        return ResponseEntity.ok(BaseResponse.success("Product serials bulk deletion completed", null));
     }
 
     @PatchMapping("/serial/{serialId}/status")
@@ -425,6 +450,31 @@ public class ProductSerialController {
         log.info("Retrieved {} product serials for product ID: {} and dealer ID: {}", productSerials.size(), productId, dealerId);
 
         return ResponseEntity.ok(BaseResponse.success("Product serials retrieved successfully", productSerials));
+    }
+
+    @PostMapping("/sync-all-stock")
+    @Operation(
+        summary = "Sync Stock for All Products",
+        description = "Manually sync stock values for all products based on current IN_STOCK product serials count. Requires ADMIN role authentication via API Gateway.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Stock sync completed successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<Void>> syncAllProductsStock() {
+        log.info("Syncing stock for all products by ADMIN user");
+
+        try {
+            productStockService.updateAllProductsStock();
+            return ResponseEntity.ok(BaseResponse.success("Stock sync completed successfully for all products", null));
+        } catch (Exception e) {
+            log.error("Error syncing stock for all products", e);
+            return ResponseEntity.status(500)
+                    .body(BaseResponse.error("Failed to sync stock: " + e.getMessage()));
+        }
     }
 
 }

@@ -26,12 +26,16 @@ public class AuthJwtService {
     // Token expiration constants
     private static final long ACCESS_TOKEN_MINUTES = 30;
     private static final long REFRESH_TOKEN_DAYS = 7;
+    private static final long CONFIRMATION_TOKEN_MINUTES = 15;
 
     // Access token expiration time: 30 minutes
     private static final long ACCESS_TOKEN_EXPIRATION = ACCESS_TOKEN_MINUTES * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
 
     // Refresh token expiration time: 7 days
     private static final long REFRESH_TOKEN_EXPIRATION = REFRESH_TOKEN_DAYS * HOURS_IN_DAY * MINUTES_IN_HOUR * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
+
+    // Confirmation token expiration time: 15 minutes
+    private static final long CONFIRMATION_TOKEN_EXPIRATION = CONFIRMATION_TOKEN_MINUTES * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
 
     public String generateToken(String username, Map<String, Object> claims) {
         Map<String, Object> accessTokenClaims = new HashMap<>(claims);
@@ -134,6 +138,37 @@ public class AuthJwtService {
     }
 
     /**
+     * Generate confirmation token for login email verification (15 minutes)
+     */
+    public String generateConfirmationToken(Long accountId, String email) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("token_type", "confirmation");
+        claims.put("accountId", accountId);
+        claims.put("email", email);
+        return createToken(claims, "login-confirmation", CONFIRMATION_TOKEN_EXPIRATION);
+    }
+
+    /**
+     * Validate confirmation token and extract claims
+     */
+    public Claims validateConfirmationToken(String token) {
+        Claims claims = extractAllClaims(token);
+
+        // Check if token is confirmation token
+        String tokenType = claims.get("token_type", String.class);
+        if (!"confirmation".equals(tokenType)) {
+            throw new RuntimeException("Invalid token type");
+        }
+
+        // Check if expired
+        if (isTokenExpired(token)) {
+            throw new RuntimeException("Confirmation token has expired");
+        }
+
+        return claims;
+    }
+
+    /**
      * Validate refresh token specifically - must be valid and not expired
      */
     public Boolean isRefreshTokenValid(String token, String username) {
@@ -143,13 +178,13 @@ public class AuthJwtService {
             if (!"refresh".equals(tokenType)) {
                 return false;
             }
-            
+
             // Check username matches
             final String tokenUsername = extractUsername(token);
             if (!tokenUsername.equals(username)) {
                 return false;
             }
-            
+
             // Refresh token MUST NOT be expired
             return !isTokenExpired(token);
             
