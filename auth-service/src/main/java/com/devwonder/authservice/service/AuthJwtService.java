@@ -26,7 +26,7 @@ public class AuthJwtService {
     // Token expiration constants
     private static final long ACCESS_TOKEN_MINUTES = 30;
     private static final long REFRESH_TOKEN_DAYS = 7;
-    private static final long CONFIRMATION_TOKEN_MINUTES = 15;
+    private static final long CONFIRMATION_TOKEN_MINUTES = 5;
 
     // Access token expiration time: 30 minutes
     private static final long ACCESS_TOKEN_EXPIRATION = ACCESS_TOKEN_MINUTES * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
@@ -34,8 +34,8 @@ public class AuthJwtService {
     // Refresh token expiration time: 7 days
     private static final long REFRESH_TOKEN_EXPIRATION = REFRESH_TOKEN_DAYS * HOURS_IN_DAY * MINUTES_IN_HOUR * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
 
-    // Confirmation token expiration time: 15 minutes
-    private static final long CONFIRMATION_TOKEN_EXPIRATION = CONFIRMATION_TOKEN_MINUTES * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND;
+    // Confirmation token expiration time: 1 minute 30 seconds (90 seconds)
+    private static final long CONFIRMATION_TOKEN_EXPIRATION = 90 * MILLISECONDS_IN_SECOND;
 
     public String generateToken(String username, Map<String, Object> claims) {
         Map<String, Object> accessTokenClaims = new HashMap<>(claims);

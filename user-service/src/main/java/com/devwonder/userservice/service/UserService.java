@@ -212,6 +212,7 @@ public class UserService {
                 .email(admin.getEmail())
                 .phone(admin.getPhone())
                 .companyName(admin.getCompanyName())
+                .requireLoginEmailConfirmation(admin.getRequireLoginEmailConfirmation())
                 .build();
     }
 
@@ -237,6 +238,7 @@ public class UserService {
                                             .email(admin.getEmail())
                                             .phone(admin.getPhone())
                                             .companyName(admin.getCompanyName())
+                                            .requireLoginEmailConfirmation(admin.getRequireLoginEmailConfirmation())
                                             .build())
                                     .orElse(null);
                         } catch (Exception e) {
@@ -283,9 +285,6 @@ public class UserService {
         existingAdmin.setEmail(updateRequest.getEmail());
         existingAdmin.setPhone(updateRequest.getPhone());
         existingAdmin.setCompanyName(updateRequest.getCompanyName());
-        if (updateRequest.getRequireLoginEmailConfirmation() != null) {
-            existingAdmin.setRequireLoginEmailConfirmation(updateRequest.getRequireLoginEmailConfirmation());
-        }
 
         // Save updated admin
         Admin updatedAdmin = adminRepository.save(existingAdmin);
@@ -299,6 +298,78 @@ public class UserService {
                 .companyName(updatedAdmin.getCompanyName())
                 .requireLoginEmailConfirmation(updatedAdmin.getRequireLoginEmailConfirmation())
                 .build();
+    }
+
+    @Transactional
+    public void deleteAdmin(Long adminId) {
+        log.info("Deleting admin with ID: {}", adminId);
+
+        // Find existing admin first to get accountId
+        Admin existingAdmin = adminRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with ID: " + adminId));
+
+        Long accountId = existingAdmin.getAccountId();
+        log.info("Found admin with accountId: {}, proceeding to delete both admin and account", accountId);
+
+        try {
+            // Delete admin first (local transaction)
+            adminRepository.deleteById(adminId);
+            log.info("Successfully deleted admin with ID: {}", adminId);
+
+            // Delete corresponding account in auth-service
+            authServiceClient.deleteAccount(accountId, "INTER_SERVICE_KEY");
+            log.info("Successfully deleted account with ID: {} in auth-service", accountId);
+
+        } catch (Exception e) {
+            log.error("Failed to delete admin or account: {}", e.getMessage());
+            throw new RuntimeException("Failed to delete admin: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public java.util.Map<String, Object> deleteAdminsBatch(List<Long> adminIds) {
+        log.info("Starting batch deletion for {} admins", adminIds.size());
+
+        List<Long> successfulDeletes = new java.util.ArrayList<>();
+        List<java.util.Map<String, Object>> failedDeletes = new java.util.ArrayList<>();
+
+        for (Long adminId : adminIds) {
+            try {
+                // Find existing admin first to get accountId
+                Admin existingAdmin = adminRepository.findById(adminId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Admin not found with ID: " + adminId));
+
+                Long accountId = existingAdmin.getAccountId();
+
+                // Delete admin first (local transaction)
+                adminRepository.deleteById(adminId);
+                log.info("Successfully deleted admin with ID: {}", adminId);
+
+                // Delete corresponding account in auth-service
+                authServiceClient.deleteAccount(accountId, "INTER_SERVICE_KEY");
+                log.info("Successfully deleted account with ID: {} in auth-service", accountId);
+
+                successfulDeletes.add(adminId);
+
+            } catch (Exception e) {
+                log.error("Failed to delete admin {}: {}", adminId, e.getMessage());
+                java.util.Map<String, Object> failedItem = new java.util.HashMap<>();
+                failedItem.put("adminId", adminId);
+                failedItem.put("error", e.getMessage());
+                failedDeletes.add(failedItem);
+            }
+        }
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("totalRequested", adminIds.size());
+        result.put("successCount", successfulDeletes.size());
+        result.put("failCount", failedDeletes.size());
+        result.put("successfulDeletes", successfulDeletes);
+        result.put("failedDeletes", failedDeletes);
+
+        log.info("Batch deletion completed: {} successful, {} failed", successfulDeletes.size(), failedDeletes.size());
+
+        return result;
     }
 
     @Transactional

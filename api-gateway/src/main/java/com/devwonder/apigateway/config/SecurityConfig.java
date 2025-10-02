@@ -181,12 +181,21 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.POST, "/api/user/admin")
                     .access(new AllAuthoritiesAuthorizationManager("ROLE_SYSTEM", "ROLE_ADMIN"))
 
+                // Dealer management endpoints - ADMIN only
                 .pathMatchers(HttpMethod.GET, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
                 .pathMatchers(HttpMethod.PUT, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
                 .pathMatchers(HttpMethod.DELETE, "/api/user/admin/dealers/*").hasRole(ROLE_ADMIN)
 
                 // Update login email confirmation setting - ADMIN only
                 .pathMatchers(HttpMethod.PATCH, "/api/user/admin/*/login-email-confirmation").hasRole(ROLE_ADMIN)
+
+                // Batch delete admins endpoint - requires both SYSTEM and ADMIN roles
+                .pathMatchers(HttpMethod.DELETE, "/api/user/admin/batch")
+                    .access(new AllAuthoritiesAuthorizationManager("ROLE_SYSTEM", "ROLE_ADMIN"))
+
+                // Delete single admin endpoint - requires both SYSTEM and ADMIN roles
+                .pathMatchers(HttpMethod.DELETE, "/api/user/admin/*")
+                    .access(new AllAuthoritiesAuthorizationManager("ROLE_SYSTEM", "ROLE_ADMIN"))
 
                 // ADMIN general endpoints - AFTER specific rules
                 .pathMatchers(HttpMethod.GET, "/api/user/admin/*").hasRole(ROLE_ADMIN)

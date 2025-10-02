@@ -36,7 +36,4 @@ public class AdminUpdateRequest {
     @Size(max = 255, message = "Company name must not exceed 255 characters")
     @Schema(description = "Company name", example = "DevWonder Inc.")
     private String companyName;
-
-    @Schema(description = "Require login email confirmation", example = "false", defaultValue = "false")
-    private Boolean requireLoginEmailConfirmation;
 }

@@ -162,7 +162,7 @@ public class EmailService {
                            ✓ Confirm Login
                         </a>
                         <p style="color: #0c5460; font-size: 12px; margin-top: 15px;">
-                            This confirmation link will expire in 15 minutes.
+                            This confirmation link will expire in 90 seconds.
                         </p>
                     </div>
 

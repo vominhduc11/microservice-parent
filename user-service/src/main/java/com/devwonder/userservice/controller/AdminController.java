@@ -235,6 +235,71 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{id}")
+    @Operation(
+        summary = "Delete Admin (SYSTEM + ADMIN Only)",
+        description = "Delete an existing admin from the system. This endpoint permanently removes both " +
+                    "the admin profile from user-service and the associated authentication account from auth-service. " +
+                    "Requires both SYSTEM and ADMIN roles for authorization. Use with caution as this operation " +
+                    "cannot be undone and will delete all related data.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Admin deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Requires both SYSTEM and ADMIN roles"),
+        @ApiResponse(responseCode = "404", description = "Admin not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error or account deletion failed")
+    })
+    public ResponseEntity<BaseResponse<String>> deleteAdmin(@PathVariable Long id) {
+        log.info("Deleting admin with ID: {}", id);
+
+        userService.deleteAdmin(id);
+        BaseResponse<String> response = new BaseResponse<>(
+            true,
+            "Admin deleted successfully",
+            "Admin with ID " + id + " has been permanently removed from the system"
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/batch")
+    @Operation(
+        summary = "Delete Multiple Admins (SYSTEM + ADMIN Only)",
+        description = "Delete multiple admins from the system in a single request. This endpoint permanently removes " +
+                    "all specified admin profiles from user-service and their associated authentication accounts from auth-service. " +
+                    "Requires both SYSTEM and ADMIN roles for authorization. Use with caution as this operation " +
+                    "cannot be undone and will delete all related data. Returns a summary of successful and failed deletions.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Batch deletion completed (check response for details)"),
+        @ApiResponse(responseCode = "400", description = "Invalid request - empty or null ID list"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Requires both SYSTEM and ADMIN roles"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<BaseResponse<java.util.Map<String, Object>>> deleteAdminsBatch(
+            @RequestBody List<Long> adminIds) {
+
+        log.info("Batch deleting {} admins", adminIds.size());
+
+        if (adminIds == null || adminIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                new BaseResponse<>(false, "Admin ID list cannot be empty", null)
+            );
+        }
+
+        java.util.Map<String, Object> result = userService.deleteAdminsBatch(adminIds);
+
+        BaseResponse<java.util.Map<String, Object>> response = new BaseResponse<>(
+            true,
+            "Batch deletion completed",
+            result
+        );
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{accountId}/login-email-confirmation")
     @Operation(
         summary = "Update Login Email Confirmation Setting",
