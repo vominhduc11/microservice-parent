@@ -1,17 +1,30 @@
 package com.devwonder.apigateway.config;
 
-import java.util.*;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.devwonder.apigateway.security.AllAuthoritiesAuthorizationManager;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+
+import com.devwonder.apigateway.security.AllAuthoritiesAuthorizationManager;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -35,7 +48,7 @@ public class SecurityConfig {
 
     private void configureOAuth2ResourceServer(ServerHttpSecurity.OAuth2ResourceServerSpec oauth2) {
         oauth2.jwt(jwt -> jwt
-                .jwkSetUri("http://auth-service:8081/auth/.well-known/jwks.json")
+                .jwtDecoder(jwtDecoder())  // Use custom decoder with zero clock skew
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()));
     }
 
@@ -76,9 +89,6 @@ public class SecurityConfig {
 
                 // Refresh token endpoint - public access (handles expired tokens internally)
                 .pathMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-
-                // Token validation endpoint - requires valid JWT token
-                .pathMatchers(HttpMethod.GET, "/api/auth/validate").authenticated()
 
                 // Change password endpoint - requires ADMIN role
                 .pathMatchers(HttpMethod.POST, "/api/auth/change-password").hasRole(ROLE_ADMIN)
@@ -316,6 +326,31 @@ public class SecurityConfig {
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .forEach(authorities::add);
         }
+    }
+
+    /**
+     * Custom JWT Decoder with ZERO clock skew tolerance
+     * This ensures tokens expire at the EXACT time specified (no 60-second grace period)
+     *
+     * Default Spring Security behavior adds 60 seconds clock skew tolerance:
+     * - Token with 5s expiration = actually valid for 65s
+     * - This bean sets clock skew to 0s for precise expiration
+     */
+    @Bean
+    public ReactiveJwtDecoder jwtDecoder() {
+        // Create JWT decoder using JWKS endpoint from auth-service
+        NimbusReactiveJwtDecoder jwtDecoder = NimbusReactiveJwtDecoder
+            .withJwkSetUri("http://auth-service:8081/auth/.well-known/jwks.json")
+            .jwsAlgorithm(SignatureAlgorithm.RS256)
+            .build();
+
+        // Configure validator with ZERO clock skew (no tolerance)
+        OAuth2TokenValidator<Jwt> withClockSkew = new DelegatingOAuth2TokenValidator<>(
+            new JwtTimestampValidator(Duration.ofSeconds(0))  // 0 seconds clock skew
+        );
+
+        jwtDecoder.setJwtValidator(withClockSkew);
+        return jwtDecoder;
     }
 
     // CORS configuration moved to YAML (api-gateway.yml) for easier maintenance

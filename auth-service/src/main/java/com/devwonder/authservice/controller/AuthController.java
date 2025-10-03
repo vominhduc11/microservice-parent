@@ -82,26 +82,6 @@ public class AuthController {
     }
 
 
-    @GetMapping("/validate")
-    @Operation(
-        summary = "Validate JWT Token",
-        description = "Validate JWT token from Authorization header. " +
-                    "Returns token status and user information if valid."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Token is valid"),
-        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-        @ApiResponse(responseCode = "403", description = "No Authorization header provided")
-    })
-    public ResponseEntity<BaseResponse<String>> validateToken(
-            @Parameter(hidden = true) HttpServletRequest request) {
-        boolean isValid = authService.validateTokenFromHeader(request);
-        return ResponseEntity.ok(BaseResponse.success(
-            isValid ? "Token is valid" : "Token is invalid",
-            isValid ? "VALID" : "INVALID"
-        ));
-    }
-
     @PostMapping("/change-password")
     @Operation(
         summary = "Change Password",

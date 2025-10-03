@@ -191,7 +191,7 @@ public class AuthService {
         claims.put("roles", roles);
         claims.put("userId", account.getId());
         
-        // Generate new access token (30 minutes)
+        // Generate new access token (5 seconds)
         String newAccessToken = jwtService.generateToken(username, claims);
         
         log.info("Token refreshed successfully for user: {}", username);
@@ -243,40 +243,6 @@ public class AuthService {
                 .username(savedAccount.getUsername())
                 .roles(roleNames)
                 .build();
-    }
-
-    public boolean validateTokenFromHeader(HttpServletRequest request) {
-        try {
-            // Extract token from Authorization header
-            String token = extractTokenFromRequest(request);
-            
-            if (token == null) {
-                log.warn("No authorization token provided for validation");
-                return false;
-            }
-            
-            // Check if token is blacklisted
-            if (tokenBlacklistService.isTokenBlacklisted(token)) {
-                log.warn("Token validation failed: token is blacklisted");
-                return false;
-            }
-            
-            // Extract username and validate token
-            String username = jwtService.extractUsername(token);
-            boolean isValid = jwtService.validateToken(token, username);
-            
-            if (isValid) {
-                log.info("Token validation successful for user: {}", username);
-            } else {
-                log.warn("Token validation failed for user: {}", username);
-            }
-            
-            return isValid;
-            
-        } catch (Exception e) {
-            log.error("Token validation failed: {}", e.getMessage());
-            return false;
-        }
     }
 
     @Transactional(readOnly = true)
