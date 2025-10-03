@@ -10,7 +10,7 @@ x-java-service: &java-service-template
     SWAGGER_API_DOCS_ENABLED: true
 
 x-build-args: &build-args
-  context: .
+  context: ./backend
   args:
     BUILDKIT_INLINE_CACHE: 1
 
@@ -27,7 +27,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/database/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
+      - ./backend/scripts/database/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
     networks:
       - microservices-network
     restart: unless-stopped
@@ -242,8 +242,9 @@ services:
       dockerfile: api-gateway/Dockerfile
     <<: *java-service-template
     container_name: api-gateway
-    ports:
-      - "8080:8080"
+    # Port 8080 only accessible within Docker network (via frontend proxies)
+    expose:
+      - "8080"
     depends_on:
       config-server:
         condition: service_healthy
@@ -488,6 +489,49 @@ services:
       ORDER_SERVICE_URL: http://order-service:8085
       PRODUCT_SERVICE_URL: http://product-service:8083
       USER_SERVICE_URL: http://user-service:8082
+
+  # Frontend Services
+  admin-frontend:
+    build:
+      context: ./frontend/admin
+      dockerfile: Dockerfile
+    container_name: admin-frontend
+    ports:
+      - "9000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  dealer-frontend:
+    build:
+      context: ./frontend/dealer
+      dockerfile: Dockerfile
+    container_name: dealer-frontend
+    ports:
+      - "5174:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  main-frontend:
+    build:
+      context: ./frontend/main
+      dockerfile: Dockerfile
+    container_name: main-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -15,7 +15,8 @@
       "Bash(find:*)",
       "Bash(docker exec:*)",
       "Bash(for service in auth-service blog-service cart-service notification-service order-service product-service user-service warranty-service)",
-      "Bash(do echo \"=== $service ===\")"
+      "Bash(do echo \"=== $service ===\")",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
