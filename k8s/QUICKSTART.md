@@ -57,6 +57,30 @@ Then open in browser:
 - http://dealer.microservices.local
 - http://www.microservices.local
 
+### Step 6: Enable Auto-scaling (Optional)
+
+For production-like behavior with automatic scaling:
+
+```bash
+cd autoscaling
+./apply-autoscaling.sh
+```
+
+This enables:
+- Horizontal Pod Autoscaler (2-10 replicas based on load)
+- Resource limits for optimal performance
+- LoadBalancer services (optional)
+
+Check auto-scaling status:
+```bash
+kubectl get hpa -n microservices
+```
+
+Test auto-scaling:
+```bash
+./test-load.sh
+```
+
 ## Troubleshooting
 
 ### Pods Not Starting?

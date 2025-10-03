@@ -19,9 +19,12 @@ k8s/
 ├── storage/                # PersistentVolume and StorageClass
 ├── infrastructure/         # StatefulSets for databases and messaging
 ├── deployments/            # Application deployments
+├── services/               # LoadBalancer services for external access
 ├── ingress/                # Ingress rules for external access
+├── autoscaling/            # HPA and resource limits for auto-scaling
 ├── deploy.sh              # Automated deployment script
 ├── cleanup.sh             # Automated cleanup script
+├── status.sh              # Check deployment status
 └── README.md              # This file
 ```
 
@@ -151,6 +154,67 @@ If Ingress is not configured, you can access services via NodePort:
 - Main Frontend: http://localhost:30080
 - Kafka UI: http://localhost:30091
 - Redis Commander: http://localhost:30081
+
+## Auto-scaling and Load Balancing
+
+### Enable Auto-scaling (Optional but Recommended)
+
+The cluster includes Horizontal Pod Autoscaler (HPA) configurations for all stateless services:
+
+```bash
+cd k8s/autoscaling
+./apply-autoscaling.sh
+```
+
+This will:
+- Install Metrics Server (if not present)
+- Apply resource limits to all deployments
+- Enable HPA for automatic scaling based on CPU/Memory usage
+- Optionally configure LoadBalancer services
+
+**Features:**
+- Auto-scale from 2 to 10 replicas based on load
+- Target CPU utilization: 70%
+- Target Memory utilization: 80%
+- Smart scale-up/scale-down policies
+
+**Monitor auto-scaling:**
+
+```bash
+# Check HPA status
+kubectl get hpa -n microservices
+
+# Watch auto-scaling in real-time
+watch kubectl get hpa -n microservices
+
+# View resource usage
+kubectl top pods -n microservices
+```
+
+**Test auto-scaling:**
+
+```bash
+cd k8s/autoscaling
+./test-load.sh
+```
+
+See [autoscaling/README.md](autoscaling/README.md) for detailed documentation.
+
+### LoadBalancer Services (Cloud/MetalLB)
+
+For cloud deployments or on-premise with MetalLB:
+
+```bash
+kubectl apply -f k8s/services/loadbalancer-services.yaml
+```
+
+Get external IPs:
+
+```bash
+kubectl get svc -n microservices | grep LoadBalancer
+```
+
+**Note:** LoadBalancer requires cloud provider support or MetalLB for on-premise clusters.
 
 ## Monitoring and Debugging
 
