@@ -1,0 +1,110 @@
+# Admin Frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-frontend
+  namespace: microservices
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30000
+  selector:
+    app: admin-frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-frontend
+  namespace: microservices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-frontend
+  template:
+    metadata:
+      labels:
+        app: admin-frontend
+    spec:
+      containers:
+        - name: admin-frontend
+          image: your-registry/admin-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+# Dealer Frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealer-frontend
+  namespace: microservices
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30174
+  selector:
+    app: dealer-frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealer-frontend
+  namespace: microservices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dealer-frontend
+  template:
+    metadata:
+      labels:
+        app: dealer-frontend
+    spec:
+      containers:
+        - name: dealer-frontend
+          image: your-registry/dealer-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+# Main Frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-frontend
+  namespace: microservices
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    app: main-frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-frontend
+  namespace: microservices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: main-frontend
+  template:
+    metadata:
+      labels:
+        app: main-frontend
+    spec:
+      containers:
+        - name: main-frontend
+          image: your-registry/main-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
