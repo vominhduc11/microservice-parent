@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealer-frontend
+  namespace: microservices
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dealer-frontend
+  template:
+    metadata:
+      labels:
+        app: dealer-frontend
+    spec:
+      containers:
+        - name: dealer-frontend
+          image: dealer-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

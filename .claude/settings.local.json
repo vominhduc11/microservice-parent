@@ -16,7 +16,15 @@
       "Bash(docker exec:*)",
       "Bash(for service in auth-service blog-service cart-service notification-service order-service product-service user-service warranty-service)",
       "Bash(do echo \"=== $service ===\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(kubectl kustomize:*)",
+      "Bash(for dir in */)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(ls:*)",
+      "Bash(/dev/null)",
+      "Bash(kubectl describe:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl apply:*)"
     ],
     "deny": [],
     "ask": []

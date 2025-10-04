@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: microservices
+
+resources:
+  - ../../base
+  - loadbalancer-services.yaml
+
+namePrefix: prod-
+
+# Using local images (no tag override needed)
+# images:
+#   - name: microservice-parent-config-server
+#     newTag: latest
+
+# Production replicas (from base)
+replicas:
+  - name: config-server
+    count: 2
+  - name: auth-service
+    count: 3
+  - name: api-gateway
+    count: 3
+
+# Add production-specific labels
+labels:
+  - pairs:
+      environment: prod
